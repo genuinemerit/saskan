@@ -210,9 +210,6 @@ class FileIO(object):
         try:
             cfg_j = self.get_file(path.join(
                 SI.get_cwd_home(), p_file_dir, p_cfg_nm))
-
-            # pp(('cfg_j', cfg_j))
-
             cfg = json.loads(cfg_j)
             return cfg
         except Exception as err:
