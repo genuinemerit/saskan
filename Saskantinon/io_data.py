@@ -6,14 +6,18 @@
 Saskan Data Management middleware.
 """
 
+import pendulum     # date and time
 import platform
 import pygame as pg
 
 # from os import path
 # from pathlib import Path
 from collections import OrderedDict
-from pprint import pprint as pp     # noqa: F401
+from os import path
+from pathlib import Path
 from pprint import pformat as pf    # noqa: F401
+from pprint import pprint as pp     # noqa: F401
+from typing import Tuple, Union
 
 from io_db import DataBase
 from io_file import FileIO
@@ -60,7 +64,9 @@ class Colors(object):
 
 
 class ImageType(object):
-    """Types of images."""
+    """Types of images.
+    Reference class attributes directly.
+    No need to instantiate this class."""
     JPG = "jpg"
     PNG = "png"
     GIF = "gif"
@@ -70,14 +76,13 @@ class ImageType(object):
     ICO = "ico"
 
 
-#  NON-UNIQUE CONSTANTS
+#  COMPLEX CONSTANTS
 # ================================
 class Astro(object):
-    """Constants:
+    """Constants, including both lists and enums
     Astronomical and physics units and conversions.
-    N.B.
-    Note that this type of class can easily be turned into a
-    dictionary as follows:
+    - Generally, can just refer directly to the lists.
+    - But the class can also be made into a dict:
       `astro_dict = {k:v for k,v in Astro.__dict__.items()
                      if not k.startswith('__')}`
     """
@@ -169,7 +174,7 @@ class Astro(object):
     U_DARK_ENERGY_PCT = 0.683       # dark energy percentage
     U_DARK_MATTER_PCT = 0.274       # dark matter percentage
     U_BARYONIC_PCT = 0.043          # baryonic matter percentage
-    # conversions -- all are multiplicative in the indicated direction
+    # conversions -- multiplicative in indicated direction
     # For `AA_TO_BB`, BB = AA * value
     # Example: `AU_TO_KM` means `KM = AU * 1.495979e+8`
     AU_TO_KM = 1.495979e+8        # astronomical units -> km
@@ -194,7 +199,7 @@ class Astro(object):
     MPC_TO_GPC = 0.001            # megaparsecs -> gigaparsecs
     MPC_TO_KPC = 1000.0           # megaparsecs -> kiloparsecs
     GLY_TO_PC = 3.262e6           # gigalight years -> parsecs
-    PC_TO_GLY = 3.065603923973023e-07       # parsecs -> gigalight years
+    PC_TO_GLY = 3.065603923973023e-07  # parsecs -> gigalight years
     PC_TO_KPC = 0.001             # parsecs -> kiloparsecs
     PC_TO_LY = 3.261598           # parsecs -> light years
 
@@ -238,6 +243,9 @@ class Geog(object):
     NS = "north-south"
     EW = "east-west"
     # conversions - metric/imperial
+    # conversions -- multiplicative in indicated direction
+    # For `AA_TO_BB`, BB = AA * value
+    # Example: `CM_TO_IN` means `CM = IN * 0.3937007874`
     CM_TO_IN = 0.3937007874      # centimeters -> inches
     CM_TO_M = 0.01               # centimeters -> meters
     CM_TO_MM = 10.0              # centimeters -> millimeters
@@ -347,9 +355,9 @@ class Geom(object):
     SHP = "shape"
 
 
-class GameDisplay(object):
-    """Values related to constructing GUI's, but which do not require
-    importing and initialzing PyGame, nor reading values from configs.
+class AppDisplay(object):
+    """Static values related to constructing GUI's.
+    As long as pg.display is not called, nothing will be rendered.
     """
     # Typesetting
     # -------------------
@@ -443,15 +451,15 @@ class GameDisplay(object):
     WHTM = FI.U["uri"]["help"]
 
 
-#  GAME SIMPLE DATA STRUCTURES
+#  SIMPLE DATA STRUCTURES
 # ============================
 class Struct(object):
     """Base class for data structures made of a
     simple group of attritubes. Structures
     have default values, but are mutable.
-    Expect these objects to be instantiated as
-    class attributes with no parameters.
-    User assigns values directly. For example:
+    Instantiate as sub-class object with no parameters.
+    User assigns values directly.
+    For example:
         CRI = Struct.ColumnRowIndex()
         CRI.r = 3
         CRI.c = 5
@@ -499,7 +507,7 @@ class Struct(object):
         """Simple structure for defining rectangles.
         This provides a way to store the minimal set of
         values needed. See GamePlane and pg.Rect for more
-        complex structures.
+        complex rectangle structures.
         """
         x: float = 0.0
         y: float = 0.0
@@ -508,8 +516,8 @@ class Struct(object):
 
     class GameLatLong(object):
         """Structure for game latitude and longitude.
-        Game lat and long refer to fantasy world locations;
-        cannot use standard Earth-based geo-loc modules.
+        Game lat and long refer to fantasy world locations.
+        Cannot use standard Earth-based geo-loc modules.
 
         Latitudes and longitudes are in decimal degrees.
         Lat north is positive; south is negative.
@@ -523,17 +531,19 @@ class Struct(object):
     class GameGeoLocation(object):
         """
         This is a general-purpose, high level geo-location
-        data structure,  planar and rectangular.
+        data structure, planar and rectangular.
         Use degrees as the specifier for locations.
         Then compute km or other physical dimensions
         based on scaling to a grid when rendering.
 
-        Will need a different type of locator for astronomical
-        data.
-
         Provide rough altitudes (average, min and max) meters,
         to give a general sense of the 3rd dimension.
         Detail heights and depths in specialized data structures.
+
+        For astronomical, underwater or other "3D" spaces,
+        see Game3DLocation class (below), keeping in mind that
+        3D rendering is beyond the capabilities of a Python-
+        driven game.
         """
         latitude_north_dg: float = 0.0
         latitude_south_dg: float = 0.0
@@ -573,8 +583,26 @@ class Struct(object):
         img_desc: str = ''
 
 
-#  GAME COMPLEX DATA STRUCTURES
+#  COMPLEX DATA STRUCTURES
 #  =============================
+class EntityType(object):
+    """Constants:
+    - This entire class can be made into a dict:
+      `entity_dict = {k:v for k,v in EntityType.__dict__.items()
+                      if not k.startswith('__')}`
+    - Generally, can just refer directly to the lists.
+    """
+    # source data formats
+    DATA_FORMATS = ["csv", "json", "xml", "xls", "xlsx",
+                    "txt", "html", "pdf", "doc", "docx",
+                    "txt", "ods", "sql", "dbf", "db",
+                    "sqlite", "mdb", "accdb", "zip",
+                    "tar", "gz"]
+    # backup type -- type of backup/copy of entire database
+    BACKUP_TYPE = ["archive", "backup", "compressed", "export",
+                   "encrypted"]
+
+
 class GamePlane(object):
     """
     A general purpose shape structure that is planar
@@ -668,21 +696,19 @@ class GamePlane(object):
 
 class GameGridData(object):
     """
-    Proivde a data structure to set up a matrix of cells within a grid,
-    to draw that grid, and to store data within each cell. The drawing
-    data is 2D oriented, but the data-content supports 3D, like a layer
-    cake or slices of scan.
+    PSet up a matrix of cells within a grid, both to direct
+    rendering, and to store data within each cell. The drawing
+    data is 2D oriented, but the data-content supports 3D,
+    like a layer cake or slices of a scan.
 
     Specs for rendering grid and cells have two inputs:
-    - number of rows and columns are init params for this class
-    - placement of grid within containing map-window defined in GameDisplay
-    To make smaller cells, assign more rows and columns to the grid;
-    to make bigger cells, assign fewer rows and columns.
+    - number of rows and columns -- init params
+    - grid placement in map-window is defined in AppDisplay
+    For smaller cells, assign more rows and columns to the grid.
+    For bigger cells, assign fewer rows and columns.
 
-    @DEV:
-    - Eventually have a 3D version of this class. That may also be
-    able to work as a 2D grid, where the z dimension of its only layer
-    is zero.
+    - Supports 3 dimensions in layered fashion.
+    - To use as a 2D grid, set p_z values to zero.
     """
     def __init__(self,
                  p_cols: int = 1,
@@ -690,19 +716,21 @@ class GameGridData(object):
                  p_z_up: int = 0,
                  p_z_down: int = 0):
         """
-        Number of cells in matrix are init parameters:
+        Number of cells in matrix:
         :args:
         -- p_cols: number of columns ("vertical" or N-S cells)
         -- p_rows: number of rows ("horizontal" or E-W cells)
         -- p_z_up: number of "up" cells
         -- p_z_down: number of "down" cells
-        Location of grid-box in map window is set in GameDisplay.
+        Location of grid-box in map window is set in AppDisplay.
         """
-        x_offset = int(round(GameDisplay.GAMEMAP_W * 0.01))
-        y_offset = int(round(GameDisplay.GAMEMAP_H * 0.02))
+        x_offset = int(round(AppDisplay.GAMEMAP_W * 0.01))
+        y_offset = int(round(AppDisplay.GAMEMAP_H * 0.02))
         self.visible = False
-        self.plane, self.box = self._set_grid_rects(x_offset, y_offset)
-        self.grid_size = self.set_grid_size(p_cols, p_rows, p_z_up, p_z_down)
+        self.plane, self.box =\
+            self._set_grid_rects(x_offset, y_offset)
+        self.grid_size =\
+            self.set_grid_size(p_cols, p_rows, p_z_up, p_z_down)
         self.cell_size = self.set_cell_size(x_offset, y_offset)
         self.grid_lines = self.set_grid_lines(x_offset, y_offset)
         self.grid_data = self.set_grid_data()
@@ -712,7 +740,7 @@ class GameGridData(object):
                         y_offset: int) -> tuple:
         """ Set GamePlane and pygame Rect objects for the grid.
         These help place and render the grid as a whole. Since inputs
-        are set by the constant structure 'GameDisplay', this method is
+        are set by the constant structure 'AppDisplay', this method is
         treated as "internal".
         Assumes a 2D rendering of each "z-layer" of the grid.
         Default z-layer is the zero-layer.
@@ -720,10 +748,10 @@ class GameGridData(object):
         :returns:
         - (grid_rect, grid_rect_pygame): tuple of GamePlane and pygame Rect
         """
-        x = GameDisplay.GAMEMAP_X + x_offset
-        y = GameDisplay.GAMEMAP_Y + y_offset
-        w = GameDisplay.GAMEMAP_W
-        h = GameDisplay.GAMEMAP_H
+        x = AppDisplay.GAMEMAP_X + x_offset
+        y = AppDisplay.GAMEMAP_Y + y_offset
+        w = AppDisplay.GAMEMAP_W
+        h = AppDisplay.GAMEMAP_H
         game_plane = GamePlane(
             p_top_left=Struct.CoordXY(x, 0),
             p_top_right=Struct.CoordXY(w, 0),
@@ -766,9 +794,9 @@ class GameGridData(object):
         :returns:
         {w, h}: width, height of each cell
         """
-        w = int(round(GameDisplay.GAMEMAP_W - x_offset) /
+        w = int(round(AppDisplay.GAMEMAP_W - x_offset) /
                 self.grid_size['rc'].c)
-        h = int(round(GameDisplay.GAMEMAP_H - y_offset) /
+        h = int(round(AppDisplay.GAMEMAP_H - y_offset) /
                 self.grid_size['rc'].r)
         return {'w': w, 'h': h}
 
@@ -836,30 +864,71 @@ class GameGridData(object):
 # =======================================================
 
 # =============================================================
+# Abstracted methods for ORM objects
+# =============================================================
+def _orm_to_dict(ORM: object) -> dict:
+    """Convert object to an OrderedDict.
+    This ensures order of attributes matches SQL order in DB.
+    :args:
+    - ORM object
+    """
+    all_vars = OrderedDict(vars(ORM))
+    public_vars = OrderedDict({k: v for k, v in all_vars.items()
+                               if not k.startswith('_') and
+                               k not in ('Constraints',
+                                         'to_dict', "from_dict")})
+    return {all_vars['_tablename']: public_vars}
+
+
+def _orm_from_dict(ORM: object,
+                   p_dict: dict,
+                   p_row: int) -> dict:
+    """
+    Load DB SELECT results into memory.
+    Set object attributes from dict of listed values
+    and return a regular dict of with populated values.
+    :args:
+    - ORM object
+    - p_dict: dict of lists of values
+    - p_row: row number of the lists of values to use
+    """
+    batch_rec =\
+        {k: v for k, v in dict(ORM.to_dict()[ORM._tablename]).items()
+         if k not in ("_tablename", "to_dict", "from_dict")}
+    for k, v in batch_rec.items():
+        setattr(ORM._tablename, k, p_dict[k][p_row])
+        batch_rec[k] = getattr(ORM._tablename, k)
+    return batch_rec
+
+
+# =============================================================
 # System Maintenance
 # =============================================================
 class Backup(object):
-    """Store metadata about database backup, restore, archive.
+    """Store metadata about DB backup, restore, archive, export.
     """
     _tablename: str = "BACKUP"
-    bkup_nm: str = ''
+    bkup_uid_pk: str = ''       # Primary key
+    bkup_name: str = ''
     bkup_dttm: str = ''
     bkup_type: str = ''
     file_from: str = ''
     file_to: str = ''
 
     def to_dict(self) -> dict:
-        """Convert object to dict.
-        """
-        all_vars = OrderedDict(vars(Backup))
-        public_vars = OrderedDict({k: v for k, v in all_vars.items()
-                                  if not k.startswith('_') and
-                                  k not in ('Constraints', 'to_dict')})
-        return {all_vars['_tablename']: public_vars}
+        """Convert attributes to OrderedDict. """
+        return _orm_to_dict(Backup)
+
+    def from_dict(self,
+                  p_dict: dict,
+                  p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return _orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: list = ["bkup_nm", "bkup_dttm"]
-        ORDER: list = ["bkup_dttm DESC", "bkup_nm ASC"]
+        PK: dict = {"bkup_uid_pk": ["bkup_uid_pk"]}
+        ORDER: list = ["bkup_dttm DESC", "bkup_name ASC"]
+        CK: dict = {"bkup_type": EntityType.BACKUP_TYPE}
 
 
 # =============================================================
@@ -884,13 +953,12 @@ class Universe(object):
     baryonic_matter_kg: float = 0.0
 
     def to_dict(self) -> dict:
-        """Convert object to dict.
-        """
-        all_vars = OrderedDict(vars(Universe))
-        public_vars = OrderedDict({k: v for k, v in all_vars.items()
-                                  if not k.startswith('_') and
-                                  k not in ('Constraints', 'to_dict')})
-        return {all_vars['_tablename']: public_vars}
+        """Convert object to dict."""
+        return _orm_to_dict(Universe)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return _orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: list = ["univ_nm_pk"]
@@ -911,13 +979,12 @@ class ExternalUniv(object):
     baryonic_matter_kg: float = 0.0
 
     def to_dict(self) -> dict:
-        """Convert object to dict.
-        """
-        all_vars = OrderedDict(vars(ExternalUniv))
-        public_vars = OrderedDict({k: v for k, v in all_vars.items()
-                                  if not k.startswith('_') and
-                                  k not in ('Constraints', 'to_dict')})
-        return {all_vars['_tablename']: public_vars}
+        """Convert object to dict."""
+        return _orm_to_dict(ExternalUniv)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return _orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: list = ["external_univ_nm_pk"]
@@ -951,13 +1018,12 @@ class GalacticCluster(object):
     timing_pulsar_loc_gly: Struct.CoordXYZ = Struct.CoordXYZ()
 
     def to_dict(self) -> dict:
-        """Convert object to dict.
-        """
-        all_vars = OrderedDict(vars(GalacticCluster))
-        public_vars = OrderedDict({k: v for k, v in all_vars.items()
-                                  if not k.startswith('_') and
-                                  k not in ('Constraints', 'to_dict')})
-        return {all_vars['_tablename']: public_vars}
+        """Convert object to dict."""
+        return _orm_to_dict(GalacticCluster)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return _orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: list = ["galactic_cluster_nm_pk"]
@@ -1008,13 +1074,12 @@ class Galaxy(object):
     interstellar_mass_kg: float = 0.0
 
     def to_dict(self) -> dict:
-        """Convert object to dict.
-        """
-        all_vars = OrderedDict(vars(Galaxy))
-        public_vars = OrderedDict({k: v for k, v in all_vars.items()
-                                  if not k.startswith('_') and
-                                  k not in ('Constraints', 'to_dict')})
-        return {all_vars['_tablename']: public_vars}
+        """Convert object to dict."""
+        return _orm_to_dict(Galaxy)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return _orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: list = ["galaxy_nm_pk"]
@@ -1158,13 +1223,12 @@ class StarSystem(object):
     asteroid_belt_loc: str = 'inner'
 
     def to_dict(self) -> dict:
-        """Convert object to dict.
-        """
-        all_vars = OrderedDict(vars(StarSystem))
-        public_vars = OrderedDict({k: v for k, v in all_vars.items()
-                                  if not k.startswith('_') and
-                                  k not in ('Constraints', 'to_dict')})
-        return {all_vars['_tablename']: public_vars}
+        """Convert object to dict."""
+        return _orm_to_dict(StarSystem)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return _orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: list = ["star_system_nm_pk"]
@@ -1245,13 +1309,12 @@ class World(object):
     terrain: str = ''
 
     def to_dict(self) -> dict:
-        """Convert object to dict.
-        """
-        all_vars = OrderedDict(vars(World))
-        public_vars = OrderedDict({k: v for k, v in all_vars.items()
-                                  if not k.startswith('_') and
-                                  k not in ('Constraints', 'to_dict')})
-        return {all_vars['_tablename']: public_vars}
+        """Convert object to dict."""
+        return _orm_to_dict(World)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return _orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: list = ["world_nm_pk"]
@@ -1289,13 +1352,12 @@ class Moon(object):
     angular_velocity: float = 0.0
 
     def to_dict(self) -> dict:
-        """Convert object to dict.
-        """
-        all_vars = OrderedDict(vars(Moon))
-        public_vars = OrderedDict({k: v for k, v in all_vars.items()
-                                  if not k.startswith('_') and
-                                  k not in ('Constraints', 'to_dict')})
-        return {all_vars['_tablename']: public_vars}
+        """Convert object to dict."""
+        return _orm_to_dict(Moon)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return _orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: list = ["moon_nm_pk"]
@@ -1347,13 +1409,12 @@ class Map(object):
     three_d_map_loc: Struct.Game3DLocation = Struct.Game3DLocation()
 
     def to_dict(self) -> dict:
-        """Convert object to dict.
-        """
-        all_vars = OrderedDict(vars(Universe))
-        public_vars = OrderedDict({k: v for k, v in all_vars.items()
-                                  if not k.startswith('_') and
-                                  k not in ('Constraints', 'to_dict')})
-        return {all_vars['_tablename']: public_vars}
+        """Convert object to dict."""
+        return _orm_to_dict(Map)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return _orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: list = ["map_nm_pk"]
@@ -1379,13 +1440,12 @@ class MapXMap(object):
     touch_type: str = ''
 
     def to_dict(self) -> dict:
-        """Convert object to dict.
-        """
-        all_vars = OrderedDict(vars(Universe))
-        public_vars = OrderedDict({k: v for k, v in all_vars.items()
-                                  if not k.startswith('_') and
-                                  k not in ('Constraints', 'to_dict')})
-        return {all_vars['_tablename']: public_vars}
+        """Convert object to dict."""
+        return _orm_to_dict(MapXMap)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return _orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: list = ["map_nm_1_fk", "map_nm_2_fk"]
@@ -1419,13 +1479,12 @@ class Grid(object):
     z_down_m: float = 0.0
 
     def to_dict(self) -> dict:
-        """Convert object to dict.
-        """
-        all_vars = OrderedDict(vars(Universe))
-        public_vars = OrderedDict({k: v for k, v in all_vars.items()
-                                  if not k.startswith('_') and
-                                  k not in ('Constraints', 'to_dict')})
-        return {all_vars['_tablename']: public_vars}
+        """Convert object to dict."""
+        return _orm_to_dict(Grid)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return _orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: list = ["grid_nm_pk"]
@@ -1443,13 +1502,12 @@ class GridXMap(object):
     map_nm_fk: str = ''
 
     def to_dict(self) -> dict:
-        """Convert object to dict.
-        """
-        all_vars = OrderedDict(vars(Universe))
-        public_vars = OrderedDict({k: v for k, v in all_vars.items()
-                                  if not k.startswith('_') and
-                                  k not in ('Constraints', 'to_dict')})
-        return {all_vars['_tablename']: public_vars}
+        """Convert object to dict."""
+        return _orm_to_dict(GridXMap)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return _orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: list = ["grid_nm_fk", "map_nm_fk"]
@@ -1478,16 +1536,21 @@ class InitGameDB(object):
         """
         pass
 
-    def create_sql_files(self):
+    def create_sql(self):
         """Pass data object to create SQL files.
+
+        @DEV:
+        - reveiw io_db logic to match hofin approach
+        - then model boot_db on hofin::boot_db and test data setup
         """
         for model in [Backup,
-                      Universe, ExternalUniv, GalacticCluster, Galaxy,
+                      Universe, ExternalUniv,
+                      GalacticCluster, Galaxy,
                       StarSystem, World, Moon,
                       Map, MapXMap, Grid, GridXMap]:
             DB.generate_sql(model)
 
-    def boot_saskan_db(self):
+    def boot_db(self):
         """
         Backup DB if it exists.
         Pass SQL DROP and CREATE files.
