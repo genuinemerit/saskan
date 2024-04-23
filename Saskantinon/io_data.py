@@ -592,15 +592,33 @@ class EntityType(object):
                       if not k.startswith('__')}`
     - Generally, can just refer directly to the lists.
     """
-    # source data formats
     DATA_FORMATS = ["csv", "json", "xml", "xls", "xlsx",
                     "txt", "html", "pdf", "doc", "docx",
                     "txt", "ods", "sql", "dbf", "db",
                     "sqlite", "mdb", "accdb", "zip",
                     "tar", "gz"]
-    # backup type -- type of backup/copy of entire database
     BACKUP_TYPE = ["archive", "backup", "compressed", "export",
                    "encrypted"]
+    CLUSTER_SHAPE = ['ellipsoid', 'spherical']
+    RELATIVE_SIZE = ['small', 'medium', 'large']
+    ASTRO_SHAPE = ['ellipsoid', 'spherical']
+    ORBITAL_SHAPE = ['circular', 'elliptical']
+    SPECTRAL_CLASS = ['O', 'B', 'A', 'F', 'G', 'K', 'M']
+    LUMINOSITY_CLASS = ['I', 'II', 'III', 'IV', 'V']
+    STABILITY = ['stable', 'unstable']
+    DENSITY = ['sparse', 'dense']
+    ASTRO_LOCATION = ['inner', 'outer', 'multiple']
+    FREQUENCY = ['rare', 'occasional', 'frequent']
+    INTENSITY = ['low', 'medium', 'high']
+    WORLD_TYPE = ['habitable', 'gas giant', 'rocky',
+                  'desert', 'oceanic', 'ice planet',
+                  'molten', 'other']
+    ASTRO_DIRECTION = ['prograde', 'retrograde']
+    MAP_TYPE = ['geo', 'astro', 'underwater', 'underground',
+                'informational', 'political']
+    MAP_TOUCH_TYPE = ['contains', 'is_contained_by', 'borders',
+                      'overlaps', 'informs', 'layers_above',
+                      'layers_below']
 
 
 class GamePlane(object):
@@ -903,6 +921,12 @@ def _orm_from_dict(ORM: object,
 
 # =============================================================
 # System Maintenance
+# @DEV:
+#  - Modify models to use UID PKs and FKs on all table models.
+#  - Consider adding a version ID to support programmatic
+#    prototyping, undo's and so on.
+#  - For test data generation, try using ChatGPT prompts?
+#  - Implement all of the CHECK enums as EntityType data structures.
 # =============================================================
 class Backup(object):
     """Store metadata about DB backup, restore, archive, export.
@@ -941,7 +965,8 @@ class Universe(object):
     It is conceptualized as a sphere.
     """
     _tablename: str = "UNIVERSE"
-    univ_nm_pk: str = ''
+    univ_uid_pk: str = ''
+    univ_name: str = ''
     radius_gly: float = 0.0
     volume_gly3: float = 0.0
     volume_pc3: float = 0.0
@@ -961,8 +986,8 @@ class Universe(object):
         return _orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: list = ["univ_nm_pk"]
-        ORDER: list = ["univ_nm_pk ASC"]
+        PK: dict = {"univ_uid_pk": ["univ_uid_pk"]}
+        ORDER: list = ["univ_name ASC"]
 
 
 class ExternalUniv(object):
@@ -971,8 +996,9 @@ class ExternalUniv(object):
     Universe is always 1:1 to a Universe. It has no shape, only mass.
     """
     _tablename: str = "EXTERNAL_UNIVERSE"
-    external_univ_nm_pk: str = ''
-    univ_nm_fk: str = ''
+    external_univ_uid_pk: str = ''
+    univ_uid_fk: str = ''
+    external_univ_name: str = ''
     mass_kg: float = 0.0
     dark_energy_kg: float = 0.0
     dark_matter_kg: float = 0.0
@@ -987,10 +1013,9 @@ class ExternalUniv(object):
         return _orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: list = ["external_univ_nm_pk"]
-        FK: dict = {"univ_nm_fk": ("UNIVERSE", "univ_nm_pk")}
-        ORDER: list = ["univ_nm_fk ASC",
-                       "external_univ_nm_pk ASC"]
+        PK: dict = {"external_univ_uid_pk": ["external_univ_uid_pk"]}
+        FK: dict = {"univ_uid_fk": ("UNIVERSE", "univ_uid_pk")}
+        ORDER: list = ["external_univ_name ASC"]
 
 
 class GalacticCluster(object):
@@ -999,10 +1024,18 @@ class GalacticCluster(object):
     is contained by one Universe and it may contain multiple Galaxies.
     Conceptualized as a bulging shape, usually ellipsoid, centered in
     a boundary box.
+
+    @DEV:
+    - This and following models use GROUPed data structures. Those
+      are not supported natively in SQLite. Consider simplifying and
+      just defining columns in the model that are not GROUPed.
+    - An alternative would be to convert the grouped set back into
+      the data structure object when reading from the DB.
     """
     _tablename: str = "GALACTIC_CLUSTER"
-    galactic_cluster_nm_pk: str = ''
-    univ_nm_fk: str = ''
+    galactic_cluster_uid_pk: str = ''
+    univ_uid_fk: str = ''
+    galactic_cluster_name: str = ''
     center_from_univ_center_gly: Struct.CoordXYZ = Struct.CoordXYZ()
     boundary_gly: Struct.Game3DLocation = Struct.Game3DLocation()
     cluster_shape: str = 'ellipsoid'
@@ -1026,32 +1059,31 @@ class GalacticCluster(object):
         return _orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: list = ["galactic_cluster_nm_pk"]
-        FK: dict = {"univ_nm_fk": ("UNIVERSE", "univ_nm_pk")}
-        CK: dict = {"cluster_shape":
-                    ['ellipsoid', 'spherical']}
+        PK: dict = {"galactic_cluster_uid_pk": ["galactic_cluster_uid_pk"]}
+        FK: dict = {"univ_uid_fk": ("UNIVERSE", "univ_uid_pk")}
+        CK: dict = {"cluster_shape": EntityType.CLUSTER_SHAPE}
         GROUP: dict = {"center_from_univ_center_gly": Struct.CoordXYZ,
                        "boundary_gly": Struct.Game3DLocation,
                        "shape_pc": Struct.CoordXYZ,
                        "shape_axes": Struct.AxesABC,
                        "shape_rot":  Struct.PitchYawRollAngle,
                        "timing_pulsar_loc_gly": Struct.CoordXYZ}
-        ORDER: list = ["univ_nm_fk ASC",
-                       "galactic_cluster_nm_pk ASC"]
+        ORDER: list = ["galactic_cluster_name ASC"]
 
 
 class Galaxy(object):
     """The Galaxy defines a section of the Galactic Cluster in
-    which a particular game instance is played. A Galaxy is 1:1 to a
-    Galactic Cluster and it may contain multiple Star-Systems.
+    which a particular game instance is played. A Galaxy is contained
+    by a Galactic Cluster and it may contain multiple Star-Systems.
     Conceptualized as a sphere, centered in a boundary box.
     It has a bulge, typically ellipsoid, in the center and a star
     field area, also ellipsoid, but can include matter outside the
     star field, all the way to edge of its halo.
     """
     _tablename: str = "GALAXY"
-    galaxy_nm_pk: str = ''
-    galactic_cluster_nm_fk: str = ''
+    galaxy_uid_pk: str = ''
+    galactic_cluster_uid_fk: str = ''
+    galaxy_namek: str = ''
     relative_size: str = 'medium'
     center_from_univ_center_kpc: Struct.CoordXYZ = Struct.CoordXYZ()
     halo_radius_pc: float = 0.0
@@ -1082,13 +1114,13 @@ class Galaxy(object):
         return _orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: list = ["galaxy_nm_pk"]
-        FK: dict = {"galactic_cluster_nm_fk":
+        PK: dict = {"galaxy_uid_pk": ["galaxy_uid_pk"]}
+        FK: dict = {"galactic_cluster_uid_fk":
                     ("GALACTIC_CLUSTER",
-                     "galactic_cluster_nm_pk")}
-        CK: dict = {"relative_size": ['small', 'medium', 'large'],
-                    "bulge_shape": ['ellipsoid', 'spherical'],
-                    "star_field_shape": ['ellipsoid', 'spherical']}
+                     "galactic_cluster_uid_pk")}
+        CK: dict = {"relative_size": EntityType.RELATIVE_SIZE,
+                    "bulge_shape": EntityType.ASTRO_SHAPE,
+                    "star_field_shape": EntityType.ASTRO_SHAPE}
         GROUP: dict = {"center_from_univ_center_kpc": Struct.CoordXYZ,
                        "boundary_pc": Struct.Game3DLocation,
                        "bulge_center_from_center_ly": Struct.CoordXYZ,
@@ -1097,8 +1129,7 @@ class Galaxy(object):
                        "star_field_dim_from_center_ly": Struct.CoordXYZ,
                        "star_field_dim_axes": Struct.AxesABC,
                        "star_field_dim_rot": Struct.PitchYawRollAngle}
-        ORDER: list = ["galactic_cluster_nm_fk ASC",
-                       "galaxy_nm_pk ASC"]
+        ORDER: list = ["galaxy_name ASC"]
 
 
 """
@@ -1192,11 +1223,9 @@ class StarSystem(object):
     a boundary box.
     """
     _tablename: str = "STAR_SYSTEM"
-    star_system_nm_pk: str = ''
-    galaxy_nm_fk: str = ''
-    nearest_pulsar_nm_fk: str = ''
-    nearest_black_hole_nm_fk: str = ''
-    binary_star_system_nm_fk: str = ''
+    star_system_uid_pk: str = ''
+    galaxy_uid_fk: str = ''
+    star_system_name: str = ''
     is_black_hole: bool = False
     is_pulsar: bool = False
     boundary_pc: Struct.Game3DLocation = Struct.Game3DLocation()
@@ -1231,50 +1260,37 @@ class StarSystem(object):
         return _orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: list = ["star_system_nm_pk"]
-        FK: dict = {"galaxy_nm_fk": ("GALAXY", "galaxy_nm_pk"),
-                    "binary_star_system_nm_fk":
-                    ("STAR_SYSTEM", "star_system_nm_pk"),
-                    "nearest_pulsar_nm_fk":
-                    ("STAR_SYSTEM", "star_system_nm_pk"),
-                    "nearest_black_hole_nm_fk":
-                    ("STAR_SYSTEM", "star_system_nm_pk")}
-        CK: dict = {"relative_size": ['small', 'medium', 'large'],
-                    "spectral_class":
-                    ['O', 'B', 'A', 'F', 'G', 'K', 'M'],
-                    'luminosity_class':
-                    ['I', 'II', 'III', 'IV', 'V'],
-                    "system_shape": ['ellipsoid', 'spherical'],
-                    "planetary_orbits_shape":
-                    ['circular', 'elliptical'],
-                    "orbital_stability": ['stable', 'unstable'],
-                    "asteroid_belt_density": ['sparse', 'dense'],
-                    'asteroid_belt_loc':
-                    ['inner', 'outer', 'multiple'],
-                    "frequency_of_flares":
-                    ['rare', 'occasional', 'frequent'],
-                    "intensity_of_flares":
-                    ['low', 'medium', 'high'],
-                    "frequency_of_comets":
-                    ['rare', 'occasional', 'frequent']}
+        PK: dict = {"star_system_uid_pk": ["star_system_uid_pk"]}
+        FK: dict = {"galaxy_uid_fk": ("GALAXY", "galaxy_uid_pk")}
+        CK: dict = {"relative_size": EntityType.RELATIVE_SIZE,
+                    "spectral_class": EntityType.SPECTRAL_CLASS,
+                    'luminosity_class': EntityType.LUMINOSITY_CLASS,
+                    "system_shape": EntityType.ASTRO_SHAPE,
+                    "planetary_orbits_shape": EntityType.ORBITAL_SHAPE,
+                    "orbital_stability": EntityType.STABILITY,
+                    "asteroid_belt_density": EntityType.DENSITY,
+                    'asteroid_belt_loc': EntityType.ASTRO_LOCATION,
+                    "frequency_of_flares": EntityType.FREQUENCY,
+                    "intensity_of_flares": EntityType.INTENSITY,
+                    "frequency_of_comets": EntityType.FREQUENCY}
         GROUP: dict = {"boundary_pc": Struct.Game3DLocation,
                        "center_from_galaxy_center_pc": Struct.CoordXYZ,
                        "system_dim_axes": Struct.AxesABC,
                        "system_dim_rot": Struct.PitchYawRollAngle}
-        ORDER: list = ["galaxy_nm_fk ASC",
-                       "star_system_nm_pk ASC"]
+        ORDER: list = ["star_system_name ASC"]
 
 
 """
 Planetary charts, indicating the path of 'wanderers' and their
 'congruences', and so on as seen from the perspective of a given
-world, will be tracked on a separate table or set of tables.
+world, will be tracked on a separate DB table or set of tables.
 Such charts would include the path of comets and rogue planets,
-unless I decide to track those on a separate table or set of tables.
+unless I decide to track those on yet another table or set of tables.
 
-Tracking of seasons and accounting of calendars is also
+Tracking of seasons and accounting of calendars will also be
 handled on separate tables.  The same is true for tracking
-of eclipses and other astronomical events.
+of eclipses and other astronomical events. In each case, such
+"charts" are contained by a World object.
 """
 
 
@@ -1283,8 +1299,9 @@ class World(object):
     A World is a planet within a Star System. It may be habitable or not.
     """
     _tablename: str = "WORLD"
-    world_nm_pk: str = ''
-    star_system_nm_fk: str = ''
+    world_uid_pk: str = ''
+    star_system_uid_fk: str = ''
+    world_name: str = ''
     world_type: str = 'habitable'
     obliquity_dg: float = 0.0    # a/k/a axial tilt
     distance_from_star_au: float = 0.0
@@ -1317,17 +1334,13 @@ class World(object):
         return _orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: list = ["world_nm_pk"]
-        FK: dict = {"star_system_nm_fk":
-                    ("STAR_SYSTEM", "star_system_nm_pk")}
-        CK: dict = {"world_type":
-                    ['habitable', 'gas giant', 'rocky',
-                     'desert', 'oceanic', 'ice planet',
-                     'molten', 'other'],
-                    "rotation_direction": ['prograde', 'retrograde'],
-                    "orbit_direction": ['prograde', 'retrograde']}
-        ORDER: list = ["star_system_nm_fk ASC",
-                       "world_nm_pk ASC"]
+        PK: dict = {"world_uid_pk": ["world_uid_pk"]}
+        FK: dict = {"star_system_uid_fk":
+                    ("STAR_SYSTEM", "star_system_uid_pk")}
+        CK: dict = {"world_type": EntityType.WORLD_TYPE,
+                    "rotation_direction": EntityType.ASTRO_DIRECTION,
+                    "orbit_direction": EntityType.ASTRO_DIRECTION}
+        ORDER: list = ["world_name ASC"]
 
 
 class Moon(object):
@@ -1337,8 +1350,9 @@ class Moon(object):
     associated with one World.
     """
     _tablename: str = "MOON"
-    moon_nm_pk: str = ''
-    world_nm_fk: str = ''
+    moon_uid_pk: str = ''
+    world_uid_fk: str = ''
+    moon_name: str = ''
     center_from_world_center_km: Struct.CoordXYZ
     mass_kg: float = 0.0
     radius_km: float = 0.0
@@ -1360,14 +1374,12 @@ class Moon(object):
         return _orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: list = ["moon_nm_pk"]
-        FK: dict = {"world_nm_fk": ("WORLD", "world_nm_pk")}
-        CK: dict = {"rotation_direction":
-                    ['prograde', 'retrograde'],
-                    "orbit_direction":
-                    ['prograde', 'retrograde']}
+        PK: dict = {"moon_uid_pk": ["moon_uid_pk"]}
+        FK: dict = {"world_uid_fk": ("WORLD", "world_uid_pk")}
+        CK: dict = {"rotation_direction": EntityType.ASTRO_DIRECTION,
+                    "orbit_direction": EntityType.ASTRO_DIRECTION}
         GROUP: dict = {"center_from_world_center_km": Struct.CoordXYZ}
-        ORDER: list = ["world_nm_fk ASC", "moon_nm_pk ASC"]
+        ORDER: list = ["moon_name ASC"]
 
 
 # =============================================================
@@ -1375,11 +1387,7 @@ class Moon(object):
 # =============================================================
 class Map(object):
     """
-    Foreign key --
-    - MAP (1) contains <-- MAPs (n)   and
-      MAPs (n) are contained by --> MAP (1).
-
-    Map is a rectangle or box. It often has a parent/container.
+    Map is a rectangle or box.
     A map rectangle is defined as a game-world geo location.
     A map box is defined as an astronomical, undersea or underground
     3D location.
@@ -1400,11 +1408,16 @@ class Map(object):
         - other points of interest (ruins, temples, etc.)
         - natural resources (mines, quarries, etc.)
         - demographics (population density, etc.)
+
+    - Maps can also contain other maps, overlap with other maps, border
+      other maps, provide layers of information, or provide geo-layers
+      associatd with other maps. These relationships are handled in
+      the MapXMap table (see below)
     """
     _tablename: str = "MAP"
-    map_nm_pk: str = ''
-    container_map_nm_fk: str = ''
-    map_type: str = 'geo'
+    map_uid_pk: str = ''
+    map_name: str = ''
+    map_type: str = ''
     geo_map_loc: Struct.GameGeoLocation = Struct.GameGeoLocation()
     three_d_map_loc: Struct.Game3DLocation = Struct.Game3DLocation()
 
@@ -1417,26 +1430,24 @@ class Map(object):
         return _orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: list = ["map_nm_pk"]
-        FK: dict = {"container_map_nm_fk": ("MAP", "map_nm_pk")}
-        CK: dict = {"map_type":
-                    ['geo', 'astro', 'underwater', 'underground']}
+        PK: dict = {"map_uid_pk": ["map_uid_pk"]}
+        CK: dict = {"map_type": EntityType.MAP_TYPE}
         GROUP: dict = {"geo_map_loc": Struct.GameGeoLocation,
-                       "three_d_map_loc":
-                       Struct.Game3DLocation}
-        ORDER: list = ["map_nm_pk ASC"]
+                       "three_d_map_loc": Struct.Game3DLocation}
+        ORDER: list = ["map_name ASC"]
 
 
 class MapXMap(object):
     """
     Associative keys --
-    - MAPs (n) overlap <--> MAPs (n)
-    - MAPs (n) border <--> MAPs (n)
-    PK is a composite key of map_nm_1_fk and map_nm_2_fk
+    - MAPs (n) <--> MAPs (n)
+    The "touch type" should be read in direction 1-->2.
+    For example, 1-contains-2, 1-is_contained_by-2, etc.
     """
     _tablename: str = "MAP_X_MAP"
-    map_nm_1_fk: str = ''
-    map_nm_2_fk: str = ''
+    map_x_map_uid_pk: str = ''
+    map_uid_1_fk: str = ''
+    map_uid_2_fk: str = ''
     touch_type: str = ''
 
     def to_dict(self) -> dict:
@@ -1448,25 +1459,29 @@ class MapXMap(object):
         return _orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: list = ["map_nm_1_fk", "map_nm_2_fk"]
-        FK: dict = {"map_nm_1_fk": ("MAP", "map_nm_pk"),
-                    "map_nm_2_fk": ("MAP", "map_nm_pk")}
-        CK: dict = {"touch_type": ['borders', 'overlaps']}
-        ORDER: list = ["map_nm_1_fk ASC", "map_nm_2_fk ASC"]
+        PK: dict = {"map_x_map_uid_pk": ["map_x_map_uid_pk"]}
+        FK: dict = {"map_uid_1_fk": ("MAP", "map_uid_pk"),
+                    "map_uid_2_fk": ("MAP", "map_uid_pk")}
+        CK: dict = {"touch_type": EntityType.MAP_TOUCH_TYPE}
 
 
 class Grid(object):
     """
+    The "Grid" table defines the dimensions of a Map.
+
     Define the size of a grid (r, c), the dim of the cells (w, h, z)
     in PyGame px, and the dim of each cell in km (w, h) or m (z).
     The z layers are provided to track altitude, depth, or elevation
     for maps that provide z-level data.
 
+    Associations with map(s) are handled in GridXMap table.
+
     @DEV:
     - Consider other grid shapes, such as hexagonal, triangular, etc.
     """
     _tablename: str = "GRID"
-    grid_nm_pk: str = ''
+    grid_uid_pk: str = ''
+    grid_name: str = ''
     row_cnt: int = 0
     col_cnt: int = 0
     z_up_cnt: int = 0
@@ -1487,19 +1502,19 @@ class Grid(object):
         return _orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: list = ["grid_nm_pk"]
-        ORDER: list = ["grid_nm_pk ASC"]
+        PK: dict = {"grid_uid_pk": ["grid_uid_pk"]}
+        ORDER: list = ["grid_name ASC"]
 
 
 class GridXMap(object):
     """
     Associative keys --
     - GRIDs (n) <--> MAPs (n)
-    PK is a composite key of grid_nm_fk and map_nm_fk
     """
     _tablename: str = "GRID_X_MAP"
-    grid_nm_fk: str = ''
-    map_nm_fk: str = ''
+    grid_x_map_uid_pk: str = ''
+    grid_uid_fk: str = ''
+    map_uid_fk: str = ''
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -1510,13 +1525,15 @@ class GridXMap(object):
         return _orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: list = ["grid_nm_fk", "map_nm_fk"]
-        FK: dict = {"grid_nm_fk": ("GRID", "grid_nm_pk"),
-                    "map_nm_fk": ("MAP", "map_nm_pk")}
-        ORDER: list = ["grid_nm_fk ASC", "map_nm_fk ASC"]
+        PK: dict = {"grid_x_map_uid_pk": ["grid_x_map_uid_pk"]}
+        FK: dict = {"grid_uid_fk": ("GRID", "grid_uid_pk"),
+                    "map_uid_fk": ("MAP", "map_uid_pk")}
 
 # Once the above have been tested, refactored, then add
-# more structures from io_data_old.py
+# more structures from io_data_old.py. The additional
+# structures are designed to add specific types of informational
+# overlays onto maps or worlds. For example, Rivers, Cities,
+# Roads; or charts of celestial events like lunar cycles.
 
 
 # =======================================================
@@ -1537,12 +1554,7 @@ class InitGameDB(object):
         pass
 
     def create_sql(self):
-        """Pass data object to create SQL files.
-
-        @DEV:
-        - reveiw io_db logic to match hofin approach
-        - then model boot_db on hofin::boot_db and test data setup
-        """
+        """Pass data object to create SQL files."""
         for model in [Backup,
                       Universe, ExternalUniv,
                       GalacticCluster, Galaxy,
@@ -1550,19 +1562,55 @@ class InitGameDB(object):
                       Map, MapXMap, Grid, GridXMap]:
             DB.generate_sql(model)
 
-    def boot_db(self):
+    def boot_db(self,
+                p_create_test_data: bool = False,
+                p_backup_archive: bool = False):
         """
-        Backup DB if it exists.
-        Pass SQL DROP and CREATE files.
-        N.B. - This is a destructive operation.
-        - Logged records appear in the backups, not in the
+        Drops and recreates empty all DB tables.
+        This is a destructive operation.
+        - Backup DB if it exists.
+        - Overlay .BAK copy of DB.
+        Do not wipe out any existing archived DB's.
+        - Logged records appear in .BAK, not in the
           refreshed database.
+        :args:
+        - p_create_test_data: bool. If True, create test data.
+        - p_backup_archive: bool. If True, archive DB.
         """
-        # file_path = Path(DB.DB)
-        # if file_path.exists():
-        #     DB.backup_db()
-        #     DB.archive_db()
-        for sql in FI.scan_dir(DB.DB_PATH, 'DROP'):
-            DB.execute_dml(sql.name)
-        for sql in FI.scan_dir(DB.DB_PATH, 'CREATE'):
-            DB.execute_dml(sql.name)
+        if p_backup_archive:
+            file_path = Path(DB.DB)
+            if file_path.exists():
+                DB.backup_db()
+                DB.archive_db()
+
+        sql_list = [sql.name for sql in FI.scan_dir(DB.DB_PATH, 'DROP*')]
+
+        pp(('DROP SQL files:', sql_list))
+
+        DB.execute_dml(sql_list, p_foreign_keys_on=False)
+
+        sql_list = [sql.name for sql in FI.scan_dir(DB.DB_PATH, 'CREATE*')]
+
+        pp(('CREATE SQL files:', sql_list))
+
+        DB.execute_dml(sql_list, p_foreign_keys_on=True)
+
+        if p_create_test_data:
+            TD = TestData()
+            for (sql, values) in []:
+                for v in values:
+                    DB.execute_insert(sql, v)
+
+
+class TestData(object):
+    """
+    Class for management of test data rows on database, elsewhere
+    @DEV:
+    - Let's see if we can get ChatGPT API to generate test data for us...
+
+    """
+
+    def __init__(self):
+        """Initialize TestData object."""
+        # self.batch_1_uid_pk = SI.get_uid()
+        pass

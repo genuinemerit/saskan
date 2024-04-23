@@ -1,5 +1,6 @@
 #! python
 """
+Manage data for saskan-app using sqlite3.
 
 :module:    io_db.py
 :class:     DataBase/0
@@ -15,8 +16,8 @@ import sqlite3 as sq3
 
 from collections import OrderedDict
 from copy import copy
-from pathlib import Path
 from os import path
+# from pathlib import Path
 from pprint import pprint as pp    # noqa: F401
 
 from io_file import FileIO
@@ -31,16 +32,16 @@ class DataBase(object):
     """
 
     def __init__(self):
-        """
-        Initialize DataBase object from configs.
-        """
+        """Initialize DataBase object."""
         self.DB_PATH = path.join(FI.D['APP']['root'],
                                  FI.D['APP']['dirs']['db'])
+        self.DATA_PATH = path.join(FI.D['APP']['root'],
+                                   FI.D['APP']['dirs']['dat'])
         self.DB = path.join(self.DB_PATH, FI.D['DB']['main'])
         self.DB_BKUP = path.join(self.DB_PATH, FI.D['DB']['bkup'])
-        self.db_conn = None
+        self.db_conn = None    # type: ignore
 
-    # Generate SQL files from Pydantic models
+    # Generate SQL files from data models
     # ===========================================
     def set_sql_data_type(self,
                           p_def_value: object,
@@ -59,10 +60,10 @@ class DataBase(object):
         else:
             field_type = type(p_def_value).__name__
             data_types = {
-                str: ' TEXT',
-                bool: ' BOOLEAN',
-                float: ' NUMERIC',
-                int: ' INTEGER'
+                'str': ' TEXT',
+                'bool': ' BOOLEAN',
+                'float': ' NUMERIC',
+                'int': ' INTEGER'
             }
             sql = data_types.get(field_type, ' TEXT')
         return sql
@@ -71,9 +72,9 @@ class DataBase(object):
                         p_def_value: object,
                         p_data_type: str) -> str:
         """
-        Extract SQL default value from Pydantic data object.
+        Extract SQL default value from data object.
         :args:
-        - p_def_value (object) Pydantic value object
+        - p_def_value (object) value object
         - p_data_type (str) SQLITE data type
         :returns:
         - (str) SQLITE SQL DEFAULT clause
@@ -113,6 +114,8 @@ class DataBase(object):
         Generate SQL CREATE TABLE code from a data model
         for specialized data types, by splitting them into separate
         columns grouped with a similar name.
+        @DEV:
+        - Denigrated. Try to avoid having to do this.
         :args:
         - p_col_nm (str) Name of customized data objects
         - p_constraints (dict) Dict of constraints for the table
@@ -141,7 +144,7 @@ class DataBase(object):
     def set_sql_foreign_keys(self,
                              p_constraints: dict) -> str:
         """
-        Generate SQL FOREIGN KEY code from a Pydantic data model.
+        Generate SQL FOREIGN KEY code from data model.
         :args:
         - p_constraints (dict) Dict of constraints for the table
         :returns:
@@ -158,15 +161,24 @@ class DataBase(object):
     def set_sql_primary_key(self,
                             p_constraints: dict) -> str:
         """
-        Generate SQL PRIMARY KEY code from a Pydantic data model.
+        Generate SQL PRIMARY KEY code from a data model.
+        It is possible to create a composite PK, but know that a
+        single Key is generated. This can create problems when
+        creating a Foreign Key relationship.  Best to use UIDs instead
+        and just have single column = UID = PK.
         :args:
+        @DEV:
+        - Kind of a kludge here, where we accept composities, but
+          only select the first one in the list for the PK. Probably
+          cleaner to just say, "single-column PK's only".
         - p_constraints (dict) Dict of constraints for the table
         :returns:
         - (str) One or more lines of SQL code
         """
         primary_key = p_constraints.get('PK')
         if primary_key:
-            sql = f"PRIMARY KEY ({', '.join(primary_key)}),\n"
+            uid_pk = list(primary_key.keys())[0]
+            sql = f"PRIMARY KEY ({uid_pk}),\n"
         else:
             sql = ''
         return sql
@@ -304,6 +316,8 @@ class DataBase(object):
         - p_col_names (list) List of column names for the table
         :writes:
         - SQL file to [APP]/sql/SELECT_BY_PK_[p_table_name].sql
+        @DEV:
+        - Simplify if we go with "one PK column only" rule
         """
         pk_conditions =\
             ' AND '.join([f'{col}=?' for col in p_constraints['PK']])
@@ -332,6 +346,8 @@ class DataBase(object):
         - p_col_names (list) Dict of column names for the table
         :writes:
         - SQL file to [APP]/sql/UPDATE_[p_table_name].sql
+        @DEV:
+        - Simplify if we go with "one PK column only" rule
         """
         pk_conditions =\
             ' AND '.join([f'{col}=?' for col in p_constraints['PK']])
@@ -356,6 +372,8 @@ class DataBase(object):
         - p_constraints (dict) Dict of constraints for the table
         :writes:
         - SQL file to [APP]/sql/DELETE_[p_table_name].sql
+        @DEV:
+        - Simplify if we go with "one PK column only" rule
         """
         pk_conditions =\
             ' AND '.join([f'{col}=?' for col in p_constraints['PK']])
@@ -366,7 +384,7 @@ class DataBase(object):
     def generate_sql(self,
                      p_data_model: object):
         """
-        Generate full set of SQL code from a Pydantic data model.
+        Generate full set of SQL code from a data model.
         :args:
         - p_data_model: data model class object
         """
@@ -376,7 +394,11 @@ class DataBase(object):
         table_name = p_data_model._tablename
         model = {k: v for k, v in p_data_model.__dict__.items()
                  if not k.startswith('_')
-                 and k not in ('to_dict', 'Constraints')}
+                 and k not in ('to_dict', 'from_dict', 'Constraints')}
+
+        pp((f"table_name: {table_name}",
+            "model:", model))
+
         col_names = self.generate_create_sql(table_name, constraints, model)
         self.generate_drop_sql(table_name)
         self.generate_insert_sql(table_name, col_names)
@@ -385,37 +407,22 @@ class DataBase(object):
         self.generate_update_sql(table_name, constraints, col_names)
         self.generate_delete_sql(table_name, constraints)
 
-    # Backup, Archive and Restore
-    # ===========================================
-
-    def backup_db(self):
-        """Copy main DB file to backup location."""
-        bkup_dttm = pendulum.now().format('YYYYMMDD_HHmmss')
-        self.execute_insert(
-            'INSERT_BACKUP',
-            (SI.get_key(), bkup_dttm, 'backup', self.DB, self.DB_BKUP))
-        shutil.copyfile(self.DB, self.DB_BKUP)
-
-    def archive_db(self):
-        """Copy main DB file to archive location."""
-        bkup_dttm = pendulum.now().format('YYYYMMDD_HHmmss')
-        file_nm = 'SASKAN_' + bkup_dttm + '.arcv'
-        bkup_nm = path.join(self.DB_PATH, file_nm)
-        self.execute_insert(
-            'INSERT_BACKUP',
-            (SI.get_key(), bkup_dttm, 'archive', self.DB, file_nm))
-        shutil.copyfile(self.DB, bkup_nm)
-
-    def restore_db(self):
-        """Copy backup DB file to main location."""
-        bkup_dttm = pendulum.now().format('YYYYMMDD_HHmmss')
-        self.execute_insert(
-            'INSERT_BACKUP',
-            (SI.get_key(), bkup_dttm, 'restore', self.DB_BKUP, self.DB))
-        shutil.copyfile(self.DB_BKUP, self.DB)
-
     # DataBase Connections
     # ===========================================
+
+    def __set_fk_pragma(self,
+                        p_foreign_keys_on: bool):
+        """Set the foreign_keys pragma to ON or OFF
+        FK's should be ignored when a table is dropped.
+        This could potentially cause problems so keep an eye on it.
+        As long as dropping, re-creating the entire DB, should be OK.
+        :args:
+        - p_foreign_keys_on (bool): If True, set foreign_keys to on
+        """
+        if p_foreign_keys_on is True:
+            self.db_conn.execute("PRAGMA foreign_keys = ON;")
+        else:
+            self.db_conn.execute("PRAGMA foreign_keys = OFF;")
 
     def disconnect_db(self):
         """Drop DB connection to SASKAN_self."""
@@ -428,44 +435,30 @@ class DataBase(object):
         self.db_conn = None
 
     def connect_db(self,
+                   p_foreign_keys_on: bool,
                    p_db_nm: str = 'main'):
-        """Open DB connection to SASKAN_self.
-        :args:
-        - p_db_nm (str) Optional. Default is 'main'.
-          If set to 'bkup' then use the backup self.
-          If neither, then connect to main self.
-        Indicate that the DB should help to maintain referential
-        integrity for foreign keys.
+        """Open DB connection to SASKAN.db.
+        Set foreign key pragma. If doing a drop, set to OFF.
         This will create a DB file at the specified location
-        if one does not already exist.
+          if one does not already exist.
         :sets:
         - db_conn: the database connection
+        - foreign_keys PRAGMA on or off
         - cur: cursor for the connection
+        :args:
+        - p_foreign_keys_on (bool): If True, set foreign_keys to on
+        - p_db_nm (str): Name of DB to connect to. Default is'main'
         """
         self.disconnect_db()
         self.SASKAN_DB = self.DB if p_db_nm == 'arcv'\
             else self.DB_BKUP if p_db_nm == 'bkup'\
             else self.DB
         self.db_conn = sq3.connect(self.SASKAN_DB)  # type: ignore
-        self.db_conn.execute("PRAGMA foreign_keys = ON;")
+        self.__set_fk_pragma(p_foreign_keys_on)
         self.cur: sq3.Cursor = self.db_conn.cursor()
 
     # SQL Helpers
     # ===========================================
-
-    def has_tables(self) -> bool:
-        """Check if the database has any tables.
-        N.B. This method assumes that a connection and
-           a cursor have already been established for
-           the database file.
-        :returns:
-        - (bool) True if there are tables, False if not
-        """
-        self.cur.execute("SELECT name FROM sqlite_master\
-                          WHERE type='table'")
-        tables = self.cur.fetchall()
-        return True if len(tables) > 0 else False
-
     def get_sql_file(self,
                      p_sql_nm: str) -> str:
         """Read SQL from named file.
@@ -474,7 +467,8 @@ class DataBase(object):
         :returns:
         - (str) Content of the SQL file
         """
-        sql_nm = str(p_sql_nm.split('.')[0]).upper() + '.sql'
+        sql_nm = p_sql_nm.replace('.sql', '').replace('.SQL', '')
+        sql_nm = sql_nm.upper() + '.sql'
         sql_path = path.join(FI.D['APP']['root'],
                              FI.D['APP']['dirs']['db'],
                              sql_nm)
@@ -500,10 +494,8 @@ class DataBase(object):
         - (list) of column names for the table
         """
         if p_tbl_nm in (None, ''):
-            for ln in p_sql_select.split('\n'):
-                if ln.upper().startswith('FROM'):
-                    tbl_nm = ln.split(' ')[1]
-                    break
+            tbl_nm =\
+                p_sql_select.split('FROM ')[1].split()[0].rstrip(',;')
         else:
             tbl_nm = p_tbl_nm
         self.cur.execute(f"PRAGMA table_info({tbl_nm})")
@@ -532,83 +524,97 @@ class DataBase(object):
 
     # Executing SQL Scripts
     # ===========================================
-    def execute_dml(self,
-                    p_sql_nm: str):
-        """Run a static SQL DROP OR CREATE file, that is,
-        a SQL file which does not use dynamic parameters.
-        :args:
-        - p_sql_nm (str): Name of external SQL file
-        """
-        self.connect_db()
-        SQL = self.get_sql_file(p_sql_nm)
-        if SQL.count(';') > 1:
-            self.cur.executescript(SQL)
-        else:
-            self.cur.execute(SQL)
-        if self.db_conn is not None:
-            self.db_conn.commit()
-        self.disconnect_db()
-
     def execute_select_all(self,
-                           p_sql_nm: str) -> OrderedDict:
-        """Run a SQL SELECT ALL file which does not use
-           any dynamic parameters.
-        Iterate (fetchall) over the cursor to see record(s).
+                           p_sql_nm: str) -> dict:
+        """Run a SQL SELECT_ALL* script. No dynamic parameters.
+           Return data as a dict of lists.
         :args:
-        - p_sql_nm (str): Name of external SQL file
-        :returns:
-        - (OrderedDict) Dict of lists, {col_nms: [data values]}
-        """
-        self.connect_db()
-        SQL: str = self.get_sql_file(p_sql_nm)
-        COLS: list = self.get_db_columns(p_sql_select=SQL)
-        self.cur.execute(SQL)
-        result = self.set_dict_from_cursor(COLS)
-        self.disconnect_db()
-        return result
-
-    def execute_select_by_pk(self,
-                             p_sql_nm: str,
-                             p_key_vals: list) -> OrderedDict:
-        """Run a SQL SELECT by PK file which uses key values
-        (primary key) for WHERE clause.
-           For now I will assume that:
-            - caller knows what values to provide and in what order
-        Iterate (fetchall) over the cursor to see record(s).
-        :args:
-        - p_sql_nm (str): Name of external SQL file
-        - p_key_vals (list): Value of primary key(s) to match on
+        - p_sql_nm (str): Name of external SQL script
         :returns:
         - (dict) Dict of lists, {col_nms: [data values]}
-
-        @DEV:
-        - Next, add:
-            - SELECT method that uses a VIEW which includes
-              all or some associated records from other tables.
         """
-        if isinstance(p_key_vals, str):
-            p_key_vals = [p_key_vals]
-        self.connect_db()
-        SQL = self.get_sql_file(p_sql_nm)
-        COLS = self.get_db_columns(p_sql_select=SQL)
-        self.cur.execute(SQL, p_key_vals)
-        result = self.set_dict_from_cursor(COLS)
+        self.connect_db(p_foreign_keys_on=True)
+        sql: str = self.get_sql_file(p_sql_nm)
+        cols: list = self.get_db_columns(p_sql_select=sql)
+        self.cur.execute(sql)
+        data: list = [r for r in self.cur.fetchall()]
+        if len(data) == 0:
+            result: dict = {col: [] for col in cols}
+        else:
+            result: dict = {col: [row[i] for row in data]
+                            for i, col in enumerate(cols)}
         self.disconnect_db()
         return result
+
+    def execute_select_by(self,
+                          p_sql_nm: str,
+                          p_pk_values: list) -> dict:
+        """Run a SQL SELECT_ALL* script. No dynamic parameters.
+           Return data as a dict of lists.
+        :args:
+        - p_sql_nm (str): Name of external SQL file
+        - p_pk_values (list): Primary key values to match on.
+            Must be listed in correct order.
+        :returns:
+        - (dict) Dict of lists, {col_nms: [data values]}
+        """
+        self.connect_db(p_foreign_keys_on=True)
+        sql: str = self.get_sql_file(p_sql_nm)
+        cols: list = self.get_db_columns(p_sql_select=sql)
+        self.cur.execute(sql, p_pk_values)
+        data: list = [r for r in self.cur.fetchall()]
+        if len(data) == 0:
+            result: dict = {col: [] for col in cols}
+        else:
+            result: dict = {col: [row[i] for row in data]
+                            for i, col in enumerate(cols)}
+        self.disconnect_db()
+        return result
+
+    def execute_dml(self,
+                    p_sql_list: list,
+                    p_foreign_keys_on: bool):
+        """Run one or more static SQL DROP, CREATE, DELETE, INSERT
+        or MODIFY scripts. No dynamic parameters.  SQL names must
+        be passed in as a list, even if only one script. They are
+        executed as one transaction. If anything fails, all are
+        rolled back.  If it is a series of DROP statements, then
+        set the p_foreign_keys_on to False.
+        :args:
+        - p_sql_nm (str): Name of external SQL file
+        - p_foreign_keys_on (bool): Set foreign key pragma ON or OFF.
+        """
+        self.connect_db(p_foreign_keys_on)
+        try:
+            self.cur.execute('BEGIN')
+            for p_sql_nm in p_sql_list:
+                sql = self.get_sql_file(p_sql_nm)
+
+                print(f"Executing SQL: {p_sql_nm}")
+
+                self.cur.execute(sql)
+            self.db_conn.commit()    # type: ignore
+        except sq3.Error as e:
+            # Rollback the transaction if any operation fails
+            self.db_conn.rollback()   # type: ignore
+            print("Transaction failed:", e)
+        finally:
+            self.disconnect_db()
 
     def execute_insert(self,
                        p_sql_nm: str,
-                       p_values: list):
-        """Run a SQL INSERT file which uses dynamic values.
+                       p_values: tuple):
+        """Run a single SQL INSERT command which uses dynamic values,
+           that is, assigned as parameters rather than hard-coded in script.
            Values are the column names in specified order.
-           For now I will assume that:
+           For now assume that:
             - INSERTs will always expect full list of values
             - caller knows what values to provide and in what order
         :args:
         - p_sql_nm (str): Name of external SQL file
         - p_values (tuple): n-tuple of values to insert
         """
-        self.connect_db()
+        self.connect_db(p_foreign_keys_on=True)
         SQL = self.get_sql_file(p_sql_nm)
         self.cur.execute(SQL, p_values)
         self.db_conn.commit()   # type: ignore
@@ -616,26 +622,23 @@ class DataBase(object):
 
     def execute_update(self,
                        p_sql_nm: str,
-                       p_values: list,
-                       p_key_vals: list):
+                       p_key_val: str,
+                       p_values: tuple):
         """Run a SQL UPDATE file which uses dynamic values.
-           Key value is matching condition for WHERE clause (prim key).
+           Key value is the matching condition for WHERE clause (prim key).
            Values are the column names in specified order.
            For now I will assume that:
             - UPDATEs will always expect full list of values
             - caller knows what values to provide and in what order
         :args:
         - p_sql_nm (str): Name of external SQL file
-        - p_values (list): list of values to update
-        - p_key_vals (list): Value of primary key)s_ to match on
+        - p_key_val (str): Value of primary key to match on
+        - p_values (tuple): n-tuple of values to update
         """
-        if isinstance(p_key_vals, str):
-            p_key_vals = [p_key_vals]
-        self.connect_db()
+        self.connect_db(p_foreign_keys_on=True)
         SQL = self.get_sql_file(p_sql_nm)
-        self.cur.execute(SQL, p_values + p_key_vals)
-        if self.db_conn is not None:
-            self.db_conn.commit()   # type: ignore
+        self.cur.execute(SQL, p_values + (p_key_val,))
+        self.db_conn.commit()   # type: ignore
         self.disconnect_db()
 
     def execute_delete(self,
@@ -648,6 +651,11 @@ class DataBase(object):
         :args:
         - p_sql_nm (str): Name of external SQL file
         - p_key_vals (list): Value of primary key(s) to match on
+
+        @DEV:
+        - There is not an equivalent in hofin::io_db, so need to
+          review this. May need to tweak it to include setting
+          p_foreign_keys_on to True.
         """
         if isinstance(p_key_vals, str):
             p_key_vals = [p_key_vals]
@@ -658,27 +666,43 @@ class DataBase(object):
             self.db_conn.commit()   # type: ignore
         self.disconnect_db()
 
-    # =====================================================================
-    # Saskan Database Management -- Backup, archive, restart
-    # =====================================================================
+    # Backup, Archive and Restore
+    # ===========================================
 
-    def boot_saskan_db(self):
-        """Create SASKAN.db database, if it does not already exist.
-        - If it already exists and has tables, back it up and then boot it.
-        - Do not wipe out any existing archives.
-        - Scan self.DB_PATH for DROP and CREATE SQL files.
-        """
-        db_file_path = Path(self.DB)
-        if db_file_path.exists():
-            self.connect_db()
-            if self.has_tables():
-                self.backup_db()
+    def backup_db(self):
+        """Copy main DB file to backup location."""
+        bkup_dttm = pendulum.now().format('YYYYMMDD_HHmmss')
+        self.execute_insert(
+            'INSERT_BACKUP',
+            (SI.get_uid(),
+             f'Backup {bkup_dttm}',
+             bkup_dttm,
+             'backup',
+             self.DB, self.DB_BKUP))
+        shutil.copyfile(self.DB, self.DB_BKUP)
 
-        sql_files = FI.scan_dir(self.DB_PATH, 'DROP*.SQL')
-        for sql in sql_files:
-            self.execute_dml(sql.name)
-        sql_files = FI.scan_dir(self.DB_PATH, 'CREATE*.SQL')
-        for sql in sql_files:
-            self.execute_dml(sql.name)
+    def archive_db(self):
+        """Copy main DB file to archive location."""
+        bkup_dttm = pendulum.now().format('YYYYMMDD_HHmmss')
+        file_nm = 'SASKAN_' + bkup_dttm + '.arcv'
+        bkup_nm = path.join(self.DB_PATH, file_nm)
+        self.execute_insert(
+            'INSERT_BACKUP',
+            (SI.get_uid(),
+             f'Archive {bkup_nm}',
+             bkup_dttm,
+             'archive',
+             self.DB, bkup_nm))
+        shutil.copyfile(self.DB, bkup_nm)
 
-        self.disconnect_db()
+    def restore_db(self):
+        """Copy backup DB file to main location."""
+        bkup_dttm = pendulum.now().format('YYYYMMDD_HHmmss')
+        self.execute_insert(
+            'INSERT_BACKUP',
+            (SI.get_uid(),
+             f'Restore {bkup_dttm}',
+             bkup_dttm,
+             'restore',
+             self.DB_BKUP, self.DB))
+        shutil.copyfile(self.DB_BKUP, self.DB)
