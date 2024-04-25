@@ -92,6 +92,25 @@ class ShellIO(object):
         return v_hash.hexdigest()
 
     @classmethod
+    def get_uid(cls,
+                p_uid_length: int = None) -> str:
+        """Generate a URL-safe, cryptographically strong random value.
+
+        A unique ID for any purpose, such as unique PK for a data record.
+
+        Args:
+            p_uid_length (integer, optional): Desired length of the key.
+                Default is 32. Minimum is 32.
+
+        Returns:
+            string: the unique ID value as a string
+        """
+        p_uid_length = 32 if p_uid_length is None else p_uid_length
+        p_uid_length = 32 if p_uid_length < 32 else p_uid_length
+        uid_val = secrets.token_urlsafe(p_uid_length)
+        return uid_val
+
+    @classmethod
     def run_cmd(cls,
                 cmd: str) -> tuple:
         """

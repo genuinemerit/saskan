@@ -10,13 +10,14 @@ dependencies:
   - pathlib
   - requests
   - tzlocal
+  - openai
   - numpy
   - pandas
   - twisted
   - tornado
   - music21
   - pendulum
-  - pydantic
+  #  - pydantic
   - pytest
   - numbers-parser
   - beautifulsoup4
@@ -29,7 +30,7 @@ dependencies:
   - numbers-parser
   - beautifulsoup4
   - sqlalchemy
-  - jupyter-core
+  #  - jupyter-core
   - ipykernel
   # - selenium
   # - odfpy

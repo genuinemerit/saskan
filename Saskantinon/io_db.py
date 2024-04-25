@@ -589,9 +589,6 @@ class DataBase(object):
             self.cur.execute('BEGIN')
             for p_sql_nm in p_sql_list:
                 sql = self.get_sql_file(p_sql_nm)
-
-                print(f"Executing SQL: {p_sql_nm}")
-
                 self.cur.execute(sql)
             self.db_conn.commit()    # type: ignore
         except sq3.Error as e:

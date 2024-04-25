@@ -13,22 +13,22 @@ import pygame as pg
 # from os import path
 # from pathlib import Path
 from collections import OrderedDict
-from os import path
+from openai import OpenAI
 from pathlib import Path
 from pprint import pformat as pf    # noqa: F401
 from pprint import pprint as pp     # noqa: F401
-from typing import Tuple, Union
+# from typing import Tuple, Union
 
 from io_db import DataBase
 from io_file import FileIO
 from io_shell import ShellIO
 
-# may want to move generation of SQL code into DB class
 DB = DataBase()
 FI = FileIO()
 SI = ShellIO()
 
-pg.init()     # Initialize PyGame for use in this module
+client = OpenAI()  # Init OpenAI for use in this module
+pg.init()          # Init PyGame for use in this module
 
 
 #  UNIQUE CONSTANTS / "TRUE" ENUMS
@@ -1584,20 +1584,15 @@ class InitGameDB(object):
                 DB.archive_db()
 
         sql_list = [sql.name for sql in FI.scan_dir(DB.DB_PATH, 'DROP*')]
-
-        pp(('DROP SQL files:', sql_list))
-
         DB.execute_dml(sql_list, p_foreign_keys_on=False)
-
         sql_list = [sql.name for sql in FI.scan_dir(DB.DB_PATH, 'CREATE*')]
-
-        pp(('CREATE SQL files:', sql_list))
-
         DB.execute_dml(sql_list, p_foreign_keys_on=True)
 
         if p_create_test_data:
             TD = TestData()
-            for (sql, values) in []:
+            for (sql, values) in [
+                TD.test_backup_data(),
+            ]:
                 for v in values:
                     DB.execute_insert(sql, v)
 
@@ -1612,5 +1607,48 @@ class TestData(object):
 
     def __init__(self):
         """Initialize TestData object."""
-        # self.batch_1_uid_pk = SI.get_uid()
+        # self.batch_1_uid_pk = SI.get_key()
         pass
+
+    def test_backup_data(self):
+        """
+        Create test data row(s) for the BACKUP table.
+        :returns: tuple
+        - SQL script to insert test data.
+        - List of values to be inserted.
+        """
+        values: list = []
+        # Hard-coded...
+        values.append((SI.get_key(),
+                       'Test Backup',
+                       pendulum.now().to_iso8601_string(),
+                       'backup',
+                       'SASKAN.db', 'SASKAN.bak'))
+        values.append((SI.get_key(),
+                       'Test Archive',
+                       pendulum.now().to_iso8601_string(),
+                       'archive',
+                       'SASKAN.bak', '...arcv'))
+        # AI-generated...
+        sql_file = DB.get_sql_file('INSERT_BACKUP')
+        completion = client.chat.completions.create(
+            model="gpt-3.5-turbo-0125",
+            messages=[
+                {"role": "system",
+                 "content": "You are a code developer, skilled in " +
+                            "crafting test data for a relational database."},
+                {"role": "user",
+                 "content": "Provide three lists of values to insert " +
+                            "into the BACKUP table. Each list is a distinct " +
+                            "python list structure. Omit any text in the " +
+                            "response  other than the python code.  " +
+                            "The BACKUP table " +
+                            f"is defined as follows: {sql_file}"}
+            ]
+        )
+        # pp((completion.choices[0].message.content))
+        t_v = completion.choices[0].message.content.replace('\n', '')
+        t_v = t_v.replace('```python ', '').replace('```', '')
+        t_v = t_v.replace('# ', '\n')
+        print(t_v)
+        return ('INSERT_BACKUP', values)
