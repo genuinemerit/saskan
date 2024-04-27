@@ -6,6 +6,7 @@
 Saskan Data Management middleware.
 """
 
+import ast          # abstract syntax trees
 import pendulum     # date and time
 import platform
 import pygame as pg
@@ -1616,6 +1617,18 @@ class TestData(object):
         :returns: tuple
         - SQL script to insert test data.
         - List of values to be inserted.
+        @DEV:
+        - Abstract the prompt creation and scrubbing of the
+          returned text from the API so that we can use much
+          the same logic for every table.
+        - See if the CHECK rule can be extracted from the
+          database metadata instead of hard-coding it in the
+          prompt. If can't get it from DB metadata, then
+          extract enums from either the SQL DDL (CREATE) code or
+          (better probably) from the data object model.
+        - When dealing with Foreign Keys, will need to
+          provide the prompt with a list of valid PK values on
+          the related table(s).
         """
         values: list = []
         # Hard-coded...
@@ -1638,17 +1651,30 @@ class TestData(object):
                  "content": "You are a code developer, skilled in " +
                             "crafting test data for a relational database."},
                 {"role": "user",
-                 "content": "Provide three lists of values to insert " +
-                            "into the BACKUP table. Each list is a distinct " +
-                            "python list structure. Omit any text in the " +
-                            "response  other than the python code.  " +
-                            "The BACKUP table " +
-                            f"is defined as follows: {sql_file}"}
+                 "content": "The BACKUP table on a sqlite database " +
+                            f"is defined as follows: {sql_file} " +
+                            "Using python syntax, make a list of values " +
+                            "to insert into the BACKUP table. " +
+                            "Omit response text other than python code. " +
+                            "For bkup_type column, use only the following " +
+                            "values: 'archive', 'backup', 'compressed', " +
+                            "'export', 'encrypted'"}
             ]
         )
-        # pp((completion.choices[0].message.content))
-        t_v = completion.choices[0].message.content.replace('\n', '')
-        t_v = t_v.replace('```python ', '').replace('```', '')
-        t_v = t_v.replace('# ', '\n')
-        print(t_v)
+        text = completion.choices[0].message.content
+        text = text.replace("```python\n", '')
+        text = text.replace("```", '').replace("```\n", '')
+        text = text.replace("backup_values = [\n", '')
+        text = text.replace("backup_data = [\n", '')
+        text = text.replace("data_to_insert = [\n", '')
+        text = text.replace("]\n", '')
+        lists = text.split(',\n')
+        for k, itm in enumerate(lists):
+            print(f"d_{k}-, {itm}")
+            itm = itm.replace("\n", '').replace("\t", '').strip()
+            print(f"d_{k}+, {itm}")
+            data_set = ast.literal_eval(itm)
+            pp(("e", data_set))
+            values.append(data_set)
+        pp(("values = ", values))
         return ('INSERT_BACKUP', values)
