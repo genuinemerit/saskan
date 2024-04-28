@@ -566,16 +566,16 @@ class DataBase(object):
     # Executing SQL Scripts
     # ===========================================
     def execute_select_all(self,
-                           p_sql_nm: str) -> dict:
+                           p_table_nm: str) -> dict:
         """Run a SQL SELECT_ALL* script. No dynamic parameters.
            Return data as a dict of lists.
         :args:
-        - p_sql_nm (str): Name of external SQL script
+        - p_table_nm (str): Name of SQL table
         :returns:
         - (dict) Dict of lists, {col_nms: [data values]}
         """
         self.connect_db(p_foreign_keys_on=True)
-        sql: str = self.get_sql_file(p_sql_nm)
+        sql: str = self.get_sql_file(f"SELECT_ALL_{p_table_nm.upper()}")
         cols: list = self.get_db_columns(p_sql_select=sql)
         self.cur.execute(sql)
         data: list = [r for r in self.cur.fetchall()]
@@ -590,7 +590,8 @@ class DataBase(object):
     def execute_select_by(self,
                           p_sql_nm: str,
                           p_pk_values: list) -> dict:
-        """Run a SQL SELECT_ALL* script. No dynamic parameters.
+        """Run a SQL SELECT_BY script using parameters
+           to select (by primary key).
            Return data as a dict of lists.
         :args:
         - p_sql_nm (str): Name of external SQL file

@@ -18,7 +18,7 @@ from openai import OpenAI
 from pathlib import Path
 from pprint import pformat as pf    # noqa: F401
 from pprint import pprint as pp     # noqa: F401
-# from typing import Tuple, Union
+from typing import Tuple, Union
 
 from io_db import DataBase
 from io_file import FileIO
@@ -1591,8 +1591,16 @@ class InitGameDB(object):
 
         if p_create_test_data:
             TD = TestData()
+            # Tables that do not require foreign keys:
             for (sql, values) in [
-                TD.test_backup_data(),
+                TD.make_test_data(Backup),
+                TD.make_test_data(Universe)
+            ]:
+                for v in values:
+                    DB.execute_insert(sql, v)
+            # Tables that do require foreign keys:
+            for (sql, values) in [
+                TD.make_test_data(ExternalUniv)
             ]:
                 for v in values:
                     DB.execute_insert(sql, v)
@@ -1600,110 +1608,124 @@ class InitGameDB(object):
 
 class TestData(object):
     """
-    Class for management of test data rows on database, elsewhere
-    @DEV:
-    - Let's see if we can get ChatGPT API to generate test data for us...
-
+    Class for management of test data rows on database
     """
 
     def __init__(self):
         """Initialize TestData object."""
-        # self.batch_1_uid_pk = SI.get_key()
         pass
 
 # =============================================================
 # Abstracted methods for TestData objects
+#        @DEV:
+#        - When dealing with Foreign Keys, will need to
+#          provide the prompt with a list of valid PK values on
+#          the related table(s).
 # =============================================================
 
-    def _set_system_content(self):
+    def _set_system_content(self) -> str:
         """Assign system content for test data AI prompts."""
         return ("You are a code developer, skilled in " +
                 "crafting test data for a relational database.")
 
     def _set_user_content(self,
                           p_data_model: object,
-                          p_table: str):
+                          p_table: str) -> str:
         """Assign user content for test data AI prompts.
-        SELECT sql FROM sqlite_master WHERE tbl_name = 'BACKUP' AND type = 'table' AND sql LIKE '%CHECK%';
-         WHERE tbl_name = 'BACKUP' AND type = 'table' AND sql LIKE '%bkup_type%CHECK%'
-        Trying to get CHECK enums from sqlite_master query didn't work.
-        Instead, we'll try to get the CHECK values from the object model.
-
-        constraints = {k: v for k, v
-                       in p_data_model.Constraints.__dict__.items()
-                       if not k.startswith('_')}
-        check_constraints = p_constraints.get('CK', {})
-        sql = ''
-        for ck_col, ck_vals in check_constraints.items():
-            ck_vals = ["'" + str(v) + "'" for v in ck_vals]
-            check_values = ', '.join(map(str, ck_vals))
-            sql += f"CHECK ({ck_col} IN ({check_values})),\n"
-
-        """
+        Identify list of CHECK constraint values, if any.
+        Identify list of FOREIGN KEY constraint values, if any.
+        :args:
+        - p_data_model: object. Data model object.
+        - p_table: str. Name of table to insert into.
+        :returns:
+        - content: string to use for user content prompt."""
         sql_create = DB.get_sql_file(p_table)
-        content = ("The BACKUP table on a sqlite database " +
+        content = (f"The {p_table} table on a sqlite database " +
                    f"is defined as follows: {sql_create} " +
-                   "Using python syntax, make a list of values " +
+                   "\nUsing python syntax, make a list of values " +
                    "to insert into the BACKUP table. " +
-                   "Store the list in a variable named 'values'. " +
+                   "\nStore the list in a variable named 'values'. " +
                    "Omit response text other than python code. ")
         constraints = {k: v for k, v
                        in p_data_model.Constraints.__dict__.items()
                        if not k.startswith('_')}
+
         check_constraints = constraints.get('CK', {})
-        for col, enums in check_constraints.items():
-            content += (f"\nFor {col} column, " +
-                        "use only the following values: {enums}\n ")
+        if check_constraints:
+            for col, enums in check_constraints.items():
+                content += (f"\nFor {col} column CHECK constraints, " +
+                            f"use only the following values:\n{enums} ")
+            content += "\nDo not list the CHECK constraints in the response."
+
+        fk_constraints = constraints.get('FK', {})
+        if fk_constraints:
+            for fk_col, (rel_table, pk_col) in fk_constraints.items():
+                rel_data = DB.execute_select_all(rel_table)
+                content += (f"\nValue of {fk_col} must match " +
+                            f"one value on {rel_table}.{pk_col}: " +
+                            f"\n{rel_data[pk_col]} ")
+        # print(content)
         return content
 
-    def test_backup_data(self):
+    def _call_ai_api(self,
+                     p_data_model: object,
+                     p_table: str) -> object:
         """
-        Create test data row(s) for the BACKUP table.
-        :returns: tuple
-        - SQL script to insert test data.
-        - List of values to be inserted.
-        @DEV:
-        - When dealing with Foreign Keys, will need to
-          provide the prompt with a list of valid PK values on
-          the related table(s).
+        Define prompts and complete the chat.
+        :args:
+        - p_data_model: object. Data model object.
+        - p_table: str. Name of table to insert into.
+        :returns:
+        - chat_completion: OpenAI object.
         """
-        values: list = []
-        # Hard-coded...
-        values.append((SI.get_key(),
-                       'Test Backup',
-                       pendulum.now().to_iso8601_string(),
-                       'backup',
-                       'SASKAN.db', 'SASKAN.bak'))
-        values.append((SI.get_key(),
-                       'Test Archive',
-                       pendulum.now().to_iso8601_string(),
-                       'archive',
-                       'SASKAN.bak', '...arcv'))
-        # AI-generated...
+        prompt_messages = [
+            {"role": "system",
+             "content": self._set_system_content()},
+            {"role": "user",
+             "content": self._set_user_content(
+                p_data_model, f'CREATE_{p_table.upper()}')}]
         completion = client.chat.completions.create(
             model="gpt-3.5-turbo-0125",
-            messages=[
-                {"role": "system",
-                 "content": self._set_system_content()},
-                {"role": "user",
-                 "content": self._set_user_content(Backup, 'INSERT_BACKUP')}
-            ]
+            messages=prompt_messages
         )
-        text = completion.choices[0].message.content
-        pp(("text = ", text))
-        # Pick up here... needs more scrubbing
-        # Don't get why OpenAI keeps changing formats... grr...
+        return completion
+
+    def _parse_ai_response(self,
+                           p_completion: object) -> list:
+        """
+        Parse the response from the AI API.
+        :args:
+        - p_completion: OpenAI object.
+        :returns:
+        - values: list. List of sets of values to insert into the database.
+        """
+        text = p_completion.choices[0].message.content
         text = text.replace("```python\n", '')
         text = text.replace("```", '').replace("```\n", '')
         text = text.replace("values = [\n", '')
-        text = text.replace("]\n", '')
-        lists = text.split(',\n')
-        for k, itm in enumerate(lists):
-            print(f"d_{k}-, {itm}")
+        text = text.replace("]\n", '').replace("]", '')
+        text = text.replace("  ", '')
+        values = text.split(',\n')
+        return values
+
+    def make_test_data(self,
+                       p_data_model: object) -> tuple:
+        """
+        Create test data row(s) for specified table.
+        :args:
+        - p_data_model: object. Data model object
+        :returns: tuple
+        - Name of SQL script to insert test data.
+        - List of values to be inserted.
+        """
+        values: list = []
+        table_name = p_data_model._tablename
+        print(f"Generating test data for:  {table_name}...")
+        completion = self._call_ai_api(p_data_model, table_name)
+        data_set = self._parse_ai_response(completion)
+        for itm in data_set:
             itm = itm.replace("\n", '').replace("\t", '').strip()
-            print(f"d_{k}+, {itm}")
-            data_set = ast.literal_eval(itm)
-            pp(("e", data_set))
-            values.append(data_set)
-        pp(("values = ", values))
-        return ('INSERT_BACKUP', values)
+            # Sometimes weird shit happens. Keep looking for scrubbing rules...
+            # pp((itm))
+            values.append(ast.literal_eval(itm))
+        return (f'INSERT_{table_name}', values)
