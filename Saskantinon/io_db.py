@@ -522,6 +522,47 @@ class DataBase(object):
                 result[col].append(row[i])
         return result
 
+    # Executing Raw SQL
+    # ===========================================
+    def execute_sql(self,
+                    p_sql_code: str,
+                    p_foreign_keys_on: bool):
+        """Run SQL passed in as a string.
+        @DEV:
+        - This is potentially a very dangerous call.
+        - May want to do something like write a key to
+          /tmp or /dev/shm, pass it in here so it can be verified.
+        :args:
+        - p_sql_nm (str): Name of external SQL file
+        - p_foreign_keys_on (bool): Set foreign key pragma ON or OFF.
+        """
+        result = None
+        self.connect_db(p_foreign_keys_on=True)
+        sql = p_sql_code.strip()
+        if sql.upper().startswith('SELECT'):
+            if 'DROP' in sql.upper()\
+              or 'INSERT' in sql.upper()\
+              or 'UPDATE' in sql.upper()\
+              or 'DELETE' in sql.upper()\
+              or 'PRAGMA' in sql.upper():
+                raise Exception("SQL code refused.")
+            else:
+                self.cur.execute(sql)
+                cols: list = self.get_db_columns(p_sql_select=sql)
+                data: list = [r for r in self.cur.fetchall()]
+
+                pp((data, cols))
+
+                if len(data) == 0:
+                    result: dict = {col: [] for col in cols}
+                else:
+                    result: dict = {col: [row[i] for row in data]
+                                    for i, col in enumerate(cols)}
+                self.disconnect_db()
+        else:
+            raise Exception("SQL code refused.")
+        return result
+
     # Executing SQL Scripts
     # ===========================================
     def execute_select_all(self,

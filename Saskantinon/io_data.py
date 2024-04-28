@@ -1611,6 +1611,51 @@ class TestData(object):
         # self.batch_1_uid_pk = SI.get_key()
         pass
 
+# =============================================================
+# Abstracted methods for TestData objects
+# =============================================================
+
+    def _set_system_content(self):
+        """Assign system content for test data AI prompts."""
+        return ("You are a code developer, skilled in " +
+                "crafting test data for a relational database.")
+
+    def _set_user_content(self,
+                          p_data_model: object,
+                          p_table: str):
+        """Assign user content for test data AI prompts.
+        SELECT sql FROM sqlite_master WHERE tbl_name = 'BACKUP' AND type = 'table' AND sql LIKE '%CHECK%';
+         WHERE tbl_name = 'BACKUP' AND type = 'table' AND sql LIKE '%bkup_type%CHECK%'
+        Trying to get CHECK enums from sqlite_master query didn't work.
+        Instead, we'll try to get the CHECK values from the object model.
+
+        constraints = {k: v for k, v
+                       in p_data_model.Constraints.__dict__.items()
+                       if not k.startswith('_')}
+        check_constraints = p_constraints.get('CK', {})
+        sql = ''
+        for ck_col, ck_vals in check_constraints.items():
+            ck_vals = ["'" + str(v) + "'" for v in ck_vals]
+            check_values = ', '.join(map(str, ck_vals))
+            sql += f"CHECK ({ck_col} IN ({check_values})),\n"
+
+        """
+        sql_create = DB.get_sql_file(p_table)
+        content = ("The BACKUP table on a sqlite database " +
+                   f"is defined as follows: {sql_create} " +
+                   "Using python syntax, make a list of values " +
+                   "to insert into the BACKUP table. " +
+                   "Store the list in a variable named 'values'. " +
+                   "Omit response text other than python code. ")
+        constraints = {k: v for k, v
+                       in p_data_model.Constraints.__dict__.items()
+                       if not k.startswith('_')}
+        check_constraints = constraints.get('CK', {})
+        for col, enums in check_constraints.items():
+            content += (f"\nFor {col} column, " +
+                        "use only the following values: {enums}\n ")
+        return content
+
     def test_backup_data(self):
         """
         Create test data row(s) for the BACKUP table.
@@ -1618,14 +1663,6 @@ class TestData(object):
         - SQL script to insert test data.
         - List of values to be inserted.
         @DEV:
-        - Abstract the prompt creation and scrubbing of the
-          returned text from the API so that we can use much
-          the same logic for every table.
-        - See if the CHECK rule can be extracted from the
-          database metadata instead of hard-coding it in the
-          prompt. If can't get it from DB metadata, then
-          extract enums from either the SQL DDL (CREATE) code or
-          (better probably) from the data object model.
         - When dealing with Foreign Keys, will need to
           provide the prompt with a list of valid PK values on
           the related table(s).
@@ -1643,30 +1680,22 @@ class TestData(object):
                        'archive',
                        'SASKAN.bak', '...arcv'))
         # AI-generated...
-        sql_file = DB.get_sql_file('INSERT_BACKUP')
         completion = client.chat.completions.create(
             model="gpt-3.5-turbo-0125",
             messages=[
                 {"role": "system",
-                 "content": "You are a code developer, skilled in " +
-                            "crafting test data for a relational database."},
+                 "content": self._set_system_content()},
                 {"role": "user",
-                 "content": "The BACKUP table on a sqlite database " +
-                            f"is defined as follows: {sql_file} " +
-                            "Using python syntax, make a list of values " +
-                            "to insert into the BACKUP table. " +
-                            "Omit response text other than python code. " +
-                            "For bkup_type column, use only the following " +
-                            "values: 'archive', 'backup', 'compressed', " +
-                            "'export', 'encrypted'"}
+                 "content": self._set_user_content(Backup, 'INSERT_BACKUP')}
             ]
         )
         text = completion.choices[0].message.content
+        pp(("text = ", text))
+        # Pick up here... needs more scrubbing
+        # Don't get why OpenAI keeps changing formats... grr...
         text = text.replace("```python\n", '')
         text = text.replace("```", '').replace("```\n", '')
-        text = text.replace("backup_values = [\n", '')
-        text = text.replace("backup_data = [\n", '')
-        text = text.replace("data_to_insert = [\n", '')
+        text = text.replace("values = [\n", '')
         text = text.replace("]\n", '')
         lists = text.split(',\n')
         for k, itm in enumerate(lists):
