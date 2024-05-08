@@ -111,6 +111,31 @@ class ShellIO(object):
         return uid_val
 
     @classmethod
+    def get_substring_exclusive(cls,
+                                full_str: str,
+                                from_token: str,
+                                to_token: str) -> str:
+        """
+        Get a substring from a string, between two tokens,
+        that is, exclusive of the tokens.
+        """
+        end_from = full_str.find(from_token) + len(from_token)
+        return full_str[end_from: full_str.find(to_token, end_from)]
+
+    @classmethod
+    def get_substring_inclusive(cls,
+                                full_str: str,
+                                from_token: str,
+                                to_token: str) -> str:
+        """
+        Get a substring from a string, between two tokens,
+        that is, exclusive of the tokens.
+        """
+        start_from = full_str.find(from_token)
+        return full_str[start_from: full_str.find(
+            to_token, start_from) + len(to_token)]
+
+    @classmethod
     def run_cmd(cls,
                 cmd: str) -> tuple:
         """

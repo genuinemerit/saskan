@@ -7,7 +7,7 @@ Saskan Data Management middleware.
 """
 
 import ast          # abstract syntax trees
-import pendulum     # date and time
+# import pendulum     # date and time
 import platform
 import pygame as pg
 
@@ -18,7 +18,7 @@ from openai import OpenAI
 from pathlib import Path
 from pprint import pformat as pf    # noqa: F401
 from pprint import pprint as pp     # noqa: F401
-from typing import Tuple, Union
+# from typing import Tuple, Union
 
 from io_db import DataBase
 from io_file import FileIO
@@ -1080,11 +1080,26 @@ class Galaxy(object):
     It has a bulge, typically ellipsoid, in the center and a star
     field area, also ellipsoid, but can include matter outside the
     star field, all the way to edge of its halo.
+
+    Test data geenration via AI keeps crapping out on this one,
+    the AI generation actually seems OK, but when I do the eval to
+    turn it into code, it barfs on the "z" coordinate of the
+    center_from_univ_center_kpc_z. I don't know why. It looks
+    correct to me, assigned it a float value of, for example, 15.0
+    The SQL identifies these as NUMERIC fields.
+
+    An almost identical "grouped" structure is used in GalacticCluster
+    and its data was generated and applied without any problem. Hmmm..
+    I guess what I am seeing in the debug displays is that, instead of
+    pulling the entire set of values into the test_set, it is breaking
+    it into sub-sets. Like there are too many line breaks left after
+    scrubbing? Nah..  I think I got it.  At some point I am stripping a
+    comma that should not be stripped, when it precedes a line break.
     """
     _tablename: str = "GALAXY"
     galaxy_uid_pk: str = ''
     galactic_cluster_uid_fk: str = ''
-    galaxy_namek: str = ''
+    galaxy_name: str = ''
     relative_size: str = 'medium'
     center_from_univ_center_kpc: Struct.CoordXYZ = Struct.CoordXYZ()
     halo_radius_pc: float = 0.0
@@ -1591,17 +1606,12 @@ class InitGameDB(object):
 
         if p_create_test_data:
             TD = TestData()
-            # Tables that do not require foreign keys:
-            for (sql, values) in [
-                TD.make_test_data(Backup),
-                TD.make_test_data(Universe)
-            ]:
-                for v in values:
-                    DB.execute_insert(sql, v)
-            # Tables that do require foreign keys:
-            for (sql, values) in [
-                TD.make_test_data(ExternalUniv)
-            ]:
+            for data_model in [Backup, Universe, Map, Grid,
+                               ExternalUniv, GalacticCluster,
+                               MapXMap, GridXMap,
+                               Galaxy, StarSystem,
+                               World, Moon]:
+                sql, values = TD.make_test_data(data_model)
                 for v in values:
                     DB.execute_insert(sql, v)
 
@@ -1613,63 +1623,96 @@ class TestData(object):
 
     def __init__(self):
         """Initialize TestData object."""
-        pass
+        self.num_cols: int = 0
 
 # =============================================================
 # Abstracted methods for TestData objects
-#        @DEV:
-#        - When dealing with Foreign Keys, will need to
-#          provide the prompt with a list of valid PK values on
-#          the related table(s).
 # =============================================================
 
     def _set_system_content(self) -> str:
         """Assign system content for test data AI prompts."""
-        return ("You are a code developer, skilled in " +
+        return ("You are a code developer, highly skilled in " +
                 "crafting test data for a relational database.")
 
     def _set_user_content(self,
-                          p_data_model: object,
-                          p_table: str) -> str:
+                          p_data_model: object) -> str:
         """Assign user content for test data AI prompts.
         Identify list of CHECK constraint values, if any.
         Identify list of FOREIGN KEY constraint values, if any.
         :args:
         - p_data_model: object. Data model object.
         - p_table: str. Name of table to insert into.
-        :returns:
-        - content: string to use for user content prompt."""
-        sql_create = DB.get_sql_file(p_table)
-        content = (f"The {p_table} table on a sqlite database " +
-                   f"is defined as follows: {sql_create} " +
-                   "\nUsing python syntax, make a list of values " +
-                   "to insert into the BACKUP table. " +
-                   "\nStore the list in a variable named 'values'. " +
-                   "Omit response text other than python code. ")
+        :returns: tuple containig:
+        - content: (str) user content prompt
+        @DEV:
+        - Seems to work OK when requesting two dictionaries.
+        - With five dictionaries, it makes errors; seems to
+          behave like maybe I am taking up too much time?
+        - Maybe play around with that. Is there a way to
+          measure how much load I am putting on the AI server?
+        - And at least once I got the "ellipses" when requesting
+          only two dictionaries.
+        """
+        table_nm = p_data_model._tablename.upper()
+        sql_create = DB.get_sql_file(f"CREATE_{table_nm}")
+        print(f"\nGenerating test data for:  {table_nm}...")
+        sql_create_lines = sql_create.split('\n')
+        self.num_cols = len([line for line in sql_create_lines
+                             if not line.startswith(
+                                ('--', 'CREATE', 'CHECK',
+                                 'FOREIGN', 'PRIMARY'))])
         constraints = {k: v for k, v
                        in p_data_model.Constraints.__dict__.items()
                        if not k.startswith('_')}
+        ck_constraints = constraints.get('CK', {})
+        fk_constraints = constraints.get('FK', {})
 
-        check_constraints = constraints.get('CK', {})
-        if check_constraints:
-            for col, enums in check_constraints.items():
-                content += (f"\nFor {col} column CHECK constraints, " +
+        content = (f"\nThe {table_nm} table on a sqlite database " +
+                   f"is defined as follows:\n{sql_create} " +
+                   "\nReturn two dictionaries of keys:values, " +
+                   "one key:value pair for each SQL column " +
+                   f"on the {table_nm} table. " +
+                   f"\nThere must be precisely {self.num_cols} " +
+                   "key:value pairs in each dictionary.")
+
+        content += ("\n\nEnclose each dictionary with curly braces. " +
+                    "\nSeparate key from value by a colon :. " +
+                    "\nSeparate each key:value pair by a comma , . " +
+                    "\nDo not put a comma after the last value in " +
+                    "a dictionary." +
+                    "\nSeparate dictionaries by a tilde character ~ ." +
+                    "\nDo not put a tilde after the last dictionary." +
+                    "\nTilde is used only between dictionaries  }~{ ." +
+                    "\nExample: {'key1':'value1','key2': value2}~" +
+                    "{'key1':'value1','key2': value2}")
+
+        content += ("\n\nFor numeric values, supply a non-zero value. " +
+                    "\nFor text values, supply a non-empty value " +
+                    "and enclose text values with single quotation marks." +
+                    "\nMatch key names to column names from database table " +
+                    "and enclose key names with single quotation marks. ")
+        content += ("\nDo not return anything other than the 2 dictionaries." +
+                    "\nVerify dictionaries enclosed by curly braces ({})." +
+                    "\nVerify number of key:value pairs." +
+                    "\nVerify dictionaries separated by a tilde }~{ ." +
+                    "\nVerify no tildes are ~ inside dictionaries.")
+
+        if ck_constraints:
+            for col, enums in ck_constraints.items():
+                content += (f"\nFor {col} SQL column CHECK constraints, " +
                             f"use only the following values:\n{enums} ")
             content += "\nDo not list the CHECK constraints in the response."
-
-        fk_constraints = constraints.get('FK', {})
         if fk_constraints:
             for fk_col, (rel_table, pk_col) in fk_constraints.items():
                 rel_data = DB.execute_select_all(rel_table)
                 content += (f"\nValue of {fk_col} must match " +
                             f"one value on {rel_table}.{pk_col}: " +
                             f"\n{rel_data[pk_col]} ")
-        # print(content)
+        # print("\n\n" + content)
         return content
 
     def _call_ai_api(self,
-                     p_data_model: object,
-                     p_table: str) -> object:
+                     p_data_model: object) -> object:
         """
         Define prompts and complete the chat.
         :args:
@@ -1678,12 +1721,13 @@ class TestData(object):
         :returns:
         - chat_completion: OpenAI object.
         """
+        content_text =\
+            self._set_user_content(p_data_model)
         prompt_messages = [
             {"role": "system",
              "content": self._set_system_content()},
             {"role": "user",
-             "content": self._set_user_content(
-                p_data_model, f'CREATE_{p_table.upper()}')}]
+             "content": content_text}]
         completion = client.chat.completions.create(
             model="gpt-3.5-turbo-0125",
             messages=prompt_messages
@@ -1693,20 +1737,21 @@ class TestData(object):
     def _parse_ai_response(self,
                            p_completion: object) -> list:
         """
-        Parse the response from the AI API.
+        Scrub and parse the response from the AI API.
         :args:
         - p_completion: OpenAI object.
         :returns:
-        - values: list. List of sets of values to insert into the database.
+        - data_set: list. List of lists of values to insert into DB
         """
         text = p_completion.choices[0].message.content
-        text = text.replace("```python\n", '')
-        text = text.replace("```", '').replace("```\n", '')
-        text = text.replace("values = [\n", '')
-        text = text.replace("]\n", '').replace("]", '')
-        text = text.replace("  ", '')
-        values = text.split(',\n')
-        return values
+        # print("\nResponse from AI, slightly scrubbed:\n")
+        text = text.replace("\n", "~")
+        text = text.replace("~~", "~")
+        print(text)
+        data_set = text.split('~')
+        # print("\nResponse parsed out into text objects\n")
+        # pp(("data_set", data_set))
+        return data_set
 
     def make_test_data(self,
                        p_data_model: object) -> tuple:
@@ -1717,15 +1762,37 @@ class TestData(object):
         :returns: tuple
         - Name of SQL script to insert test data.
         - List of values to be inserted.
+        @DEV:
+        - Sometimes the eval throws rather bizarre errors.
+        - May want to try crafting a version that does not
+          rely on eval.
         """
+        table_nm = p_data_model._tablename.upper()
         values: list = []
-        table_name = p_data_model._tablename
-        print(f"Generating test data for:  {table_name}...")
-        completion = self._call_ai_api(p_data_model, table_name)
+        completion = self._call_ai_api(p_data_model)
         data_set = self._parse_ai_response(completion)
+
+        print("\nResults...")
+
         for itm in data_set:
-            itm = itm.replace("\n", '').replace("\t", '').strip()
-            # Sometimes weird shit happens. Keep looking for scrubbing rules...
-            # pp((itm))
-            values.append(ast.literal_eval(itm))
-        return (f'INSERT_{table_name}', values)
+
+            # print("\nUnevaluated dictionary")
+            print('_0_', itm)
+            # print("\nEvaluated dictionary")
+            test_set = ast.literal_eval(itm)
+            print('_1_', test_set)
+            # print("\nEvaluated list of values")
+            test_set = list(test_set.values())
+            print('_2_', test_set)
+
+            if len(test_set) != self.num_cols:
+                e =\
+                    (f"\nThere must be exactly {self.num_cols} pairs " +
+                        "in each dictionary, one value for each column " +
+                        f"on the {table_nm} table, not " +
+                        f"{len(test_set)} values.")
+                raise ValueError(e)
+            else:
+                values.append(test_set)
+
+        return (f'INSERT_{table_nm}', values)

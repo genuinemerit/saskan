@@ -133,7 +133,7 @@ class DataBase(object):
             for k, v in sub_model.items():
                 g_col_nm = f'{p_col_nm}_{k}'
                 p_col_names.append(g_col_nm)
-                sql += f' {g_col_nm}'
+                sql += f'{g_col_nm}'
                 data_type = self.set_sql_data_type(v, p_constraints)
                 sql += data_type
                 sql += self.set_sql_default(v, data_type.split(' ')[1])
@@ -655,6 +655,11 @@ class DataBase(object):
         """
         self.connect_db(p_foreign_keys_on=True)
         SQL = self.get_sql_file(p_sql_nm)
+
+        # print("\nDataBase: execute_insert")
+        # print(f"SQL: {SQL}")
+        # print(f"p_values: {p_values}")
+
         self.cur.execute(SQL, p_values)
         self.db_conn.commit()   # type: ignore
         self.disconnect_db()
