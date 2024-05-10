@@ -10,6 +10,7 @@ import ast          # abstract syntax trees
 # import pendulum     # date and time
 import platform
 import pygame as pg
+import random
 
 # from os import path
 # from pathlib import Path
@@ -1327,14 +1328,14 @@ class World(object):
     gravity_m_per_s_per_s: float = 0.0
     orbit_gdy: float = 0.0
     orbit_gyr: float = 0.0
-    tidally_locked: bool = False
+    is_tidally_locked: bool = False
     rotation_gdy: float = 0.0
     rotation_direction: str = 'prograde'
     orbit_direction: str = 'prograde'
     moons_cnt: int = 0
     world_desc: str = ''
     atmosphere: str = ''
-    sky_color: pg.Color = Colors.CP_BLUE
+    sky_color: str = 'blue'
     biosphere: str = ''
     sentients: str = ''
     climate: str = ''
@@ -1373,7 +1374,7 @@ class Moon(object):
     mass_kg: float = 0.0
     radius_km: float = 0.0
     obliquity_dg: float = 0.0    # a/k/a axial tilt
-    tidally_locked: bool = True
+    is_tidally_locked: bool = True
     rotation_direction: str = 'prograde'
     orbit_direction: str = 'prograde'
     orbit_world_days: float = 0.0
@@ -1556,7 +1557,6 @@ class GridXMap(object):
 # DB/ORM Calls
 # - Create SQL files
 # - Create SQLITE tables
-# - @DEV - possibly move these to io_db?
 # =======================================================
 class InitGameDB(object):
     """Methods to:
@@ -1611,22 +1611,197 @@ class InitGameDB(object):
                                MapXMap, GridXMap,
                                Galaxy, StarSystem,
                                World, Moon]:
-                sql, values = TD.make_test_data(data_model)
+                # sql, values = TD.make_AI_test_data(data_model)
+                sql, values = TD.make_algo_test_data(data_model)
                 for v in values:
                     DB.execute_insert(sql, v)
 
 
 class TestData(object):
     """
-    Class for management of test data rows on database
+    Managem test data rows on database
     """
 
     def __init__(self):
         """Initialize TestData object."""
+        self.test_data_rows = 1
+        self.table_name: str = ''
+        self.sql_cols: list = []
         self.num_cols: int = 0
+        self.ck_constraints: dict = {}
+        self.fk_constraints: dict = {}
 
 # =============================================================
-# Abstracted methods for TestData objects
+# Algorithm-based TestData objects
+# =============================================================
+# =============================================================
+# Abstracted 'private' methods
+# =============================================================
+    def _get_data_model(self,
+                        p_data_model: object) -> bool:
+        """Get data model info from object and CREATE SQL file.
+        :args:
+        - p_data_model: object.
+        :sets:
+        - class level attributes
+        """
+        self.table_name = p_data_model._tablename.upper()
+        sql_create = DB.get_sql_file(f"CREATE_{self.table_name}")
+        sql_line = sql_create.split('\n')
+        self.sql_cols = [line.strip()[:-1] for line in sql_line
+                         if not line.startswith(
+                            ('--', 'CREATE', 'CHECK',
+                             'FOREIGN', 'PRIMARY'))]
+        self.num_cols = len(self.sql_cols)
+        constraints = {k: v for k, v
+                       in p_data_model.Constraints.__dict__.items()
+                       if not k.startswith('_')}
+        self.ck_constraints = constraints.get('CK', {})
+        self.fk_constraints = constraints.get('FK', {})
+        return True
+
+    def _get_name_value(self,
+                        p_row_num: int) -> str:
+        """Return test data value for a name field
+        :args:
+        - p_row_num: int. Row number.
+        :returns: str
+        """
+        v = f"test_{self.table_name.lower()}_{p_row_num:04d}"
+        return v
+
+    def _get_file_value(self) -> str:
+        """Return test data value for a file field
+        :returns: str
+        """
+        v = SI.get_cwd_home() + '/' + SI.get_uid()[10:17] + '/' +\
+            random.choice(['test_data', 'other', 'config', 'backup']) +\
+            random.choice(['.txt', '.jpg', '.png', '.pdf', '.dat', '.xls'])
+        return v
+
+    def _get_astro_value(self) -> float:
+        """Return test data value for a kg, gly, gly3, pc3 field
+        :returns: float
+        """
+        v = random.randint(1, 100000000000) / 1000
+        return v
+
+    def _get_rate_value(self) -> float:
+        """Return test data value for a rate
+        :returns: float
+        """
+        v = random.randint(1, 10000) / 10
+        return v
+
+    def _get_degree_value(self) -> float:
+        """Return test data value for a degree
+        :returns: float
+        """
+        v = random.randint(1, 1801) / 10
+        if (random.randint(0, 1) == 0):
+            v = -v
+        return v
+
+    def _get_xyz_value(self) -> float:
+        """Return test data value for meters or x, y, z dimensions
+        :returns: float
+        """
+        v = random.randint(1, 300) / 10
+        return v
+
+    def _get_fk_value(self,
+                      p_col_nm: str) -> list:
+        """Return test data value for a foreign key field
+        :args:
+        - p_col_nm: str. Column name.
+        - p_row_num: int. Row number.
+        :returns:
+        - value from another table
+        """
+        v = None
+        for fk_col, (rel_table, pk_col) in self.fk_constraints.items():
+            if fk_col == p_col_nm:
+                rel_data = DB.execute_select_all(rel_table)
+                v = rel_data[pk_col]
+                break
+        return v
+
+# =============================================================
+# 'Public' methods
+# =============================================================
+    def make_algo_test_data(self,
+                            p_data_model: object) -> tuple:
+        """
+        Create test data row(s) for specified table.
+        :args:
+        - p_data_model: object. Data model object
+        :returns: tuple
+        - Name of SQL script to insert test data.
+        - List of tuple of values to be inserted.
+        """
+        full_list: list = []
+        self._get_data_model(p_data_model)
+
+        print(f"\nGenerating test data for:  {self.table_name}...")
+
+        for rx in range(self.test_data_rows):
+            row_list: list = []
+            for cx, col in enumerate(self.sql_cols):
+
+                col_nm, col_type, _, col_default = col.split()
+                row_list.append(col_default.replace("'", ""))
+
+                if col_nm.endswith('_pk'):
+                    row_list[cx] = SI.get_key()
+                elif col_nm.endswith('_dttm'):
+                    row_list[cx] = SI.get_iso_time_stamp()
+
+                elif col_nm in self.ck_constraints.keys():
+                    row_list[cx] = random.choice(self.ck_constraints[col_nm])
+                elif col_nm in self.fk_constraints.keys():
+                    row_list[cx] = random.choice(self._get_fk_value(col_nm))
+
+                elif col_nm.startswith('file_'):
+                    row_list[cx] = self._get_file_value()
+                elif col_nm.startswith('is_'):
+                    row_list[cx] = random.choice([0, 1])
+
+                elif col_nm.endswith('_name'):
+                    row_list[cx] = self._get_name_value(rx)
+                elif col_nm.endswith('_dg'):
+                    row_list[cx] = self._get_degree_value()
+                elif col_nm.endswith('_cnt'):
+                    row_list[cx] = random.randint(10, 100)
+                elif col_nm.endswith('_au'):
+                    row_list[cx] = random.randint(9, 50) / 10
+
+                elif any(col_nm.endswith(suffix)
+                         for suffix in ('_px', '_pulse_per_ms',
+                                        '_days')):
+                    row_list[cx] = random.randint(30, 10000)
+                elif any(col_nm.endswith(suffix)
+                         for suffix in ('_rate', '_per_mpc',
+                                        '_per_s', '_velocity')):
+                    row_list[cx] = self._get_rate_value()
+                elif any(col_nm.endswith(suffix)
+                         for suffix in ('_kg', '_gly', '_gpc', '_pc',
+                                        '_ly3', '_gyr', '_pc3', '_gpc3',
+                                        '_gly3')):
+                    row_list[cx] = self._get_astro_value()
+                elif any(col_nm.endswith(suffix)
+                         for suffix in ('_km', '_m', '_x', '_cnt', '_y',
+                                        '_z', '_a', '_b', '_c', '_pitch',
+                                        '_yaw', '_roll', '_gdy')):
+                    row_list[cx] = self._get_xyz_value()
+
+            full_list.append(tuple(row_list))
+        return (f'INSERT_{self.table_name}', full_list)
+
+# =============================================================
+# AI-based TestData objects
+# =============================================================
+# =============================================================
+# Abstracted 'private' methods
 # =============================================================
 
     def _set_system_content(self) -> str:
@@ -1652,15 +1827,23 @@ class TestData(object):
           measure how much load I am putting on the AI server?
         - And at least once I got the "ellipses" when requesting
           only two dictionaries.
+        - Then once I got the data-generation working, more or
+          less, with occasional blips, then I started getting
+          odd ball SQLlite errors, like bad foreign reference
+          when it looked perfectly legit to me.
+        - Sigh... this has been really interesting, but it is
+          time to throw in the towel and just proceed with my
+          own test data generation algorithms.
         """
         table_nm = p_data_model._tablename.upper()
         sql_create = DB.get_sql_file(f"CREATE_{table_nm}")
         print(f"\nGenerating test data for:  {table_nm}...")
         sql_create_lines = sql_create.split('\n')
-        self.num_cols = len([line for line in sql_create_lines
-                             if not line.startswith(
-                                ('--', 'CREATE', 'CHECK',
-                                 'FOREIGN', 'PRIMARY'))])
+        self.sql_cols = [line for line in sql_create_lines
+                         if not line.startswith(
+                            ('--', 'CREATE', 'CHECK',
+                             'FOREIGN', 'PRIMARY'))]
+        self.num_cols = len(self.sql_cols)
         constraints = {k: v for k, v
                        in p_data_model.Constraints.__dict__.items()
                        if not k.startswith('_')}
@@ -1708,7 +1891,6 @@ class TestData(object):
                 content += (f"\nValue of {fk_col} must match " +
                             f"one value on {rel_table}.{pk_col}: " +
                             f"\n{rel_data[pk_col]} ")
-        # print("\n\n" + content)
         return content
 
     def _call_ai_api(self,
@@ -1744,17 +1926,16 @@ class TestData(object):
         - data_set: list. List of lists of values to insert into DB
         """
         text = p_completion.choices[0].message.content
-        # print("\nResponse from AI, slightly scrubbed:\n")
         text = text.replace("\n", "~")
         text = text.replace("~~", "~")
-        print(text)
         data_set = text.split('~')
-        # print("\nResponse parsed out into text objects\n")
-        # pp(("data_set", data_set))
         return data_set
 
-    def make_test_data(self,
-                       p_data_model: object) -> tuple:
+    # =============================================================
+    # 'Public' methods
+    # =============================================================
+    def make_AI_test_data(self,
+                          p_data_model: object) -> tuple:
         """
         Create test data row(s) for specified table.
         :args:
@@ -1772,18 +1953,10 @@ class TestData(object):
         completion = self._call_ai_api(p_data_model)
         data_set = self._parse_ai_response(completion)
 
-        print("\nResults...")
-
         for itm in data_set:
 
-            # print("\nUnevaluated dictionary")
-            print('_0_', itm)
-            # print("\nEvaluated dictionary")
             test_set = ast.literal_eval(itm)
-            print('_1_', test_set)
-            # print("\nEvaluated list of values")
             test_set = list(test_set.values())
-            print('_2_', test_set)
 
             if len(test_set) != self.num_cols:
                 e =\
