@@ -10,6 +10,7 @@ Generic system command runner.
 import hashlib      # generate hash keys
 import inspect      # getdoc
 import pendulum
+import platform
 import secrets
 import subprocess as shl
 
@@ -188,6 +189,13 @@ class ShellIO(object):
             system(cmd)
         except Exception as err:
             raise Exception(f"{err} {cmd}")
+
+    @classmethod
+    def get_host(cls) -> str:
+        """Get the hostname.
+        This returns the hostname of the machine running the program."""
+        hostname = platform.node()
+        return hostname
 
     @classmethod
     def get_os_home(cls) -> str:

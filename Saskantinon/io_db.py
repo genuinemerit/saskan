@@ -396,9 +396,6 @@ class DataBase(object):
                  if not k.startswith('_')
                  and k not in ('to_dict', 'from_dict', 'Constraints')}
 
-        pp((f"table_name: {table_name}",
-            "model:", model))
-
         col_names = self.generate_create_sql(table_name, constraints, model)
         self.generate_drop_sql(table_name)
         self.generate_insert_sql(table_name, col_names)
@@ -550,8 +547,6 @@ class DataBase(object):
                 self.cur.execute(sql)
                 cols: list = self.get_db_columns(p_sql_select=sql)
                 data: list = [r for r in self.cur.fetchall()]
-
-                pp((data, cols))
 
                 if len(data) == 0:
                     result: dict = {col: [] for col in cols}
