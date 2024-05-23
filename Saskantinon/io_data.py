@@ -614,10 +614,12 @@ class EntityType(object):
     GLOSS_TYPE = ['word', 'phrase', 'map', 'picture', 'diagram',
                   'data', 'software', 'sound', 'video']
     INTENSITY = ['low', 'medium', 'high']
-    LAKE_SIZE = ['small','medium', 'large']
-    LAKE_TYPE = ['lake','reservoir', 'pond', 'pool', 'loch',
-                 'hot spring','swamp','marsh','mill pond',
-                 'oxbow lake','spring','sinkhole',
+    LAKE_SIZE = ['small', 'medium', 'large']
+    LAKE_TYPE = ['lake', 'reservoir', 'pond', 'pool',
+                 'loch',
+                 'hot spring', 'swamp', 'marsh',
+                 'mill pond',
+                 'oxbow lake', 'spring', 'sinkhole',
                  'acquifer', 'vernal pool', 'wadi']
     LUMINOSITY_CLASS = ['I', 'II', 'III', 'IV', 'V']
     MAP_TOUCH_TYPE = ['contains', 'is_contained_by', 'borders',
@@ -627,6 +629,19 @@ class EntityType(object):
                 'informational', 'political']
     ORBITAL_SHAPE = ['circular', 'elliptical']
     RELATIVE_SIZE = ['small', 'medium', 'large']
+    RIVER_FEATURE = ['delta', 'bridge', 'crossing',
+                     'footbridge', 'pier', 'marina',
+                     'boathouse', 'habitat']
+    RIVER_HAZARD = ['rapids', 'wreckage', 'sandbar',
+                    'waterfall', 'shallow',
+                    'dam', 'weir', 'habitat']
+    RIVER_TYPE = ['perrenial', 'periodic', 'episodic',
+                  'exotic', 'tributary', 'distributary',
+                  'underground', 'aqueduct', 'canal',
+                  'rapids', 'winding', 'stream',
+                  'glacier']
+    RIVER_NAV_TYPE = ["small craft", "large craft",
+                      "none"]
     SPECTRAL_CLASS = ['O', 'B', 'A', 'F', 'G', 'K', 'M']
     STABILITY = ['stable', 'unstable']
     WATER_TYPE = ['freshwater','saline', 'brackish']
@@ -1893,7 +1908,7 @@ class Lake(object):
     lake_size: str = "medium"
     water_type: str = "freshwater"
     lake_type: str = "lake"
-    tidal_influence: bool = False
+    is_tidal_influence: bool = False
     lake_surface_m2: float = 0.0
     max_depth_m: float = 0.0
     avg_depth_m: float = 0.0
@@ -1929,6 +1944,108 @@ class Lake(object):
         ORDER: list = ["lake_uid_pk ASC"]
 
 
+class LakeXMap(object):
+    """
+    Associative keys --
+    - LAKEs (n) <--> MAPs (n)
+    """
+    _tablename: str = "LAKE_X_MAP"
+    lake_x_map_pk: str = ''
+    lake_uid_fk: str = ''
+    map_uid_fk: str = ''
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return _orm_to_dict(LakeXMap)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return _orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: dict = {"lake_x_map_pk": "lake_x_map_pk"}
+        FK: dict = {"lake_uid_fk":
+                    ("LAKE", "lake_uid_pk"),
+                    "map_uid_fk":
+                    ("MAP", "map_uid_pk")}
+        ORDER: list =\
+            ["lake_uid_fk ASC", "map_uid_fk ASC"]
+
+
+class River(object):
+    """
+    drainage_basin_m: Avg area of land where rainfall is
+    collected and drained into river on each bank. For game
+    purposes, number of meters from center of river.
+
+    avg_velocity_m_per_h: Meters per hour on avg. This is
+    not the same as the max velocity, which is likely to be
+    much higher.
+
+    @DEV:
+    - For river/lake and river/river and river/waterbody
+    associations, may need to define additional
+    association tables; and those tables may need to
+    have some types associated with them. We want to
+    avoid having any "null" FK's, since they are not
+    supported by SQLite and it is bad practice to
+    manage FK's without DB-level support for them.
+
+    JSON:
+    river_course_points: [lat-long, ...]
+    river_bank_points: [lat-long, ...]
+    "hazards": [{"uid": int,
+                 "type": EntityType.RIVER_HAZARD,
+                 "loc": lat-long},
+                ...],
+    "features": [{"uid": int,
+                  "type": EntityType.RIVER_FEATURE,
+                   "loc": GeogLatLong}, ...]
+    """
+    _tablename: str = "RIVER"
+    river_uid_pk: str = ''
+    gloss_common_uid_fk: str = ''
+    river_course_points_json: str = ''
+    river_bank_points_json: str = ''
+    river_type: str = 'perrenial'
+    avg_width_m: float = 0.0
+    avg_depth_m: float = 0.0
+    total_length_km: float = 0.0
+    drainage_basin_km: float = 0.0
+    avg_velocity_m_per_h: float = 0.0
+    gradient_m_per_km: float = 0.0
+    river_hazards_json: str = ''
+    river_features_json: str = ''
+    river_nav_type: str = 'none'
+    flora_and_fauna: str = ''
+    water_quality: str = ''
+    historical_events: str = ''
+    current_conditions: str = ''
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return _orm_to_dict(River)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return _orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: dict = {"river_uid_pk": "river_uid_pk"}
+        FK: dict = {"gloss_common_uid_fk":
+                    ("GLOSS_COMMON", "gloss_common_uid_pk")}
+        CK: dict = {"river_type":
+                    EntityType.RIVER_TYPE,
+                    "river_nav_type":
+                    EntityType.RIVER_NAV_TYPE}
+        JSON: list = ["river_course_points_json",
+                      "river_bank_points_json",
+                      "hazards_json",
+                      "features_json"]
+        ORDER: list =\
+            ["river_uid_pk ASC"]
+
+
 # =======================================================
 # DB/ORM Calls
 # - Create SQL files
@@ -1954,8 +2071,9 @@ class InitGameDB(object):
                       CharSet, CharMember, LangFamily,
                       Language, LangDialect,
                       GlossCommon, Glossary,
-                      Lake
-                      # LakeXMap, River, RiverXMap,
+                      Lake, LakeXMap,
+                      River
+                      # , RiverXMap,
                       # WaterBody, WaterBodyXMap, WaterBodyXRiver,
                       # LandBody, LandBodyXMap, LandBodyXLandBody,
                       # LandBodyXWaterBody
@@ -1990,20 +2108,24 @@ class InitGameDB(object):
 
         if p_create_test_data:
             TD = TestData()
-            for data_model in [Backup, Universe,
-                               Map, Grid, CharSet,
-                               ExternalUniv, GalacticCluster,
-                               MapXMap, GridXMap, CharMember,
-                               Galaxy, StarSystem,
-                               World, Moon, LangFamily,
-                               Language, LangDialect,
-                               GlossCommon, Glossary,
-                               Lake
-                               # LakeXMap, River, RiverXMap,
-                               # WaterBody, WaterBodyXMap, WaterBodyXRiver,
-                               # LandBody, LandBodyXMap, LandBodyXLandBody,
-                               # LandBodyXWaterBody
-                               ]:
+            for data_model in [
+                Backup, Universe,
+                Map, Grid, CharSet,
+                ExternalUniv, GalacticCluster,
+                MapXMap, GridXMap, CharMember,
+                Galaxy, StarSystem,
+                World, Moon, LangFamily,
+                Language, LangDialect,
+                GlossCommon, Glossary,
+                Lake, LakeXMap,
+                River
+                # , RiverXMap,
+                # WaterBody, WaterBodyXMap,
+                # WaterBodyXRiver,
+                # LandBody, LandBodyXMap,
+                # LandBodyXLandBody,
+                # LandBodyXWaterBody
+            ]:
                 sql, values = TD.make_algo_test_data(data_model)
                 for v in values:
                     DB.execute_insert(sql, v)
@@ -2148,6 +2270,45 @@ class TestData(object):
                                    k=random.randint(10, 30)))
         return v
 
+    def _get_river_hazards(self) -> str:
+        """Return made-up data using the river_hazards
+        JSON format:
+        [{"uid": int,
+          "type": EntityType.RIVER_HAZARD,
+          "loc": lat-long},
+          ...]
+        """
+        hazards = []
+        num_hazards = random.randint(1, 10)
+        for _ in range(num_hazards):
+            hazard = {}
+            hazard["uid"] = random.randint(1000, 9999)
+            hazard["type"] = random.choice(EntityType.RIVER_HAZARD)
+            hazard["loc"] = (random.uniform(-90, 90),
+                             random.uniform(-180, 180))
+            hazards.append(hazard)
+        return json.dumps(hazards)
+
+    def _get_river_features(self) -> str:
+        """Return made-up data using the river_features
+        JSON format:
+        [{"uid": int,
+          "type": EntityType.RIVER_FEATURE,
+          "loc": lat-long},
+          ...]
+        """
+        features = []
+        num_features = random.randint(1, 10)
+        for _ in range(num_features):
+            feature = {}
+            feature["uid"] = random.randint(1000, 9999)
+            feature["type"] = random.choice(EntityType.RIVER_FEATURE)
+            feature["loc"] = (random.uniform(-90, 90),
+                              random.uniform(-180, 180))
+            features.append(feature)
+        return json.dumps(features)
+
+
 # =============================================================
 # 'Public' methods
 # =============================================================
@@ -2187,6 +2348,10 @@ class TestData(object):
                     row_list[cx] = self._get_file_value()
                 elif col_nm.startswith('is_'):
                     row_list[cx] = random.choice([0, 1])
+                elif col_nm.startswith('river_features_'):
+                    row_list[cx] = self._get_river_features()
+                elif col_nm.startswith('river_hazards_'):
+                    row_list[cx] = self._get_river_hazards()
 
                 elif col_nm.endswith('_name'):
                     row_list[cx] = self._get_name_value(rx)

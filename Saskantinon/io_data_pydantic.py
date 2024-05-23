@@ -1784,7 +1784,7 @@ class River(BaseModel):
                                       'weir'. 'habitat'>,
                  "loc": GeogLatLong}, ...],
     "features":
-    [{"uid": int, "type": <'lock', 'delta', 'bridge',
+    [{"uid": int, "type": <'lock',      'delta', 'bridge',
                                        'crossing', 'footbridge',
                                        'pier', 'marina',
                                        'boathouse',
