@@ -44,18 +44,21 @@ class DataBase(object):
     # Generate SQL files from data models
     # ===========================================
     def set_sql_data_type(self,
+                          p_col_nm: str,
                           p_def_value: object,
                           p_constraints: dict) -> str:
         """
         Convert default value data type to SQLITE data type.
         :args:
+        - p_col_nm (str) column name
         - p_def_value (object) default value
         - p_constraints (dict) Dict of constraints for the table
         :returns:
         - (str) SQLITE data type
         """
         sql = ''
-        if 'JSON' in p_constraints.get('JSON', []):
+        if 'JSON' in p_constraints.keys() and\
+                p_col_nm in p_constraints['JSON']:
             sql = ' JSON'
         else:
             field_type = type(p_def_value).__name__
@@ -134,7 +137,8 @@ class DataBase(object):
                 g_col_nm = f'{p_col_nm}_{k}'
                 p_col_names.append(g_col_nm)
                 sql += f'{g_col_nm}'
-                data_type = self.set_sql_data_type(v, p_constraints)
+                data_type = self.set_sql_data_type(
+                    g_col_nm, v, p_constraints)
                 sql += data_type
                 sql += self.set_sql_default(v, data_type.split(' ')[1])
                 sql += self.set_sql_comment(v)
@@ -228,7 +232,8 @@ class DataBase(object):
             if not sql:
                 col_names.append(col_nm)
                 data_type_sql =\
-                    self.set_sql_data_type(def_value, p_constraints)
+                    self.set_sql_data_type(
+                        col_nm, def_value, p_constraints)
                 default_sql =\
                     self.set_sql_default(def_value,
                                          data_type_sql.split(' ')[1])

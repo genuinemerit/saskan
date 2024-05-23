@@ -7,10 +7,12 @@ Saskan Data Management middleware.
 """
 
 import ast          # abstract syntax trees
+import json
 # import pendulum     # date and time
 import platform
 import pygame as pg
 import random
+import string
 
 # from os import path
 # from pathlib import Path
@@ -597,8 +599,8 @@ class EntityType(object):
     ASTRO_DIRECTION = ['prograde', 'retrograde']
     ASTRO_LOCATION = ['inner', 'outer', 'multiple']
     ASTRO_SHAPE = ['ellipsoid', 'spherical']
-    BACKUP_TYPE = ["archive", "backup", "compressed", "export",
-                   "encrypted"]
+    BACKUP_TYPE = ["archive", "backup", "compressed",
+                   "export", "encrypted"]
     CHAR_SET_TYPE = ['alphabet', 'abjad', 'abugida',
                      'syllabary', 'ideogram']
     CLUSTER_SHAPE = ['ellipsoid', 'spherical']
@@ -612,6 +614,11 @@ class EntityType(object):
     GLOSS_TYPE = ['word', 'phrase', 'map', 'picture', 'diagram',
                   'data', 'software', 'sound', 'video']
     INTENSITY = ['low', 'medium', 'high']
+    LAKE_SIZE = ['small','medium', 'large']
+    LAKE_TYPE = ['lake','reservoir', 'pond', 'pool', 'loch',
+                 'hot spring','swamp','marsh','mill pond',
+                 'oxbow lake','spring','sinkhole',
+                 'acquifer', 'vernal pool', 'wadi']
     LUMINOSITY_CLASS = ['I', 'II', 'III', 'IV', 'V']
     MAP_TOUCH_TYPE = ['contains', 'is_contained_by', 'borders',
                       'overlaps', 'informs', 'layers_above',
@@ -622,6 +629,7 @@ class EntityType(object):
     RELATIVE_SIZE = ['small', 'medium', 'large']
     SPECTRAL_CLASS = ['O', 'B', 'A', 'F', 'G', 'K', 'M']
     STABILITY = ['stable', 'unstable']
+    WATER_TYPE = ['freshwater','saline', 'brackish']
     WORLD_TYPE = ['habitable', 'gas giant', 'rocky',
                   'desert', 'oceanic', 'ice planet',
                   'molten', 'other']
@@ -1842,6 +1850,85 @@ class Glossary(object):
 # more structures from io_data_old.py / io_data_pydantic.py.
 
 
+class Lake(object):
+    """
+    Geographic features, e.g. lakes, rivers, mountains, are
+    named by reference to a gloss_common_uid_pk.
+
+    Geo features have a complex line defined by series of
+    points, often defined by latitude and longitude.
+    The more points, the more precise the curve or lines.
+    Points stored as JSON with an undetermined length.
+    SQL generator code identifies them via a classmethod
+    constraint keyed by "JSON".' SQLite supports a JSON
+    data type, but not sure yet what that buys us.
+
+    catchment_area_radius_m: area of land where rainfall is
+    collected and drained into the lake. Not same as
+    the area of the lake itself. For game purposes,
+    assume it is a circle with a radius.
+
+    accessibility: How easy it is to reach the lake, whether
+    roads, trails, or settlements nearby. Can be quantified
+    as a number, or a word, or a phrase.
+
+    special_features: Unique or notable features, like
+    islands, underwater caves, or geothermal activity
+
+    lake_usage:  fishing, recreation, transportation,
+    as a water source for nearby settlements. Expand to
+    more attributes like resevoir.
+
+    conservation_status: Efforts to protect or preserve
+
+    current_conditions: quality, temperature, frozen, etc.
+
+    JSON:
+    lake_shorline_points: [GeogLatLong, ..]
+    """
+    _tablename: str = "LAKE"
+    lake_uid_pk: str = ''
+    gloss_common_uid_fk: str = ''
+    lake_shoreline_points_json: str = ''
+    lake_size: str = "medium"
+    water_type: str = "freshwater"
+    lake_type: str = "lake"
+    tidal_influence: bool = False
+    lake_surface_m2: float = 0.0
+    max_depth_m: float = 0.0
+    avg_depth_m: float = 0.0
+    lake_altitude_m: float = 0.0
+    catchment_area_radius_m: float = 0.0
+    lake_origin: str = ''
+    flora_and_fauna: str = ''
+    water_color: str = ''
+    accessibility: str = ''
+    special_features: str = ''
+    lake_usage: str = ''
+    legends_or_myths: str = ''
+    lake_history: str = ''
+    conservation_status: str = ''
+    current_conditions: str = ''
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return _orm_to_dict(Lake)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return _orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: dict = {"lake_uid_pk": ["lake_uid_pk"]}
+        FK: dict = {"gloss_common_uid_fk":
+                    ("GLOSS_COMMON", "gloss_common_uid_pk")}
+        JSON: list = ["lake_shoreline_points_json"]
+        CK: dict = {"lake_size": EntityType.LAKE_SIZE,
+                    "water_type": EntityType.WATER_TYPE,
+                    "lake_type": EntityType.LAKE_TYPE}
+        ORDER: list = ["lake_uid_pk ASC"]
+
+
 # =======================================================
 # DB/ORM Calls
 # - Create SQL files
@@ -1866,7 +1953,13 @@ class InitGameDB(object):
                       Map, MapXMap, Grid, GridXMap,
                       CharSet, CharMember, LangFamily,
                       Language, LangDialect,
-                      GlossCommon, Glossary]:
+                      GlossCommon, Glossary,
+                      Lake
+                      # LakeXMap, River, RiverXMap,
+                      # WaterBody, WaterBodyXMap, WaterBodyXRiver,
+                      # LandBody, LandBodyXMap, LandBodyXLandBody,
+                      # LandBodyXWaterBody
+                      ]:
             DB.generate_sql(model)
 
     def boot_db(self,
@@ -1904,7 +1997,13 @@ class InitGameDB(object):
                                Galaxy, StarSystem,
                                World, Moon, LangFamily,
                                Language, LangDialect,
-                               GlossCommon, Glossary]:
+                               GlossCommon, Glossary,
+                               Lake
+                               # LakeXMap, River, RiverXMap,
+                               # WaterBody, WaterBodyXMap, WaterBodyXRiver,
+                               # LandBody, LandBodyXMap, LandBodyXLandBody,
+                               # LandBodyXWaterBody
+                               ]:
                 sql, values = TD.make_algo_test_data(data_model)
                 for v in values:
                     DB.execute_insert(sql, v)
@@ -2028,6 +2127,27 @@ class TestData(object):
             random.choice(['.html', '.jpg', '.wav', '.pdf', '.dat', '.csv'])
         return v
 
+    def _get_points_value(self) -> str:
+        """Return test data value for a points field
+        :returns: json-formatted str
+        """
+        points = []
+        num_points = random.randint(3, 20)
+        for _ in range(num_points):
+            latitude = random.uniform(-90, 90)
+            longitude = random.uniform(-180, 180)
+            points.append((latitude, longitude))
+        return json.dumps(points)
+
+    def _get_text_value(self) -> str:
+        """Return generic text value
+        :returns: str
+        """
+        v = ''.join(random.choices(string.ascii_letters +
+                                   string.digits,
+                                   k=random.randint(10, 30)))
+        return v
+
 # =============================================================
 # 'Public' methods
 # =============================================================
@@ -2079,6 +2199,9 @@ class TestData(object):
                 elif col_nm.endswith('_au'):
                     row_list[cx] = random.randint(9, 50) / 10
 
+                elif '_points_' in col_nm:
+                    row_list[cx] = self._get_points_value()
+
                 elif any(col_nm.endswith(suffix)
                          for suffix in ('_px', '_pulse_per_ms',
                                         '_days')):
@@ -2097,6 +2220,13 @@ class TestData(object):
                                         '_z', '_a', '_b', '_c', '_pitch',
                                         '_yaw', '_roll', '_gdy')):
                     row_list[cx] = self._get_xyz_value()
+
+                elif col_type == 'BOOLEAN':
+                    row_list[cx] = random.choice([0, 1])
+                elif col_type == 'TEXT':
+                    row_list[cx] = self._get_text_value()
+                elif col_type == 'NUMERIC':
+                    row_list[cx] = random.randint(20, 1000) / 10
 
             full_list.append(tuple(row_list))
         return (f'INSERT_{self.table_name}', full_list)
