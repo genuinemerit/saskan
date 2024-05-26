@@ -625,8 +625,32 @@ class EntityType(object):
     MAP_TOUCH_TYPE = ['contains', 'is_contained_by', 'borders',
                       'overlaps', 'informs', 'layers_above',
                       'layers_below']
-    MAP_TYPE = ['geo', 'astro', 'underwater', 'underground',
+    MAP_TYPE = ['geo', 'astro', 'underwater',
+                'underground',
                 'informational', 'political']
+    OCEAN_BODY_TYPE = ['fjord', 'sea', 'ocean',
+                       'harbor', 'lagoon', 'bay',
+                       'gulf', 'sound', 'bight',
+                       'delta', 'estuary', 'strait',
+                       'ice field', 'ice sheet',
+                       'ice shelf', 'iceberg',
+                       'ice floe', 'ice pack',
+                       'roadstead', 'tidal pool',
+                       'salt marsh']
+    OCEAN_HAZARD = ['tsunami', 'typhoon', 'volcano',
+                    'tide', 'storm', 'whirlpool',
+                    'current', 'undertow', 'rip tide',
+                    'reef']
+    OCEAN_FEATURE = ['atoll', 'coral reef', 'seamount',
+                     'trench', 'volcanic vent',
+                     'hydrothermal vent', 'tide pool',
+                     'mangrove', 'kelp forest',
+                     'coral bed', 'sargasso',
+                     'gyre', 'upwelling',
+                     'downwelling', 'eddy',
+                     'thermocline', 'halocline',
+                     'polar ice cap', 'ice shelf']
+    OCEAN_WAVE_TYPE = ['low', 'medium', 'high', 'none']
     ORBITAL_SHAPE = ['circular', 'elliptical']
     RELATIVE_SIZE = ['small', 'medium', 'large']
     RIVER_FEATURE = ['delta', 'bridge', 'crossing',
@@ -644,7 +668,7 @@ class EntityType(object):
                       "none"]
     SPECTRAL_CLASS = ['O', 'B', 'A', 'F', 'G', 'K', 'M']
     STABILITY = ['stable', 'unstable']
-    WATER_TYPE = ['freshwater','saline', 'brackish']
+    WATER_TYPE = ['freshwater', 'saline', 'brackish']
     WORLD_TYPE = ['habitable', 'gas giant', 'rocky',
                   'desert', 'oceanic', 'ice planet',
                   'molten', 'other']
@@ -1570,8 +1594,10 @@ class GridXMap(object):
 
     class Constraints(object):
         PK: dict = {"grid_x_map_uid_pk": ["grid_x_map_uid_pk"]}
-        FK: dict = {"grid_uid_fk": ("GRID", "grid_uid_pk"),
-                    "map_uid_fk": ("MAP", "map_uid_pk")}
+        FK: dict = {"grid_uid_fk":
+                    ("GRID", "grid_uid_pk"),
+                    "map_uid_fk":
+                    ("MAP", "map_uid_pk")}
 
 
 class CharSet(object):
@@ -1861,9 +1887,6 @@ class Glossary(object):
         CK: dict = {"gloss_type": EntityType.GLOSS_TYPE}
         ORDER: list = ["gloss_name ASC"]
 
-# Once the above have been tested, refactored, then add
-# more structures from io_data_old.py / io_data_pydantic.py.
-
 
 class Lake(object):
     """
@@ -2000,7 +2023,7 @@ class River(object):
                 ...],
     "features": [{"uid": int,
                   "type": EntityType.RIVER_FEATURE,
-                   "loc": GeogLatLong}, ...]
+                   "loc": lat-long}, ...]
     """
     _tablename: str = "RIVER"
     river_uid_pk: str = ''
@@ -2040,10 +2063,90 @@ class River(object):
                     EntityType.RIVER_NAV_TYPE}
         JSON: list = ["river_course_points_json",
                       "river_bank_points_json",
-                      "hazards_json",
-                      "features_json"]
+                      "river_hazards_json",
+                      "river_features_json"]
         ORDER: list =\
             ["river_uid_pk ASC"]
+
+
+class RiverXMap(object):
+    """
+    Associative keys --
+    - RIVERs (n) <--> MAPs (n)
+    """
+    _tablename: str = "RIVER_X_MAP"
+    river_x_map_uid_pk: str = ''
+    river_uid_fk: str = ''
+    map_uid_fk: str = ''
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return _orm_to_dict(RiverXMap)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return _orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: dict = {"river_x_map_uid_pk":
+                    "river_x_map_uid_pk"}
+        FK: dict = {"river_uid_fk":
+                    ("RIVER", "river_uid_pk"),
+                    "map_uid_fk":
+                    ("MAP", "map_uid_pk")}
+        ORDER: list =\
+            ["river_x_map_uid_pk ASC"]
+
+
+class OceanBody(object):
+    """For bodies of water associated with oceans.
+    """
+    _tablename: str = "OCEAN_BODY"
+    ocean_body_uid_pk: str = ''
+    gloss_common_uid_fk: str = ''
+    body_shoreline_points_json: str = ''
+    is_coastal: bool = True
+    is_frozen: bool = False
+    ocean_body_type: str = ''
+    water_type: str = ''
+    is_tidal_influence: bool = False
+    tidal_flows_per_day: int = 0
+    avg_high_tide_m: float = 0.0
+    avg_low_tide_m: float = 0.0
+    max_high_tide_m: float = 0.0
+    ocean_wave_type: str = ''
+    body_surface_area_m2: float = 0.0
+    body_surface_altitude_m: float = 0.0
+    max_depth_m: float = 0.0
+    avg_depth_m: float = 0.0
+    ocean_hazards_json: str = ''
+    ocean_features_json: str = ''
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return _orm_to_dict(OceanBody)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return _orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: dict = {"ocean_body_uid_pk":
+                    "ocean_body_uid_pk"}
+        FK: dict = {"gloss_common_uid_fk":
+                    ("GLOSS_COMMON", "gloss_common_uid_pk")}
+        CK: dict = {"ocean_body_type":
+                    EntityType.OCEAN_BODY_TYPE,
+                    "water_type":
+                    EntityType.WATER_TYPE,
+                    "ocean_wave_type":
+                    EntityType.OCEAN_WAVE_TYPE}
+        JSON: list = ["river_course_points_json",
+                      "river_bank_points_json",
+                      "ocean_hazards_json",
+                      "ocean_features_json"]
+        ORDER: list =\
+            ["ocean_body_uid_pk ASC"]
 
 
 # =======================================================
@@ -2072,13 +2175,16 @@ class InitGameDB(object):
                       Language, LangDialect,
                       GlossCommon, Glossary,
                       Lake, LakeXMap,
-                      River
-                      # , RiverXMap,
-                      # WaterBody, WaterBodyXMap, WaterBodyXRiver,
+                      River, RiverXMap,
+                      OceanBody,
+                      # OceanBodyXMap, OceanBodyXRiver,
                       # LandBody, LandBodyXMap, LandBodyXLandBody,
-                      # LandBodyXWaterBody
+                      # LandBodyXOceanBody
                       ]:
             DB.generate_sql(model)
+
+# Add River-Lake association table
+# More: mountains, spacecraft, buildings, etc.
 
     def boot_db(self,
                 p_create_test_data: bool = False,
@@ -2118,13 +2224,13 @@ class InitGameDB(object):
                 Language, LangDialect,
                 GlossCommon, Glossary,
                 Lake, LakeXMap,
-                River
-                # , RiverXMap,
-                # WaterBody, WaterBodyXMap,
-                # WaterBodyXRiver,
+                River, RiverXMap,
+                OceanBody,
+                # OceanBodyXMap,
+                # OceanBodyXRiver,
                 # LandBody, LandBodyXMap,
                 # LandBodyXLandBody,
-                # LandBodyXWaterBody
+                # LandBodyXOceanBody
             ]:
                 sql, values = TD.make_algo_test_data(data_model)
                 for v in values:
@@ -2270,44 +2376,26 @@ class TestData(object):
                                    k=random.randint(10, 30)))
         return v
 
-    def _get_river_hazards(self) -> str:
-        """Return made-up data using the river_hazards
+    def _get_hazards_or_features(self,
+                                 p_entity: EntityType) -> str:
+        """Return made-up data using a *_hazards or
+            *_features EntityType and the following
         JSON format:
         [{"uid": int,
           "type": EntityType.RIVER_HAZARD,
           "loc": lat-long},
           ...]
         """
-        hazards = []
-        num_hazards = random.randint(1, 10)
-        for _ in range(num_hazards):
-            hazard = {}
-            hazard["uid"] = random.randint(1000, 9999)
-            hazard["type"] = random.choice(EntityType.RIVER_HAZARD)
-            hazard["loc"] = (random.uniform(-90, 90),
-                             random.uniform(-180, 180))
-            hazards.append(hazard)
-        return json.dumps(hazards)
-
-    def _get_river_features(self) -> str:
-        """Return made-up data using the river_features
-        JSON format:
-        [{"uid": int,
-          "type": EntityType.RIVER_FEATURE,
-          "loc": lat-long},
-          ...]
-        """
-        features = []
-        num_features = random.randint(1, 10)
-        for _ in range(num_features):
-            feature = {}
-            feature["uid"] = random.randint(1000, 9999)
-            feature["type"] = random.choice(EntityType.RIVER_FEATURE)
-            feature["loc"] = (random.uniform(-90, 90),
+        hazfeats = []
+        num_hazfeats = random.randint(1, 10)
+        for _ in range(num_hazfeats):
+            hazfeat = {}
+            hazfeat["uid"] = random.randint(1000, 9999)
+            hazfeat["type"] = random.choice(p_entity)
+            hazfeat["loc"] = (random.uniform(-90, 90),
                               random.uniform(-180, 180))
-            features.append(feature)
-        return json.dumps(features)
-
+            hazfeats.append(hazfeat)
+        return json.dumps(hazfeats)
 
 # =============================================================
 # 'Public' methods
@@ -2349,9 +2437,21 @@ class TestData(object):
                 elif col_nm.startswith('is_'):
                     row_list[cx] = random.choice([0, 1])
                 elif col_nm.startswith('river_features_'):
-                    row_list[cx] = self._get_river_features()
+                    row_list[cx] =\
+                        self._get_hazards_or_features(
+                            EntityType.RIVER_FEATURE)
                 elif col_nm.startswith('river_hazards_'):
-                    row_list[cx] = self._get_river_hazards()
+                    row_list[cx] =\
+                        self._get_hazards_or_features(
+                            EntityType.RIVER_HAZARD)
+                elif col_nm.startswith('ocean_features_'):
+                    row_list[cx] =\
+                        self._get_hazards_or_features(
+                            EntityType.OCEAN_FEATURE)
+                elif col_nm.startswith('ocean_hazards_'):
+                    row_list[cx] =\
+                        self._get_hazards_or_features(
+                            EntityType.OCEAN_HAZARD)
 
                 elif col_nm.endswith('_name'):
                     row_list[cx] = self._get_name_value(rx)
