@@ -595,6 +595,9 @@ class EntityType(object):
       `entity_dict = {k:v for k,v in EntityType.__dict__.items()
                       if not k.startswith('__')}`
     - Generally, can just refer directly to the lists.
+    {"body_relation_type":
+                   ['borders', 'overlaps',
+                    'contains', 'contained by']
     """
     ASTRO_DIRECTION = ['prograde', 'retrograde']
     ASTRO_LOCATION = ['inner', 'outer', 'multiple']
@@ -621,6 +624,12 @@ class EntityType(object):
                  'mill pond',
                  'oxbow lake', 'spring', 'sinkhole',
                  'acquifer', 'vernal pool', 'wadi']
+    LAND_BODY_TYPE = ['island', 'continent', 'sub-continent',
+                      'region']
+    LAND_LAND_RELATION_TYPE = ['borders', 'overlaps',
+                               'contains', 'contained by']
+    LAND_OCEAN_RELATION_TYPE = ['borders', 'overlaps',
+                                'contains', 'contained by']
     LUMINOSITY_CLASS = ['I', 'II', 'III', 'IV', 'V']
     MAP_TOUCH_TYPE = ['contains', 'is_contained_by', 'borders',
                       'overlaps', 'informs', 'layers_above',
@@ -2149,6 +2158,193 @@ class OceanBody(object):
             ["ocean_body_uid_pk ASC"]
 
 
+class OceanBodyXMap(object):
+    """
+    Associative keys --
+    - OCEAN_BODY (n) <--> MAP (n)
+    """
+    _tablename: str = "OCEAN_BODY_X_MAP"
+    ocean_body_x_map_uid_pk: str = ''
+    ocean_body_uid_fk: str = ''
+    map_uid_fk: str = ''
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return _orm_to_dict(OceanBodyXMap)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return _orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: dict = {"ocean_body_x_map_uid_pk":
+                    "ocean_body_x_map_uid_pk"}
+        FK: dict = {"ocean_body_uid_fk":
+                    ("OCEAN_BODY", "ocean_body_uid_pk"),
+                    "map_uid_fk":
+                    ("MAP", "map_uid_pk")}
+        ORDER: list =\
+            ["ocean_body_x_map_uid_pk ASC"]
+
+
+class OceanBodyXRiver(object):
+    """
+    Associative keys --
+    - OCEAN_BODY (n) <--> RIVER (n)
+    """
+    _tablename: str = "OCEAN_BODY_X_RIVER"
+    ocean_body_x_river_uid_pk: str = ''
+    ocean_body_uid_fk: str = ''
+    river_uid_fk: str = ''
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return _orm_to_dict(OceanBodyXRiver)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return _orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: dict = {"ocean_body_x_river_uid_pk":
+                    "ocean_body_x_river_uid_pk"}
+        FK: dict = {"ocean_body_uid_fk":
+                    ("OCEAN_BODY", "ocean_body_uid_pk"),
+                    "river_uid_fk":
+                    ("RIVER", "river_uid_pk")}
+        ORDER: list =\
+            ["ocean_body_x_river_uid_pk ASC"]
+
+
+class LandBody(object):
+    """
+    Use this for geographic features that are not water.
+    Including: continents, islands, geographic regions.
+    """
+    _tablename: str = "LAND_BODY"
+    land_body_uid_pk: str = ''
+    gloss_common_uid_fk: str = ''
+    body_landline_points_json: str = ''
+    land_body_type: str = ''
+    land_body_surface_area_m2: float = 0.0
+    land_body_surface_avg_altitude_m: float = 0.0
+    max_altitude_m: float = 0.0
+    min_altitude_m: float = 0.0
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return _orm_to_dict(LandBody)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return _orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: dict = {"land_body_uid_pk":
+                    "land_body_uid_pk"}
+        FK: dict = {"gloss_common_uid_fk":
+                    ("GLOSS_COMMON", "gloss_common_uid_pk")}
+        CK: dict = {"land_body_type":
+                    EntityType.LAND_BODY_TYPE}
+        ORDER: list =\
+            ["land_body_uid_pk ASC"]
+
+
+class LandBodyXMap(object):
+    """
+    Associative keys --
+    - LAND_BODY (n) <--> MAP (n)
+    """
+    _tablename: str = "LAND_BODY_X_MAP"
+    land_body_x_map_uid_pk: str = ''
+    land_body_uid_fk: str = ''
+    map_uid_fk: str = ''
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return _orm_to_dict(LandBodyXMap)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return _orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: dict = {"land_body_x_map_uid_pk":
+                    "land_body_x_map_uid_pk"}
+        FK: dict = {"land_body_uid_fk":
+                    ("LAND_BODY", "land_body_uid_pk"),
+                    "map_uid_fk":
+                    ("MAP", "map_uid_pk")}
+        ORDER: list =\
+            ["land_body_x_map_uid_pk ASC"]
+
+
+class LandBodyXLandBody(object):
+    """
+    Associative keys --
+    - LAND_BODY (n) <--> LAND_BODY (n)
+    - relation:
+        - body 1 --> body 2
+    """
+    _tablename: str = "LAND_BODY_X_LAND_BODY"
+    land_body_x_land_body_uid_pk: str = ''
+    land_body_1_uid_fk: str = ''
+    land_body_2_uid_fk: str = ''
+    land_land_relation_type: str = ''
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return _orm_to_dict(LandBodyXLandBody)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return _orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: dict = {"land_body_x_land_body_uid_pk":
+                    "land_body_x_land_body_uid_pk"}
+        FK: dict = {"land_body_1_uid_fk":
+                    ("LAND_BODY", "land_body_uid_pk"),
+                    "land_body_2_uid_fk":
+                    ("LAND_BODY", "land_body_uid_pk")}
+        CK: dict = {"land_land_relation_type":
+                    EntityType.LAND_LAND_RELATION_TYPE}
+        ORDER: list =\
+            ["land_body_x_land_body_uid_pk ASC"]
+
+
+class LandBodyXOceanBody(object):
+    """
+    Associative keys --
+    - LAND_BODY (n) <--> OCEAN_BODY (n)
+    """
+    _tablename: str = "LAND_BODY_X_OCEAN_BODY"
+    land_body_x_ocean_body_uid_pk: str = ''
+    land_body_uid_fk: str = ''
+    ocean_body_uid_fk: str = ''
+    land_ocean_relation_type: str = ''
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return _orm_to_dict(LandBodyXOceanBody)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return _orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: dict = {"land_body_x_ocean_body_uid_pk":
+                    "land_body_x_ocean_body_uid_pk"}
+        FK: dict = {"land_body_uid_fk":
+                    ("LAND_BODY", "land_body_uid_pk"),
+                    "ocean_body_uid_fk":
+                    ("OCEAN_BODY", "ocean_body_uid_pk")}
+        CK: dict = {"land_ocean_relation_type":
+                    EntityType.LAND_OCEAN_RELATION_TYPE}
+        ORDER: list =\
+            ["land_body_x_ocean_body_uid_pk ASC"]
+
+
 # =======================================================
 # DB/ORM Calls
 # - Create SQL files
@@ -2176,11 +2372,10 @@ class InitGameDB(object):
                       GlossCommon, Glossary,
                       Lake, LakeXMap,
                       River, RiverXMap,
-                      OceanBody,
-                      # OceanBodyXMap, OceanBodyXRiver,
-                      # LandBody, LandBodyXMap, LandBodyXLandBody,
-                      # LandBodyXOceanBody
-                      ]:
+                      OceanBody, OceanBodyXMap,
+                      OceanBodyXRiver,
+                      LandBody, LandBodyXMap,
+                      LandBodyXLandBody, LandBodyXOceanBody]:
             DB.generate_sql(model)
 
 # Add River-Lake association table
@@ -2214,24 +2409,21 @@ class InitGameDB(object):
 
         if p_create_test_data:
             TD = TestData()
-            for data_model in [
-                Backup, Universe,
-                Map, Grid, CharSet,
-                ExternalUniv, GalacticCluster,
-                MapXMap, GridXMap, CharMember,
-                Galaxy, StarSystem,
-                World, Moon, LangFamily,
-                Language, LangDialect,
-                GlossCommon, Glossary,
-                Lake, LakeXMap,
-                River, RiverXMap,
-                OceanBody,
-                # OceanBodyXMap,
-                # OceanBodyXRiver,
-                # LandBody, LandBodyXMap,
-                # LandBodyXLandBody,
-                # LandBodyXOceanBody
-            ]:
+            for data_model in [Backup, Universe,
+                               Map, Grid, CharSet,
+                               ExternalUniv, GalacticCluster,
+                               MapXMap, GridXMap, CharMember,
+                               Galaxy, StarSystem,
+                               World, Moon, LangFamily,
+                               Language, LangDialect,
+                               GlossCommon, Glossary,
+                               Lake, LakeXMap,
+                               River, RiverXMap,
+                               OceanBody, OceanBodyXMap,
+                               OceanBodyXRiver,
+                               LandBody, LandBodyXMap,
+                               LandBodyXLandBody,
+                               LandBodyXOceanBody]:
                 sql, values = TD.make_algo_test_data(data_model)
                 for v in values:
                     DB.execute_insert(sql, v)
