@@ -6,7 +6,7 @@
 Saskan Data Management middleware.
 """
 
-import ast          # abstract syntax trees
+# import ast          # abstract syntax trees
 import json
 # import pendulum     # date and time
 import platform
@@ -630,6 +630,7 @@ class EntityType(object):
                                'contains', 'contained by']
     LAND_OCEAN_RELATION_TYPE = ['borders', 'overlaps',
                                 'contains', 'contained by']
+    LINK_CATEGORY = ['help']
     LUMINOSITY_CLASS = ['I', 'II', 'III', 'IV', 'V']
     MAP_TOUCH_TYPE = ['contains', 'is_contained_by', 'borders',
                       'overlaps', 'informs', 'layers_above',
@@ -678,6 +679,7 @@ class EntityType(object):
     SPECTRAL_CLASS = ['O', 'B', 'A', 'F', 'G', 'K', 'M']
     STABILITY = ['stable', 'unstable']
     WATER_TYPE = ['freshwater', 'saline', 'brackish']
+    WINDOW_CATEGORY = ['admin', 'game']
     WORLD_TYPE = ['habitable', 'gas giant', 'rocky',
                   'desert', 'oceanic', 'ice planet',
                   'molten', 'other']
@@ -931,6 +933,111 @@ class GameGridData(object):
         return grid_matrix
 
 
+#  GAME-RELATED BASIC DATA ALGORTIHMS
+# ===================================
+class CompareRect(object):
+    """
+    Compare (pygame) rectangles:
+    - Check for containment
+    - Check for intersections (overlap, collision/union)
+    - Check for adjacency/borders (clipline)
+    - Check for equality/sameness
+    """
+
+    def __init__(self):
+        pass
+
+    def rect_contains(self,
+                      p_box_a: pg.Rect,
+                      p_box_b: pg.Rect) -> bool:
+        """Determine if rectangle A contains rectangle B.
+        use pygame contains
+        :args:
+        - p_box_a: (pygame.Rect) rectangle A
+        - p_box_b: (pygame.Rect) rectangle B
+        """
+        if p_box_a.contains(p_box_b):
+            return True
+        else:
+            return False
+
+    def rect_overlaps(self,
+                      p_box_a: pg.Rect,
+                      p_box_b: pg.Rect) -> bool:
+        """Determine if rectangle A and rectangle B overlap.
+        xxx use pygame colliderect xxx
+        use pygame union
+        :args:
+        - p_box_a: (pygame.Rect) rectangle A
+        - p_box_b: (pygame.Rect) rectangle B
+        """
+        # if p_box_a.colliderect(p_box_b):
+        if p_box_a.union(p_box_b):
+            return True
+        else:
+            return False
+
+    def rect_borders(self,
+                     p_rect_a: pg.Rect,
+                     p_rect_b: pg.Rect) -> bool:
+        """Determine if rectangle A and rectangle B share a border.
+        use pygame clipline
+        :args:
+        - p_box_a: (pygame.Rect) rectangle A
+        - p_box_b: (pygame.Rect) rectangle B
+        """
+        if p_rect_a.clipline(p_rect_b):
+            return True
+        else:
+            return False
+
+    def rect_same(self,
+                  p_rect_a: pg.Rect,
+                  p_rect_b: pg.Rect) -> bool:
+        """Determine if rectangle A and rectangle B occupy exactly
+        the same space.
+        :args:
+        - p_box_a: (pygame.Rect) rectangle A
+        - p_box_b: (pygame.Rect) rectangle B
+        """
+        if p_rect_a.topright == p_rect_b.topright and \
+           p_rect_a.bottomleft == p_rect_b.bottomleft:
+            return True
+        else:
+            return False
+
+
+class SetGameData(object):
+    """
+    - Set database values (not test data).
+    - Read data from database and store in memory structures.
+    - Generate specialized data values for use in the game.
+    - See io_data_more::GetGameData() class for ideas, but
+      using DB sources/targets in all cases.
+    - See config .json files for ideas regarding additional
+      DB structures and values
+        - leave c_context and d_dirs as is
+        - convert the g_*.json files to DB tables
+        - convert the t_*.json files to DB tables
+    """
+
+    def __init__(self):
+        pass
+
+    def make_grid_key(self,
+                      p_col: int,
+                      p_row: int) -> str:
+        """Convert integer coordinates to string key
+           for use in the .grid["G"] (grid data) matrix.
+        :args:
+        - p_col: int, column number
+        - p_row: int, row number
+        :returns:
+        - str, key for specific grid-cell record, in "0n_0n" format
+        """
+        return f"{str(p_col).zfill(2)}_{str(p_row).zfill(2)}"
+
+
 # =============================================================
 # DB/ORM table definitions
 #
@@ -984,11 +1091,8 @@ def _orm_from_dict(ORM: object,
 # =============================================================
 # System Maintenance
 # @DEV:
-#  - Modify models to use UID PKs and FKs on all table models.
 #  - Consider adding a version ID to support programmatic
 #    prototyping, undo's and so on.
-#  - For test data generation, try using ChatGPT prompts?
-#  - Implement all of the CHECK enums as EntityType data structures.
 # =============================================================
 class Backup(object):
     """Store metadata about DB backup, restore, archive, export.
@@ -1015,6 +1119,135 @@ class Backup(object):
         PK: dict = {"bkup_uid_pk": ["bkup_uid_pk"]}
         ORDER: list = ["bkup_dttm DESC", "bkup_name ASC"]
         CK: dict = {"bkup_type": EntityType.BACKUP_TYPE}
+
+
+# =============================================================
+# Game Construction
+# - Convert g_ and t_ configs to database tables.
+# - Convert the APP values on c_context.json to db tables.
+# - Convert the schema files to db tables.
+# =============================================================
+
+class AppConfig(object):
+    """Define the APP configuration values.
+    - app root, bin, and mem directories
+    - app directories
+        - cfg, data, img, py, db, sch
+    - may need to keep or dup some values for bootstrap
+    """
+    _tablename: str = "APP_CONFIG"
+    config_uid_pk: str = ''
+    version_id: str = ''
+    root_dir: str = ''
+    bin_dir: str = ''
+    mem_dir: str = ''
+    cfg_dir: str = ''
+    dat_dir: str = ''
+    img_dir: str = ''
+    py_dir: str = ''
+    db_dir: str = ''
+    sch_dir: str = ''
+    log_dat: str = ''
+    mon_dat: str = ''
+    dbg_dat: str = ''
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return _orm_to_dict(AppConfig)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return _orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: dict = {"config_uid_pk": ["config_uid_pk"]}
+        ORDER: list = ["version_id ASC"]
+
+
+class Texts(object):
+    """Define static text strings used in the game.
+    - Text string UID PK - unique for text string + language
+    - Real-world language of the text, eg, 'en', 'de', 'fr'.
+    - Name of a text string, not unique since it can be repeated
+      in different languages.
+    - Text string value.
+    """
+    _tablename: str = "TEXTS"
+    text_uid_pk: str = ''
+    lang_code: str = ''
+    text_name: str = ''
+    text_value: str = ''
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return _orm_to_dict(Texts)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return _orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: dict = {"text_uid_pk": ["text_uid_pk"]}
+        ORDER: list = ["text_name ASC", "lang_code ASC"]
+
+
+class Windows(object):
+    """Define the values for screens within the game.
+    - Window UID PK - unique for window
+    - Version ID
+    - Window category: admin, game, etc.
+    - Window name
+    - Window title
+    - x, y, w, h, margin
+    """
+    _tablename: str = "WINDOWS"
+    win_uid_pk: str = ''
+    version_id: str = ''
+    win_catg: str = ''
+    win_name: str = ''
+    win_title: str = ''
+    win_x: float = 0.0
+    win_y: float = 0.0
+    win_w: float = 0.0
+    win_h: float = 0.0
+    win_margin: float = 0.0
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return _orm_to_dict(Windows)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return _orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: dict = {"win_uid_pk": ["win_uid_pk"]}
+        CK: dict = {"win_catg": EntityType.WINDOW_CATEGORY}
+        ORDER: list = ["win_catg ASC", "win_name ASC", "version_id ASC"]
+
+
+class Links(object):
+    """Define the values for URIs used in the game.
+    """
+    _tablename: str = "LINKS"
+    link_uid_pk: str = ''
+    version_id: str = ''
+    link_catg: str = ''
+    link_name: str = ''
+    link_value: str = ''
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return _orm_to_dict(Links)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return _orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: dict = {"link_uid_pk": ["link_uid_pk"]}
+        CK: dict = {"link_catg": EntityType.LINK_CATEGORY}
+        ORDER: list = ["link_catg ASC", "link_name ASC", "version_id ASC"]
 
 
 # =============================================================
@@ -1609,6 +1842,9 @@ class GridXMap(object):
                     ("MAP", "map_uid_pk")}
 
 
+# =============================================================
+# Semantics and Languages
+# =============================================================
 class CharSet(object):
     """
     Description of a set of characters used in a language.
@@ -1897,6 +2133,9 @@ class Glossary(object):
         ORDER: list = ["gloss_name ASC"]
 
 
+# =============================================================
+# Game Geography
+# =============================================================
 class Lake(object):
     """
     Geographic features, e.g. lakes, rivers, mountains, are
@@ -2354,6 +2593,35 @@ class InitGameDB(object):
     """Methods to:
     - Create set of SQL files to manage the game database.
     - Boot the database by running the SQL files.
+    More:
+      - roads
+      - paths
+      - trails
+      - sea lanes
+      - mountains
+      - hills
+      - mines
+      - quarries
+      - caverns
+      - forests
+      - undersea domains
+      - populations
+      - belief systems
+      - countries (over time...)
+      - federations
+      - provinces
+      - towns
+      - counties, cantons and departments
+      - towns
+      - villages
+      - estates and communes
+      - tribal lands
+      - neighborhoods and precincts
+      - farms and fields
+      - ruins
+      - temples
+      - scenes
+      - buildingsmountains, spacecraft, buildings, etc.
     """
 
     def __init__(self):
@@ -2377,9 +2645,6 @@ class InitGameDB(object):
                       LandBody, LandBodyXMap,
                       LandBodyXLandBody, LandBodyXOceanBody]:
             DB.generate_sql(model)
-
-# Add River-Lake association table
-# More: mountains, spacecraft, buildings, etc.
 
     def boot_db(self,
                 p_create_test_data: bool = False,
@@ -2687,176 +2952,3 @@ class TestData(object):
 
             full_list.append(tuple(row_list))
         return (f'INSERT_{self.table_name}', full_list)
-
-# =============================================================
-# AI-based TestData objects
-# =============================================================
-# =============================================================
-# Abstracted 'private' methods
-# =============================================================
-
-    def _set_system_content(self) -> str:
-        """Assign system content for test data AI prompts."""
-        return ("You are a code developer, highly skilled in " +
-                "crafting test data for a relational database.")
-
-    def _set_user_content(self,
-                          p_data_model: object) -> str:
-        """Assign user content for test data AI prompts.
-        Identify list of CHECK constraint values, if any.
-        Identify list of FOREIGN KEY constraint values, if any.
-        :args:
-        - p_data_model: object. Data model object.
-        - p_table: str. Name of table to insert into.
-        :returns: tuple containig:
-        - content: (str) user content prompt
-        @DEV:
-        - Seems to work OK when requesting two dictionaries.
-        - With five dictionaries, it makes errors; seems to
-          behave like maybe I am taking up too much time?
-        - Maybe play around with that. Is there a way to
-          measure how much load I am putting on the AI server?
-        - And at least once I got the "ellipses" when requesting
-          only two dictionaries.
-        - Then once I got the data-generation working, more or
-          less, with occasional blips, then I started getting
-          odd ball SQLlite errors, like bad foreign reference
-          when it looked perfectly legit to me.
-        - Sigh... this has been really interesting, but it is
-          time to throw in the towel and just proceed with my
-          own test data generation algorithms.
-        """
-        table_nm = p_data_model._tablename.upper()
-        sql_create = DB.get_sql_file(f"CREATE_{table_nm}")
-        print(f"\nGenerating test data for:  {table_nm}...")
-        sql_create_lines = sql_create.split('\n')
-        self.sql_cols = [line for line in sql_create_lines
-                         if not line.startswith(
-                            ('--', 'CREATE', 'CHECK',
-                             'FOREIGN', 'PRIMARY'))]
-        self.num_cols = len(self.sql_cols)
-        constraints = {k: v for k, v
-                       in p_data_model.Constraints.__dict__.items()
-                       if not k.startswith('_')}
-        ck_constraints = constraints.get('CK', {})
-        fk_constraints = constraints.get('FK', {})
-
-        content = (f"\nThe {table_nm} table on a sqlite database " +
-                   f"is defined as follows:\n{sql_create} " +
-                   "\nReturn two dictionaries of keys:values, " +
-                   "one key:value pair for each SQL column " +
-                   f"on the {table_nm} table. " +
-                   f"\nThere must be precisely {self.num_cols} " +
-                   "key:value pairs in each dictionary.")
-
-        content += ("\n\nEnclose each dictionary with curly braces. " +
-                    "\nSeparate key from value by a colon :. " +
-                    "\nSeparate each key:value pair by a comma , . " +
-                    "\nDo not put a comma after the last value in " +
-                    "a dictionary." +
-                    "\nSeparate dictionaries by a tilde character ~ ." +
-                    "\nDo not put a tilde after the last dictionary." +
-                    "\nTilde is used only between dictionaries  }~{ ." +
-                    "\nExample: {'key1':'value1','key2': value2}~" +
-                    "{'key1':'value1','key2': value2}")
-
-        content += ("\n\nFor numeric values, supply a non-zero value. " +
-                    "\nFor text values, supply a non-empty value " +
-                    "and enclose text values with single quotation marks." +
-                    "\nMatch key names to column names from database table " +
-                    "and enclose key names with single quotation marks. ")
-        content += ("\nDo not return anything other than the 2 dictionaries." +
-                    "\nVerify dictionaries enclosed by curly braces ({})." +
-                    "\nVerify number of key:value pairs." +
-                    "\nVerify dictionaries separated by a tilde }~{ ." +
-                    "\nVerify no tildes are ~ inside dictionaries.")
-
-        if ck_constraints:
-            for col, enums in ck_constraints.items():
-                content += (f"\nFor {col} SQL column CHECK constraints, " +
-                            f"use only the following values:\n{enums} ")
-            content += "\nDo not list the CHECK constraints in the response."
-        if fk_constraints:
-            for fk_col, (rel_table, pk_col) in fk_constraints.items():
-                rel_data = DB.execute_select_all(rel_table)
-                content += (f"\nValue of {fk_col} must match " +
-                            f"one value on {rel_table}.{pk_col}: " +
-                            f"\n{rel_data[pk_col]} ")
-        return content
-
-    def _call_ai_api(self,
-                     p_data_model: object) -> object:
-        """
-        Define prompts and complete the chat.
-        :args:
-        - p_data_model: object. Data model object.
-        - p_table: str. Name of table to insert into.
-        :returns:
-        - chat_completion: OpenAI object.
-        """
-        content_text =\
-            self._set_user_content(p_data_model)
-        prompt_messages = [
-            {"role": "system",
-             "content": self._set_system_content()},
-            {"role": "user",
-             "content": content_text}]
-        completion = client.chat.completions.create(
-            model="gpt-3.5-turbo-0125",
-            messages=prompt_messages
-        )
-        return completion
-
-    def _parse_ai_response(self,
-                           p_completion: object) -> list:
-        """
-        Scrub and parse the response from the AI API.
-        :args:
-        - p_completion: OpenAI object.
-        :returns:
-        - data_set: list. List of lists of values to insert into DB
-        """
-        text = p_completion.choices[0].message.content
-        text = text.replace("\n", "~")
-        text = text.replace("~~", "~")
-        data_set = text.split('~')
-        return data_set
-
-    # =============================================================
-    # 'Public' methods
-    # =============================================================
-    def make_AI_test_data(self,
-                          p_data_model: object) -> tuple:
-        """
-        Create test data row(s) for specified table.
-        :args:
-        - p_data_model: object. Data model object
-        :returns: tuple
-        - Name of SQL script to insert test data.
-        - List of values to be inserted.
-        @DEV:
-        - Sometimes the eval throws rather bizarre errors.
-        - May want to try crafting a version that does not
-          rely on eval.
-        """
-        table_nm = p_data_model._tablename.upper()
-        values: list = []
-        completion = self._call_ai_api(p_data_model)
-        data_set = self._parse_ai_response(completion)
-
-        for itm in data_set:
-
-            test_set = ast.literal_eval(itm)
-            test_set = list(test_set.values())
-
-            if len(test_set) != self.num_cols:
-                e =\
-                    (f"\nThere must be exactly {self.num_cols} pairs " +
-                        "in each dictionary, one value for each column " +
-                        f"on the {table_nm} table, not " +
-                        f"{len(test_set)} values.")
-                raise ValueError(e)
-            else:
-                values.append(test_set)
-
-        return (f'INSERT_{table_nm}', values)
