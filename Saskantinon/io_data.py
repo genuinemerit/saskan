@@ -679,7 +679,7 @@ class EntityType(object):
     SPECTRAL_CLASS = ['O', 'B', 'A', 'F', 'G', 'K', 'M']
     STABILITY = ['stable', 'unstable']
     WATER_TYPE = ['freshwater', 'saline', 'brackish']
-    WINDOW_CATEGORY = ['admin', 'game']
+    APP_CATEGORY = ['admin', 'game']
     WORLD_TYPE = ['habitable', 'gas giant', 'rocky',
                   'desert', 'oceanic', 'ice planet',
                   'molten', 'other']
@@ -1191,6 +1191,45 @@ class Texts(object):
         ORDER: list = ["text_name ASC", "lang_code ASC"]
 
 
+class Frames(object):
+    """Define the values for frames i.e., the outermost window.
+    - Optionally may have size, info-bar and page-header
+    - frame_name: name of app or sub-app that uses the frame,
+       e.g. 'admin' or 'game'
+    """
+    _tablename: str = "FRAMES"
+    frame_uid_pk: str = ''
+    lang_uid_fk: str = ''
+    app_catg: str = ''
+    version_id: str = ''
+    frame_name: str = ''
+    frame_title: str = ''
+    frame_desc: str = ''
+    size_w: float = 0.0
+    size_h: float = 0.0
+    ibar_x: float = 0.0
+    ibar_y: float = 0.0
+    pg_hdr_x: float = 0.0
+    pg_hdr_y: float = 0.0
+    pg_hdr_w: float = 0.0
+    pg_hdr_h: float = 0.0
+    pg_hdr_txt: str = ''
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return _orm_to_dict(Frames)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return _orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: dict = {"frame_uid_pk": ["frame_uid_pk"]}
+        FK: dict = {"lang_uid_fk": ("LANGUAGE", "lang_uid_pk")}
+        CK: dict = {"app_catg": EntityType.APP_CATEGORY}
+        ORDER: list = ["app_catg ASC", "frame_name ASC", "version_id ASC"]
+
+
 class Windows(object):
     """Define the values for screens within the game.
     - Window UID PK - unique for window
@@ -1202,8 +1241,9 @@ class Windows(object):
     """
     _tablename: str = "WINDOWS"
     win_uid_pk: str = ''
+    frame_uid_fk: str = ''
+    lang_uid_fk: str = ''
     version_id: str = ''
-    win_catg: str = ''
     win_name: str = ''
     win_title: str = ''
     win_x: float = 0.0
@@ -1222,16 +1262,18 @@ class Windows(object):
 
     class Constraints(object):
         PK: dict = {"win_uid_pk": ["win_uid_pk"]}
-        CK: dict = {"win_catg": EntityType.WINDOW_CATEGORY}
-        ORDER: list = ["win_catg ASC", "win_name ASC", "version_id ASC"]
+        FK: dict = {"frame_uid_fk": ("FRAMES", "frame_uid_pk"),
+                    "lang_uid_fk": ("LANGUAGE", "lang_uid_pk")}
+        ORDER: list = ["win_name ASC", "version_id ASC"]
 
 
 class Links(object):
-    """Define the values for URIs used in the game.
+    """Define the values for URIs used in the app.
     """
     _tablename: str = "LINKS"
     link_uid_pk: str = ''
     version_id: str = ''
+    lang_uid_fk: str = ''
     link_catg: str = ''
     link_name: str = ''
     link_value: str = ''
@@ -1246,8 +1288,94 @@ class Links(object):
 
     class Constraints(object):
         PK: dict = {"link_uid_pk": ["link_uid_pk"]}
+        FK: dict = {"lang_uid_fk": ("LANGUAGE", "lang_uid_pk")}
         CK: dict = {"link_catg": EntityType.LINK_CATEGORY}
         ORDER: list = ["link_catg ASC", "link_name ASC", "version_id ASC"]
+
+
+class MenuBars(object):
+    """Define the values for Menu Bars (dimensions only) used in the game.
+    - menu_bar_name: what app or sub-app uses this menu bar,
+       e.g., 'admin' or 'game'
+    """
+    _tablename: str = "MENU_BARS"
+    menu_bar_uid_pk: str = ''
+    frame_uid_fk: str = ''
+    version_id: str = ''
+    menu_bar_name: str = ''
+    link_value: str = ''
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return _orm_to_dict(MenuBars)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return _orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: dict = {"menu_bar_uid_pk": ["menu_bar_uid_pk"]}
+        FK: dict = {"frame_uid_fk": ("FRAMES", "frame_uid_pk")}
+        ORDER: list = ["menu_bar_name ASC", "version_id ASC"]
+
+
+class Menus(object):
+    """Define the values for Menus, i.e, name of a dropdown.
+    - menu_id: generic string label "ID" or key for menu
+    - menu_name: text string label for menu in designated language
+    """
+    _tablename: str = "MENUS"
+    menu_uid_pk: str = ''
+    menu_bar_uid_fk: str = ''
+    lang_uid_fk: str = ''
+    version_id: str = ''
+    menu_id: str = ''
+    menu_name: str = ''
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return _orm_to_dict(Menus)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return _orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: dict = {"menu_uid_pk": ["menu_uid_pk"]}
+        FK: dict = {"menu_bar_uid_fk": ("MENU_BARS", "menu_bar_uid_pk"),
+                    "lang_uid_fk": ("LANGUAGE", "lang_uid_pk")}
+        ORDER: list = ["menu_id ASC", "menu_name ASC"]
+
+
+class MenuItems(object):
+    """Define the values for Menu Items, i.e, each item on a menu.
+    - item_id: generic string label "ID" or key for menu item
+    - item_name: text string label for menu in designated language
+    """
+    _tablename: str = "MENU_ITEMS"
+    item_uid_pk: str = ''
+    menu_uid_fk: str = ''
+    lang_uid_fk: str = ''
+    version_id: str = ''
+    item_id: str = ''
+    item_order: int = 0
+    item_name: str = ''
+    help_text: str = ''
+    enabled_default: bool = True
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return _orm_to_dict(MenuItems)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return _orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: dict = {"item_uid_pk": ["item_uid_pk"]}
+        FK: dict = {"menu_uid_fk": ("MENUS", "menu_uid_pk"),
+                    "lang_uid_fk": ("LANGUAGE", "lang_uid_pk")}
+        ORDER: list = ["item_id ASC", "item_name ASC"]
 
 
 # =============================================================
@@ -2643,7 +2771,9 @@ class InitGameDB(object):
                       OceanBody, OceanBodyXMap,
                       OceanBodyXRiver,
                       LandBody, LandBodyXMap,
-                      LandBodyXLandBody, LandBodyXOceanBody]:
+                      LandBodyXLandBody, LandBodyXOceanBody,
+                      AppConfig, Texts, Frames, Windows,
+                      Links, MenuBars, Menus, MenuItems]:
             DB.generate_sql(model)
 
     def boot_db(self,
@@ -2688,7 +2818,9 @@ class InitGameDB(object):
                                OceanBodyXRiver,
                                LandBody, LandBodyXMap,
                                LandBodyXLandBody,
-                               LandBodyXOceanBody]:
+                               LandBodyXOceanBody,
+                               AppConfig, Texts, Frames, Windows,
+                               Links, MenuBars, Menus, MenuItems]:
                 sql, values = TD.make_algo_test_data(data_model)
                 for v in values:
                     DB.execute_insert(sql, v)
