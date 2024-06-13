@@ -27,18 +27,19 @@ class FileIO(object):
 
     def __init__(self):
         """Initialize FileIO object.
-        Eventually move 'schema' data to DB.
+        Move all data except necessary bootstrap info (d_dirs) to DB.
+        And include bootstrap info in DB.
         """
         self.D: dict = self.get_config("saskan/config", "d_dirs")
-        self.T: dict = self.get_config("saskan/config", "t_texts_en")
-        self.F: dict = self.get_config("saskan/config", "g_frame")
-        self.M: dict = self.get_config("saskan/config", "g_menus")
-        self.W: dict = self.get_config("saskan/config", "g_windows")
-        self.U: dict = self.get_config("saskan/config", "g_uri")
-        self.S: dict = self.get_config("saskan/schema", "svc_schema")
-        self.G: dict = self.get_config("saskan/schema", "saskan_geo")
-        self.A: dict = self.get_config("saskan/schema", "saskan_astro")
-        self.T: dict = self.get_config("saskan/schema", "saskan_time")
+        # self.T: dict = self.get_config("saskan/config", "t_texts_en")
+        # self.F: dict = self.get_config("saskan/config", "g_frame")
+        # self.M: dict = self.get_config("saskan/config", "g_menus")
+        # self.W: dict = self.get_config("saskan/config", "g_windows")
+        # self.U: dict = self.get_config("saskan/config", "g_uri")
+        # self.S: dict = self.get_config("saskan/schema", "svc_schema")
+        # self.G: dict = self.get_config("saskan/schema", "saskan_geo")
+        # self.A: dict = self.get_config("saskan/schema", "saskan_astro")
+        # self.T: dict = self.get_config("saskan/schema", "saskan_time")
 
     # Read methods
     # ==============================================================

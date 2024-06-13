@@ -80,6 +80,14 @@ class ImageType(object):
     ICO = "ico"
 
 
+# Probably want to define database tables to store
+# name, location, other info regarding image, video,
+# sound and possibly other types of resources (plug-ins,
+# mods, external services, etc.)
+# Also see list of things like regions, countries,
+# provinces, cities, towns, villages, etc.
+
+
 #  COMPLEX CONSTANTS
 # ================================
 class Astro(object):
@@ -594,10 +602,6 @@ class EntityType(object):
     - This entire class can be made into a dict:
       `entity_dict = {k:v for k,v in EntityType.__dict__.items()
                       if not k.startswith('__')}`
-    - Generally, can just refer directly to the lists.
-    {"body_relation_type":
-                   ['borders', 'overlaps',
-                    'contains', 'contained by']
     """
     ASTRO_DIRECTION = ['prograde', 'retrograde']
     ASTRO_LOCATION = ['inner', 'outer', 'multiple']
@@ -616,6 +620,7 @@ class EntityType(object):
     FREQUENCY = ['rare', 'occasional', 'frequent']
     GLOSS_TYPE = ['word', 'phrase', 'map', 'picture', 'diagram',
                   'data', 'software', 'sound', 'video']
+    HEMISPHERE_TYPE = ['north', 'south']
     INTENSITY = ['low', 'medium', 'high']
     LAKE_SIZE = ['small', 'medium', 'large']
     LAKE_TYPE = ['lake', 'reservoir', 'pond', 'pool',
@@ -630,6 +635,8 @@ class EntityType(object):
                                'contains', 'contained by']
     LAND_OCEAN_RELATION_TYPE = ['borders', 'overlaps',
                                 'contains', 'contained by']
+    LEAP_RULE = ['add_to_start_of_nth_month',
+                 'add_to_end_of_nth_month', 'add_special_month']
     LINK_CATEGORY = ['help']
     LUMINOSITY_CLASS = ['I', 'II', 'III', 'IV', 'V']
     MAP_TOUCH_TYPE = ['contains', 'is_contained_by', 'borders',
@@ -676,6 +683,9 @@ class EntityType(object):
                   'glacier']
     RIVER_NAV_TYPE = ["small craft", "large craft",
                       "none"]
+    SEASON_TYPE = ['winter', 'spring', 'summer', 'fall'
+                   'all', 'winter-spring', 'spring-summer',
+                   'summer-fall', 'fall-winter']
     SPECTRAL_CLASS = ['O', 'B', 'A', 'F', 'G', 'K', 'M']
     STABILITY = ['stable', 'unstable']
     WATER_TYPE = ['freshwater', 'saline', 'brackish']
@@ -1123,9 +1133,11 @@ class Backup(object):
 
 # =============================================================
 # Game Construction
-# - Convert g_ and t_ configs to database tables.
-# - Convert the APP values on c_context.json to db tables.
-# - Convert the schema files to db tables.
+# x Convert g_ and t_ configs to database tables.
+# x Convert the APP values on c_context.json to db tables.
+# - Convert the schema files to db tables: services, ontology
+# - Convert the time and scenes to db tables.
+# - If needed, modify the geo and astro db tables per schema files
 # =============================================================
 
 class AppConfig(object):
@@ -1818,6 +1830,223 @@ class Moon(object):
                     "orbit_direction": EntityType.ASTRO_DIRECTION}
         GROUP: dict = {"center_from_world_center_km": Struct.CoordXYZ}
         ORDER: list = ["moon_name ASC"]
+
+
+# =============================================================
+# Time
+# =============================================================
+class SolarYear(object):
+    """
+    A Solar Year is always associated with a World, within a
+    given Star System.
+    For Solar years, we assume that the World's star
+    is the referene. We indicate how leaps are
+    handled in terms of fractional days.
+    Revolution and rotation of the World
+    can be computed based on World structure and does
+    not need to be entered directly, though it may save
+    a little processing to do so.
+    - solar_year_span: number of solar revolutions in
+      the year. Typically this is 1. But I have cultures
+      (terpins) that count as 1 "year" 4 solar years. This
+      way they don't account for leap days/years in the
+      same way.
+    The Solar Year is not the same thing as a Calendar.
+    However, this may be the place to define some baseline
+    'Rosetta Stone' values:
+    - epoch_start: for a given culture on this world,
+      when did "time" begin? i.e, how many solar years
+      previous to the start of game time?
+    - game_start: when did the game start?
+    - game_time: how do we count the passage of time
+      for the purpose of gameplay? I am thinking something
+      like an absolute count of minutes, with one decimal,
+      since the game_start?
+    - These values are probably better suited on some kind
+      of game/civilization object.
+    """
+    _tablename: str = "SOLAR_YEAR"
+    solar_year_uid_pk: str = ''
+    world_uid_fk: str = ''
+    lang_uid_fk: str = ''
+    solar_year_key: str = ''
+    version_id: str = ''
+    solar_year_name: str = ''
+    solar_year_desc: str = ''
+    days_in_solar_year: float = 0.0
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return _orm_to_dict(SolarYear)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return _orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: dict = {"solar_year_uid_pk": ["solar_year_uid_pk"]}
+        FK: dict = {"world_uid_fk": ("WORLD", "world_uid_pk"),
+                    "lang_uid_fk": ("WORLD", "lang_uid_pk")}
+        ORDER: list = ["solar_year_key ASC", "version_id ASC"]
+
+
+class LunarYear(object):
+    """
+    A Lunar Year is always associated with a World, within a
+    given Star System. And with one or more lunar cycles.
+
+    Which of the World's moons are being referenced is
+    hanlded by the LunarYearXMoons association table.
+
+    Duration of each moon's revolution around the world and
+    its relative position per other satellites will be handled
+    by computations. The LunarYear table contains the total
+    number of days in the lunar year, whether it is based on
+    a single satellite or a comoposite.
+
+    The Lunar Year is not the same thing as a Calendar.
+    """
+    _tablename: str = "LUNAR_YEAR"
+    lunar_year_uid_pk: str = ''
+    world_uid_fk: str = ''
+    lang_uid_fk: str = ''
+    lunar_year_key: str = ''
+    version_id: str = ''
+    lunar_year_name: str = ''
+    lunar_year_desc: str = ''
+    days_in_lunar_year: float = 0.0
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return _orm_to_dict(LunarYear)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return _orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: dict = {"lunar_year_uid_pk": ["lunar_year_uid_pk"]}
+        FK: dict = {"world_uid_fk": ("WORLD", "world_uid_pk"),
+                    "lang_uid_fk": ("WORLD", "lang_uid_pk")}
+        ORDER: list = ["lunar_year_key ASC", "version_id ASC"]
+
+
+class LunarYearXMoon(object):
+    """
+    Associative keys --
+    - LUNAR_YEARs (n) <--> MOONs (n)
+    """
+    _tablename: str = "LUNAR_YEAR_X_MOON"
+    lunar_year_x_moon_uid_pk: str = ''
+    lunar_year_uid_fk: str = ''
+    moon_uid_fk: str = ''
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return _orm_to_dict(LunarYearXMoon)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return _orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: dict = {"lunar_year_x_moon_uid_pk":
+                    ["lunar_year_x_moon_uid_pk"]}
+        FK: dict = {"lunar_year_uid_fk": ("LUNAR_YEAR",
+                    "lunar_year_uid_pk"),
+                    "moon_uid_fk": ("MOON", "moon_uid_pk")}
+
+
+class SolarCalendar(object):
+    """
+    A Solar Calendar is a cultural artifact. It is associated with
+    a Solar Year. The name of the calendar is defined as a link to
+    a common glossary item.
+    Months are defined in the Months calendar.
+    - epoch_start_offset: the first year in this system, in relationship
+      to the default "epoch start" year for the game. Need to figure
+      out how/where to define the epoch start for a given world.
+    For more detailed info on watches, hours, minutes, they are
+    handled in sepearate tables, just like months. (weeks too...)
+    """
+    _tablename: str = "SOLAR_CALENDAR"
+    solar_calendar_uid_pk: str = ''
+    solar_year_uid_fk: str = ''
+    year_name_gloss_common_uid_fk: str = ''
+    season_start_uid_fk: str = ''
+    solar_calendar_id: str = ''
+    solar_calendar_desc: str = ''
+    version_id: str = ''
+    epoch_start_offset: int = 0
+    months_in_year: int = 0
+    watches_in_day: int = 0
+    hours_in_watch: int = 0
+    minutes_in_hour: int = 0
+    seconds_in_minute: int = 0
+    leap_year: int = 0
+    leap_month: int = 0
+    leap_days: int = 0
+    leap_rule: str = ''
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return _orm_to_dict(SolarCalendar)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return _orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: dict = {"solar_calendar_uid_pk": ["solar_calendar_uid_pk"]}
+        FK: dict = {"solar_year_uid_fk":
+                    ("SOLAR_YEAR", "solar_year_uid_pk"),
+                    "year_name_gloss_common_uid_fk":
+                    ("GLOSS_COMMON", "gloss_common_uid_pk"),
+                    "season_start_uid_fk":
+                    ("SEASON", "season_uid_pk")}
+        CK: dict = {"leap_rule": EntityType.LEAP_RULE}
+        ORDER: list = ["solar_calendar_id ASC", "version_id ASC"]
+
+# Next: LunarCalendar, Months, Watches, Hours
+# Then: Scenes, Locations, Buildings, etc.
+
+
+class Season(object):
+    """
+    A Season simply defines the length of a season as proportion
+    of a year.
+    It is categoriezed as one or more of the seasons in common
+    use on Earth, which are defined as a type category.
+    Seaons also vary depending on which hemisphere they relate
+    to, which is also defined as a type.
+    Names of seasons are handled as foreign keys to a common
+    glossary item.
+    """
+    _tablename: str = "SEASON"
+    season_uid_pk: str = ''
+    year_uid_fk: str = ''
+    gloss_common_uid_fk: str = ''
+    version_id: str = ''
+    season_type: str = ''
+    hemisphere_type: str = ''
+    years_in_season: float = 0.0
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return _orm_to_dict(Season)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return _orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: dict = {"season_uid_pk": ["season_uid_pk"]}
+        FK: dict = {"year_uid_fk": ("YEAR", "year_uid_pk"),
+                    "gloss_common_uid_fk":
+                    ("GLOSS_COMMON", "gloss_common_uid_pk")}
+        CK: dict = {"season_type": EntityType.SEASON_TYPE,
+                    "hemisphere_type": EntityType.HEMISPHERE_TYPE}
+        ORDER: list = ["season_uid_pk ASC", "season_type ASC"]
 
 
 # =============================================================

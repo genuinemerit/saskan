@@ -38,18 +38,17 @@ WT = WireTap()
 
 class SaskanInstall(object):
     """Configure and install set-up for Saskan apps.
-
-    Bootstrap config and schema metadata from project directory.
-    Use current working directory (git project) to derive home directory.
+    Extend this to populate database with bootstrap data
+    if needed.
 
     @DEV:
     - Create servers, clients, queues, load balancers and so on.
-    - Save updated svc dict to a config file, then pickle it.
     """
 
     def __init__(self):
         """Initialize directories and files."""
         self.verify_bash_bin_dir()
+        """
         self.APP = path.join("/home", Path.cwd().parts[2], FI.D["APP"])
         self.create_app_space()
         self.install_app_files()
@@ -62,6 +61,7 @@ class SaskanInstall(object):
         # self.start_servers(svc)
         # self.start_clients()
         # FI.pickle_saskan(self.APP)
+        """
 
     # Helpers
     # ==============================================================
@@ -70,7 +70,7 @@ class SaskanInstall(object):
         """Verify standard bash directory exists.
         - /usr/local/bin
         """
-        files = FI.get_dir(FI.D["BIN"])
+        files = FI.scan_dir(FI.D["BIN"])
         if files is None:
             raise Exception(f"{FI.T['err_file']} {FI.D['BIN']}")
 
@@ -84,7 +84,7 @@ class SaskanInstall(object):
         Create namesapce sub-dirs.
         """
         # App dir
-        files = FI.get_dir(self.APP)
+        files = FI.scan_dir(self.APP)
         if files is not None:
             # Delete everything in app dir
             app_files = self.APP + "/*"
@@ -114,7 +114,7 @@ class SaskanInstall(object):
                      FI.D["ADIRS"]["IMG"],
                      FI.D["ADIRS"]["ONT"]):
             src_dir = path.join(Path.cwd(), sdir)
-            files = FI.get_dir(src_dir)
+            files = FI.scan_dir(src_dir)
             if files is not None:
                 FI.copy_files(path.join(self.APP, sdir), files)
 
@@ -122,7 +122,7 @@ class SaskanInstall(object):
         """Copy - python (*.py) files --> /python
         Excluding installer scripts.
         """
-        files = FI.get_dir(Path.cwd())
+        files = FI.scan_dir(Path.cwd())
         if files is None:
             raise Exception(f"{FI.T['err_file']} {Path.cwd()}")
         py_files = [
@@ -144,7 +144,7 @@ class SaskanInstall(object):
         """
         src_dir = path.join(Path.cwd(), "bash")
         py_dir = path.join(self.APP, FI.D["ADIRS"]["PY"])
-        files = FI.get_dir(src_dir)
+        files = FI.scan_dir(src_dir)
         for bf in files:
             bf_name = str(bf).split("/")[-1]
             tgt_file = path.join(FI.D["BIN"], bf_name)
@@ -371,7 +371,7 @@ www-data    5108    5106  0 18:45 ?        00:00:00 nginx: worker process
                      ng_d)
         FI.make_dir(path.join(ng_d, "stream.conf.d"))
         for cfg_p in [f for f in
-                      FI.get_dir(path.join(self.APP, FI.D["ADIRS"]["CFG"]))
+                      FI.scan_dir(path.join(self.APP, FI.D["ADIRS"]["CFG"]))
                       if "saskan_lb_" in str(f) and ".conf" in str(f)]:
             FI.copy_file(cfg_p, path.join(ng_d, "stream.conf.d"))
         # available = path.join("/etc/nginx/sites-available")

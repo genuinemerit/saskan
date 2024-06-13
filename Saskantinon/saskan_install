@@ -4,7 +4,9 @@
 
 # For this file --> chmod u=rwx,g=rx,o=rx
 # Run from local git app dir with conda "saskan" venv activated.
-# Run with sudo permissions.
+# Run with sudo permissions:  sudo bash ./saskan_install
+# This seems to not pick up the conda (mamba) env correctly.
+# Running saskan_install.py directly seems to work.
 
-python3 saskan_install.py
+python saskan_install.py
 
