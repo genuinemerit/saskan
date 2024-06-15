@@ -9,7 +9,7 @@ Saskan Data Management middleware.
 # import ast          # abstract syntax trees
 import json
 # import pendulum     # date and time
-import platform
+# import platform
 import pygame as pg
 import random
 import string
@@ -370,6 +370,8 @@ class Geom(object):
 class AppDisplay(object):
     """Static values related to constructing GUI's.
     As long as pg.display is not called, nothing will be rendered.
+    This needs to be modified once io_file is modified to read
+    from the database.
     """
     # Typesetting
     # -------------------
@@ -406,19 +408,19 @@ class AppDisplay(object):
     INFO = pg.display.Info()
     FRAME = "game_frame"  # --> c_frame.json
     MENUS = "game_menus"  # --> c_menus.json
-    PLATFORM = (
-        FI.F[FRAME]["dsc"] +
-        #  " | " + platform.platform() +
-        #  " | " + platform.architecture()[0] +
-        f" | monitor (w, h): {INFO.current_w}, {INFO.current_h}" +
-        " | Python " + platform.python_version() +
-        " | Pygame " + pg.version.ver)
+    # PLATFORM = (
+    #     FI.F[FRAME]["dsc"] +
+    #     #  " | " + platform.platform() +
+    #     #  " | " + platform.architecture()[0] +
+    #     f" | monitor (w, h): {INFO.current_w}, {INFO.current_h}" +
+    #     " | Python " + platform.python_version() +
+    #     " | Pygame " + pg.version.ver)
     # Window/overall frame for Game
     # -----------------------------
     WIN_W = round(INFO.current_w * 0.9)
     WIN_H = round(INFO.current_h * 0.9)
     WIN_MID = (WIN_W / 2, WIN_H / 2)
-    pg.display.set_caption(FI.F[FRAME]["ttl"])
+    # pg.display.set_caption(FI.F[FRAME]["ttl"])
     KEYMOD_NONE = 4096
     TIMER = pg.time.Clock()
     # Don't do display.set_mode() command in data structure
@@ -430,19 +432,19 @@ class AppDisplay(object):
     MBAR_X = WIN_W * 0.01
     MBAR_Y = WIN_H * 0.005
     MBAR_H = WIN_H * 0.04
-    MBAR_W = 240 if (WIN_W - (MBAR_X * 2)) / len(FI.M[MENUS]["menu"]) > 240\
-        else (WIN_W - (MBAR_X * 2)) / len(FI.M[MENUS]["menu"])
+    # MBAR_W = 240 if (WIN_W - (MBAR_X * 2)) / len(FI.M[MENUS]["menu"]) > 240\
+    #     else (WIN_W - (MBAR_X * 2)) / len(FI.M[MENUS]["menu"])
     MBAR_MARGIN = 6
     # Game Map (grid) window size for Saskan game
     # -------------------------------------------
-    GAMEMAP_TTL = FI.W["game_windows"]["gamemap"]["ttl"]
+    # GAMEMAP_TTL = FI.W["game_windows"]["gamemap"]["ttl"]
     GAMEMAP_X = int(round(WIN_W * 0.01))
     GAMEMAP_Y = int(round(WIN_H * 0.06))
     GAMEMAP_W = int(round(WIN_W * 0.8))
     GAMEMAP_H = int(round(WIN_H * 0.9))
     # Console window for Saskan app
     # -------------------------------
-    CONSOLE = FI.W["game_windows"]["console"]
+    # CONSOLE = FI.W["game_windows"]["console"]
     CONSOLE_X = int(round(GAMEMAP_X + GAMEMAP_W + 20))
     CONSOLE_Y = GAMEMAP_Y
     CONSOLE_W = int(round(WIN_W * 0.15))
@@ -450,17 +452,17 @@ class AppDisplay(object):
     CONSOLE_BOX = pg.Rect(CONSOLE_X, CONSOLE_Y,
                           CONSOLE_W, CONSOLE_H)
     # For now, the header/title on CONSOLE is static
-    CONSOLE_TTL_TXT = FI.W["game_windows"]["console"]["ttl"]
-    CONSOLE_TTL_IMG =\
-        F_SANS_MED.render(CONSOLE_TTL_TXT, True,
-                          Colors.CP_BLUEPOWDER,
-                          Colors.CP_BLACK)
-    CONSOLE_TTL_BOX = CONSOLE_TTL_IMG.get_rect()
-    CONSOLE_TTL_BOX.topleft = (CONSOLE_X + 5, CONSOLE_Y + 5)
+    # CONSOLE_TTL_TXT = FI.W["game_windows"]["console"]["ttl"]
+    # CONSOLE_TTL_IMG =\
+    #     F_SANS_MED.render(CONSOLE_TTL_TXT, True,
+    #                       Colors.CP_BLUEPOWDER,
+    #                       Colors.CP_BLACK)
+    # CONSOLE_TTL_BOX = CONSOLE_TTL_IMG.get_rect()
+    # CONSOLE_TTL_BOX.topleft = (CONSOLE_X + 5, CONSOLE_Y + 5)
     # Info Bar for Saskan app
     IBAR_LOC = (GAMEMAP_X, int(round(WIN_H * 0.97)))
     # Help Pages -- external web pages, displayed in a browser
-    WHTM = FI.U["uri"]["help"]
+    # WHTM = FI.U["uri"]["help"]
 
 
 #  SIMPLE DATA STRUCTURES
@@ -1886,8 +1888,46 @@ class SolarYear(object):
     class Constraints(object):
         PK: dict = {"solar_year_uid_pk": ["solar_year_uid_pk"]}
         FK: dict = {"world_uid_fk": ("WORLD", "world_uid_pk"),
-                    "lang_uid_fk": ("WORLD", "lang_uid_pk")}
+                    "lang_uid_fk": ("LANGUAGE", "lang_uid_pk")}
         ORDER: list = ["solar_year_key ASC", "version_id ASC"]
+
+
+class Season(object):
+    """
+    A Season simply defines the length of a season as proportion
+    of a year.
+    It is categoriezed as one or more of the seasons in common
+    use on Earth, which are defined as a type category.
+    Seaons also vary depending on which hemisphere they relate
+    to, which is also defined as a type.
+    Names of seasons are handled as foreign keys to a common
+    glossary item.
+    """
+    _tablename: str = "SEASON"
+    season_uid_pk: str = ''
+    solar_year_uid_fk: str = ''
+    gloss_common_uid_fk: str = ''
+    version_id: str = ''
+    season_type: str = ''
+    hemisphere_type: str = ''
+    years_in_season: float = 0.0
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return _orm_to_dict(Season)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return _orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: dict = {"season_uid_pk": ["season_uid_pk"]}
+        FK: dict = {"solar_year_uid_fk": ("SOLAR_YEAR", "solar_year_uid_pk"),
+                    "gloss_common_uid_fk":
+                    ("GLOSS_COMMON", "gloss_common_uid_pk")}
+        CK: dict = {"season_type": EntityType.SEASON_TYPE,
+                    "hemisphere_type": EntityType.HEMISPHERE_TYPE}
+        ORDER: list = ["season_uid_pk ASC", "season_type ASC"]
 
 
 class LunarYear(object):
@@ -1927,7 +1967,7 @@ class LunarYear(object):
     class Constraints(object):
         PK: dict = {"lunar_year_uid_pk": ["lunar_year_uid_pk"]}
         FK: dict = {"world_uid_fk": ("WORLD", "world_uid_pk"),
-                    "lang_uid_fk": ("WORLD", "lang_uid_pk")}
+                    "lang_uid_fk": ("LANGUAGE", "lang_uid_pk")}
         ORDER: list = ["lunar_year_key ASC", "version_id ASC"]
 
 
@@ -1986,7 +2026,7 @@ class SolarCalendar(object):
     leap_year: int = 0
     leap_month: int = 0
     leap_days: int = 0
-    leap_rule: str = ''
+    leap_rule: str = 'add_to_end_of_nth_month'
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -2007,47 +2047,48 @@ class SolarCalendar(object):
         CK: dict = {"leap_rule": EntityType.LEAP_RULE}
         ORDER: list = ["solar_calendar_id ASC", "version_id ASC"]
 
-# Next: LunarCalendar, Months, Watches, Hours
-# Then: Scenes, Locations, Buildings, etc.
 
-
-class Season(object):
+class LunarCalendar(object):
     """
-    A Season simply defines the length of a season as proportion
-    of a year.
-    It is categoriezed as one or more of the seasons in common
-    use on Earth, which are defined as a type category.
-    Seaons also vary depending on which hemisphere they relate
-    to, which is also defined as a type.
-    Names of seasons are handled as foreign keys to a common
-    glossary item.
+    A Lunar Calendar is a cultural artifact. It is associated with
+    a Lunar Year. The name of the calendar is defined as a link to
+    a common glossary item.
+    Months are defined in the Months calendar.
+    - epoch_start_offset: the first year in this system, in relationship
+      to the default "epoch start" year for the game. Need to figure
+      out how/where to define the epoch start for a given world.
+    For more detailed info on watches, hours, minutes, they are
+    handled in sepearate tables, just like months. (weeks too...)
     """
-    _tablename: str = "SEASON"
-    season_uid_pk: str = ''
-    year_uid_fk: str = ''
-    gloss_common_uid_fk: str = ''
+    _tablename: str = "LUNAR_CALENDAR"
+    lunar_calendar_uid_pk: str = ''
+    lunar_year_uid_fk: str = ''
+    year_name_gloss_common_uid_fk: str = ''
+    lunar_calendar_id: str = ''
+    lunar_calendar_desc: str = ''
     version_id: str = ''
-    season_type: str = ''
-    hemisphere_type: str = ''
-    years_in_season: float = 0.0
+    epoch_start_offset: int = 0
+    days_in_month: int = 0
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return _orm_to_dict(Season)
+        return _orm_to_dict(LunarCalendar)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
         return _orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"season_uid_pk": ["season_uid_pk"]}
-        FK: dict = {"year_uid_fk": ("YEAR", "year_uid_pk"),
-                    "gloss_common_uid_fk":
+        PK: dict = {"lunar_calendar_uid_pk": ["lunar_calendar_uid_pk"]}
+        FK: dict = {"lunar_year_uid_fk":
+                    ("LUNAR_YEAR", "lunar_year_uid_pk"),
+                    "year_name_gloss_common_uid_fk":
                     ("GLOSS_COMMON", "gloss_common_uid_pk")}
-        CK: dict = {"season_type": EntityType.SEASON_TYPE,
-                    "hemisphere_type": EntityType.HEMISPHERE_TYPE}
-        ORDER: list = ["season_uid_pk ASC", "season_type ASC"]
+        ORDER: list = ["lunar_calendar_id ASC", "version_id ASC"]
 
+
+# Next: Months, Watches, Hours
+# Then: Scenes, Locations, Buildings, etc.
 
 # =============================================================
 # Abstract Maps and Grids
@@ -3002,7 +3043,10 @@ class InitGameDB(object):
                       LandBody, LandBodyXMap,
                       LandBodyXLandBody, LandBodyXOceanBody,
                       AppConfig, Texts, Frames, Windows,
-                      Links, MenuBars, Menus, MenuItems]:
+                      Links, MenuBars, Menus, MenuItems,
+                      SolarYear, Season,
+                      LunarYear, LunarYearXMoon,
+                      SolarCalendar, LunarCalendar]:
             DB.generate_sql(model)
 
     def boot_db(self,
@@ -3049,7 +3093,10 @@ class InitGameDB(object):
                                LandBodyXLandBody,
                                LandBodyXOceanBody,
                                AppConfig, Texts, Frames, Windows,
-                               Links, MenuBars, Menus, MenuItems]:
+                               Links, MenuBars, Menus, MenuItems,
+                               SolarYear, Season,
+                               LunarYear, LunarYearXMoon,
+                               SolarCalendar, LunarCalendar]:
                 sql, values = TD.make_algo_test_data(data_model)
                 for v in values:
                     DB.execute_insert(sql, v)
