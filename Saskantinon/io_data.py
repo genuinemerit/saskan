@@ -1019,37 +1019,6 @@ class CompareRect(object):
             return False
 
 
-class SetGameData(object):
-    """
-    - Set database values (not test data).
-    - Read data from database and store in memory structures.
-    - Generate specialized data values for use in the game.
-    - See io_data_more::GetGameData() class for ideas, but
-      using DB sources/targets in all cases.
-    - See config .json files for ideas regarding additional
-      DB structures and values
-        - leave c_context and d_dirs as is
-        - convert the g_*.json files to DB tables
-        - convert the t_*.json files to DB tables
-    """
-
-    def __init__(self):
-        pass
-
-    def make_grid_key(self,
-                      p_col: int,
-                      p_row: int) -> str:
-        """Convert integer coordinates to string key
-           for use in the .grid["G"] (grid data) matrix.
-        :args:
-        - p_col: int, column number
-        - p_row: int, row number
-        :returns:
-        - str, key for specific grid-cell record, in "0n_0n" format
-        """
-        return f"{str(p_col).zfill(2)}_{str(p_row).zfill(2)}"
-
-
 # =============================================================
 # DB/ORM table definitions
 #

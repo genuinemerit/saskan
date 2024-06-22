@@ -9,6 +9,9 @@ Manage data for saskan-app using sqlite3.
 - configs/d_dirs.json
 
 Manage data for saskan_data app using sqlite3.
+This is a backend module for handling calls to the DB.
+For creation of data model, see io_data.py.
+For setting and getting data, see io_set_get_data.py.
 """
 import pendulum
 import shutil
