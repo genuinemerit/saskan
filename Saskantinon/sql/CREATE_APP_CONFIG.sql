@@ -1,0 +1,16 @@
+CREATE TABLE IF NOT EXISTS APP_CONFIG (
+config_uid_pk TEXT DEFAULT '',
+version_id TEXT DEFAULT '',
+root_dir TEXT DEFAULT '',
+bin_dir TEXT DEFAULT '',
+mem_dir TEXT DEFAULT '',
+cfg_dir TEXT DEFAULT '',
+dat_dir TEXT DEFAULT '',
+img_dir TEXT DEFAULT '',
+py_dir TEXT DEFAULT '',
+db_dir TEXT DEFAULT '',
+sch_dir TEXT DEFAULT '',
+log_dat TEXT DEFAULT '',
+mon_dat TEXT DEFAULT '',
+dbg_dat TEXT DEFAULT '',
+PRIMARY KEY (config_uid_pk));

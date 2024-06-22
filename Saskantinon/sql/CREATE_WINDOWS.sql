@@ -1,0 +1,15 @@
+CREATE TABLE IF NOT EXISTS WINDOWS (
+win_uid_pk TEXT DEFAULT '',
+frame_uid_fk TEXT DEFAULT '',
+lang_uid_fk TEXT DEFAULT '',
+version_id TEXT DEFAULT '',
+win_name TEXT DEFAULT '',
+win_title TEXT DEFAULT '',
+win_x NUMERIC DEFAULT 0.0,
+win_y NUMERIC DEFAULT 0.0,
+win_w NUMERIC DEFAULT 0.0,
+win_h NUMERIC DEFAULT 0.0,
+win_margin NUMERIC DEFAULT 0.0,
+FOREIGN KEY (frame_uid_fk) REFERENCES FRAMES(frame_uid_pk) ON DELETE CASCADE,
+FOREIGN KEY (lang_uid_fk) REFERENCES LANGUAGE(lang_uid_pk) ON DELETE CASCADE,
+PRIMARY KEY (win_uid_pk));

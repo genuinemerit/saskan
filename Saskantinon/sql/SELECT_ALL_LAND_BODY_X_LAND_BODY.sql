@@ -1,0 +1,6 @@
+SELECT land_body_x_land_body_uid_pk,
+land_body_1_uid_fk,
+land_body_2_uid_fk,
+land_land_relation_type
+FROM LAND_BODY_X_LAND_BODY
+ORDER BY land_body_x_land_body_uid_pk ASC;

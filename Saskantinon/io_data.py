@@ -1840,32 +1840,18 @@ class Moon(object):
 class SolarYear(object):
     """
     A Solar Year is always associated with a World, within a
-    given Star System.
-    For Solar years, we assume that the World's star
-    is the referene. We indicate how leaps are
-    handled in terms of fractional days.
+    given Star System and that world's star is the reference.
+    Indicate how leaps are handled in terms of fractional days.
     Revolution and rotation of the World
     can be computed based on World structure and does
     not need to be entered directly, though it may save
     a little processing to do so.
+    This is astronomical data, not a Calendar definition.
     - solar_year_span: number of solar revolutions in
       the year. Typically this is 1. But I have cultures
       (terpins) that count as 1 "year" 4 solar years. This
       way they don't account for leap days/years in the
       same way.
-    The Solar Year is not the same thing as a Calendar.
-    However, this may be the place to define some baseline
-    'Rosetta Stone' values:
-    - epoch_start: for a given culture on this world,
-      when did "time" begin? i.e, how many solar years
-      previous to the start of game time?
-    - game_start: when did the game start?
-    - game_time: how do we count the passage of time
-      for the purpose of gameplay? I am thinking something
-      like an absolute count of minutes, with one decimal,
-      since the game_start?
-    - These values are probably better suited on some kind
-      of game/civilization object.
     """
     _tablename: str = "SOLAR_YEAR"
     solar_year_uid_pk: str = ''
@@ -1894,12 +1880,12 @@ class SolarYear(object):
 
 class Season(object):
     """
-    A Season simply defines the length of a season as proportion
-    of a year.
+    A Season defines the length of a season as proportion
+    of a Solar year.
     It is categoriezed as one or more of the seasons in common
     use on Earth, which are defined as a type category.
     Seaons also vary depending on which hemisphere they relate
-    to, which is also defined as a type.
+    to, also defined as a type.
     Names of seasons are handled as foreign keys to a common
     glossary item.
     """
@@ -1942,9 +1928,10 @@ class LunarYear(object):
     its relative position per other satellites will be handled
     by computations. The LunarYear table contains the total
     number of days in the lunar year, whether it is based on
-    a single satellite or a comoposite.
+    a single satellite or a comoposite. The day is always in
+    relation to the world's rotation w/r/t iits sun.
 
-    The Lunar Year is not the same thing as a Calendar.
+    The Lunar Year is astronomical data and not a Calendar.
     """
     _tablename: str = "LUNAR_YEAR"
     lunar_year_uid_pk: str = ''
@@ -1975,6 +1962,8 @@ class LunarYearXMoon(object):
     """
     Associative keys --
     - LUNAR_YEARs (n) <--> MOONs (n)
+    This table associates Lunar Year astro data with a
+    specific moon.
     """
     _tablename: str = "LUNAR_YEAR_X_MOON"
     lunar_year_x_moon_uid_pk: str = ''
@@ -2002,12 +1991,11 @@ class SolarCalendar(object):
     A Solar Calendar is a cultural artifact. It is associated with
     a Solar Year. The name of the calendar is defined as a link to
     a common glossary item.
-    Months are defined in the Months calendar.
     - epoch_start_offset: the first year in this system, in relationship
       to the default "epoch start" year for the game. Need to figure
       out how/where to define the epoch start for a given world.
-    For more detailed info on watches, hours, minutes, they are
-    handled in sepearate tables, just like months. (weeks too...)
+    Months, Weeks, Days, Hours, etc are defined in distinct tables
+    that are associated with Solar and/or Lunar Calendars.
     """
     _tablename: str = "SOLAR_CALENDAR"
     solar_calendar_uid_pk: str = ''
@@ -2050,15 +2038,15 @@ class SolarCalendar(object):
 
 class LunarCalendar(object):
     """
-    A Lunar Calendar is a cultural artifact. It is associated with
+    A Lunar Calendar is a cultural artifact associated with
     a Lunar Year. The name of the calendar is defined as a link to
     a common glossary item.
-    Months are defined in the Months calendar.
     - epoch_start_offset: the first year in this system, in relationship
       to the default "epoch start" year for the game. Need to figure
       out how/where to define the epoch start for a given world.
-    For more detailed info on watches, hours, minutes, they are
-    handled in sepearate tables, just like months. (weeks too...)
+    Months, Weeks, Days, Hours, etc are defined in distinct tables
+    that are associated with Solar and/or Lunar Calendars.
+
     """
     _tablename: str = "LUNAR_CALENDAR"
     lunar_calendar_uid_pk: str = ''
@@ -2087,8 +2075,257 @@ class LunarCalendar(object):
         ORDER: list = ["lunar_calendar_id ASC", "version_id ASC"]
 
 
-# Next: Months, Watches, Hours
-# Then: Scenes, Locations, Buildings, etc.
+class Month(object):
+    """
+    A Month is associated with 1..n Calendars via an
+    association table.
+    - is_leap_day_month: true if the month contains leap day/s
+    - is_leap_month: true if entire month is leap days
+    """
+    _tablename: str = "MONTH"
+    month_uid_pk: str = ''
+    month_name_gloss_common_uid_fk: str = ''
+    month_id: str = ''
+    version_id: str = ''
+    days_in_month: int = 0
+    months_number: int = 0
+    is_leap_day_month: bool = False
+    is_leap_month: bool = False
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return _orm_to_dict(Month)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return _orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: dict = {"month_uid_pk": ["month_uid_pk"]}
+        FK: dict = {"month_name_gloss_common_uid_fk":
+                    ("GLOSS_COMMON", "gloss_common_uid_pk")}
+        ORDER: list = ["month_id ASC", "version_id ASC"]
+
+
+class SolarCalendarXMonth(object):
+    """
+    Associative keys --
+    - SOLAR_CALENDARs (n) <--> MONTHs (n)
+    This table associates Solar Calendar data with a
+    set of Months.
+    """
+    _tablename: str = "SOLAR_CALENDAR_X_MONTH"
+    solar_calendar_x_moon_uid_pk: str = ''
+    solar_calendar_uid_fk: str = ''
+    month_uid_fk: str = ''
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return _orm_to_dict(SolarCalendarXMonth)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return _orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: dict = {"solar_calendar_x_moon_uid_pk":
+                    ["solar_calendar_x_moon_uid_pk"]}
+        FK: dict = {"solar_calendar_uid_fk": ("SOLAR_CALENDAR",
+                    "solar_calendar_uid_pk"),
+                    "month_uid_fk": ("MONTH", "month_uid_pk")}
+
+
+class LunarCalendarXMonth(object):
+    """
+    Associative keys --
+    - LUNAR_CALENDARs (n) <--> MONTHs (n)
+    This table associates Lunar Calendar data with a
+    set of Months.
+    """
+    _tablename: str = "LUNAR_CALENDAR_X_MONTH"
+    lunar_calendar_x_moon_uid_pk: str = ''
+    lunar_calendar_uid_fk: str = ''
+    month_uid_fk: str = ''
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return _orm_to_dict(LunarCalendarXMonth)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return _orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: dict = {"lunar_calendar_x_moon_uid_pk":
+                    ["lunar_calendar_x_moon_uid_pk"]}
+        FK: dict = {"lunar_calendar_uid_fk": ("LUNAR_CALENDAR",
+                    "lunar_calendar_uid_pk"),
+                    "month_uid_fk": ("MONTH", "month_uid_pk")}
+
+
+class WeekTime(object):
+    """
+    WeekTime is associated with 1..n Calendars via an
+    association table.
+    It describes any reckoning of days that is
+    shorter than an average month. It is not necessarily
+    the 7 days we are accustomed to. It could be a fortnight,
+    a special 5 day week, or a 3 day holiday week.
+    - week_time_number: optional; order of week if multiples
+    - is_leap_week_time: true if the week contains only leap day/s
+    """
+    _tablename: str = "WEEK_TIME"
+    week_time_uid_pk: str = ''
+    week_time_name_gloss_common_uid_fk: str = ''
+    week_time_desc: str = ''
+    week_time_id: str = ''
+    version_id: str = ''
+    days_in_week_time: int = 0
+    week_time_number: int = 0
+    is_leap_week_time: bool = False
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return _orm_to_dict(WeekTime)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return _orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: dict = {"week_time_uid_pk": ["week_time_uid_pk"]}
+        FK: dict = {"week_time_name_gloss_common_uid_fk":
+                    ("GLOSS_COMMON", "gloss_common_uid_pk")}
+        ORDER: list = ["week_time_id ASC", "version_id ASC"]
+
+
+class SolarCalendarXWeekTime(object):
+    """
+    Associative keys --
+    - SOLAR_CALENDARs (n) <--> WEEK_TIMEs (n)
+    This table associates Solar Calendar data with a
+    set of Week Times.
+    """
+    _tablename: str = "SOLAR_CALENDAR_X_WEEK_TIME"
+    solar_calendar_x_week_time_uid_pk: str = ''
+    solar_calendar_uid_fk: str = ''
+    week_time_uid_fk: str = ''
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return _orm_to_dict(SolarCalendarXWeekTime)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return _orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: dict = {"solar_calendar_x_week_time_uid_pk":
+                    ["solar_calendar_x_week_time_uid_pk"]}
+        FK: dict = {"solar_calendar_uid_fk": ("SOLAR_CALENDAR",
+                    "solar_calendar_uid_pk"),
+                    "week_time_uid_fk": ("WEEK_TIME", "week_time_uid_pk")}
+
+
+class LunarCalendarXWeekTime(object):
+    """
+    Associative keys --
+    - LUNAR_CALENDARs (n) <--> WEEK_TIMEs (n)
+    This table associates Lunar Calendar data with a
+    set of Week Times.
+    """
+    _tablename: str = "LUNAR_CALENDAR_X_WEEK_TIME"
+    lunar_calendar_x_week_time_uid_pk: str = ''
+    lunar_calendar_uid_fk: str = ''
+    week_time_uid_fk: str = ''
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return _orm_to_dict(LunarCalendarXWeekTime)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return _orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: dict = {"lunar_calendar_x_week_time_uid_pk":
+                    ["lunar_calendar_x_week_time_uid_pk"]}
+        FK: dict = {"lunar_calendar_uid_fk": ("LUNAR_CALENDAR",
+                    "lunar_calendar_uid_pk"),
+                    "week_time_uid_fk": ("WEEK_TIME", "week_time_uid_pk")}
+
+
+class DayTime(object):
+    """
+    DayTime is associated with 1..n Weeks via an
+    association table.
+    It describes any reckoning of time construed in
+    hours that is longer than one hour and not longer
+    that a full day. It is not necessarily the 24 hours
+    day we are accustomed to. It could be a 12 hour
+    half-day, a 6 hour "watch" and so on.
+    - day_time_number: order of day in a week
+    - is_leap_day_time: true if the day is only a leap day
+    """
+    _tablename: str = "DAY_TIME"
+    day_time_uid_pk: str = ''
+    day_time_name_gloss_common_uid_fk: str = ''
+    day_time_desc: str = ''
+    day_time_id: str = ''
+    version_id: str = ''
+    hours_in_day_time: int = 0
+    day_time_number: int = 0
+    is_leap_day_time: bool = False
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return _orm_to_dict(DayTime)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return _orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: dict = {"day_time_uid_pk": ["day_time_uid_pk"]}
+        FK: dict = {"day_time_name_gloss_common_uid_fk":
+                    ("GLOSS_COMMON", "gloss_common_uid_pk")}
+        ORDER: list = ["day_time_id ASC", "version_id ASC"]
+
+
+class WeekTimeXDayTime(object):
+    """
+    Associative keys --
+    - WEEK_TIMEs (n) <--> DAY_TIMEs (n)
+    This table associates Week Time data with a
+    set of Day Times.
+    """
+    _tablename: str = "WEEK_TIME_X_DAY_TIME"
+    week_time_x_day_time_uid_pk: str = ''
+    week_time_uid_fk: str = ''
+    day_time_uid_fk: str = ''
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return _orm_to_dict(WeekTimeXDayTime)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return _orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: dict = {"week_time_x_day_time_uid_pk":
+                    ["week_time_x_day_time_uid_pk"]}
+        FK: dict = {"week_time_uid_fk": ("WEEK_TIME", "week_time_uid_pk"),
+                    "day_time_uid_fk": ("DAY_TIME", "day_time_uid_pk")}
+
+
+# Next: Hours, Scenes, Locations, Buildings, Sets, Characters, Inventories,
+#  Services, etc.
+# Come back and add these (and maybe more) afer doing some more work on tying
+# the front end and middle ware to the new database and data model, including
+# generation of initial set-up data. Maybe do some implementation on the
+# financial app too.
+
 
 # =============================================================
 # Abstract Maps and Grids
@@ -3046,7 +3283,12 @@ class InitGameDB(object):
                       Links, MenuBars, Menus, MenuItems,
                       SolarYear, Season,
                       LunarYear, LunarYearXMoon,
-                      SolarCalendar, LunarCalendar]:
+                      SolarCalendar, LunarCalendar,
+                      Month, LunarCalendarXMonth,
+                      SolarCalendarXMonth,
+                      WeekTime, LunarCalendarXWeekTime,
+                      SolarCalendarXWeekTime,
+                      DayTime, WeekTimeXDayTime]:
             DB.generate_sql(model)
 
     def boot_db(self,
@@ -3096,7 +3338,12 @@ class InitGameDB(object):
                                Links, MenuBars, Menus, MenuItems,
                                SolarYear, Season,
                                LunarYear, LunarYearXMoon,
-                               SolarCalendar, LunarCalendar]:
+                               SolarCalendar, LunarCalendar,
+                               Month, LunarCalendarXMonth,
+                               SolarCalendarXMonth,
+                               WeekTime, LunarCalendarXWeekTime,
+                               SolarCalendarXWeekTime,
+                               DayTime, WeekTimeXDayTime]:
                 sql, values = TD.make_algo_test_data(data_model)
                 for v in values:
                     DB.execute_insert(sql, v)
