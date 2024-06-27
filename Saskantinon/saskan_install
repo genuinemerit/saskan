@@ -3,10 +3,19 @@
 # module: /bash/saskan_install
 
 # For this file --> chmod u=rwx,g=rx,o=rx
-# Run from local git app dir with conda "saskan" venv activated.
-# Run with sudo permissions:  sudo bash ./saskan_install
-# This seems to not pick up the conda (mamba) env correctly.
-# Running saskan_install.py directly seems to work.
+# Run with sudo permissions:  sudo bash saskan_install
 
-python saskan_install.py
+# no... trying to avoid this...
+# Run from local git app dir with conda "saskan" venv activated?
+# Hmmm.. this seems to not pick up the conda (mamba) env correctly?.
+# Running saskan_install.py directly seems to work?
+# Yeah... having the same issues.
+# mamba only exists under the local (dave) account. can't
+# activate it when in sudo mode. catch-22.  Without it, the
+# python script doesn't run.  But if I run it as dave, it
+# craps out on writing to
+
+# mamba init
+# mamba activate saskan
+python /home/dave/Dropbox/GitHub/saskan-app/Saskantinon/saskan_install.py
 

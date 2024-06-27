@@ -18,8 +18,10 @@ from pathlib import Path
 from pprint import pprint as pp  # noqa: F401
 
 from io_shell import ShellIO
+from io_set_get import GetData
 
 SI = ShellIO()
+GD = GetData()
 
 
 class FileIO(object):
@@ -30,16 +32,20 @@ class FileIO(object):
         Move all data except necessary bootstrap info (d_dirs) to DB.
         And include bootstrap info in DB.
         """
-        self.D: dict = self.get_config("saskan/config", "d_dirs")
-        # self.T: dict = self.get_config("saskan/config", "t_texts_en")
-        # self.F: dict = self.get_config("saskan/config", "g_frame")
-        # self.M: dict = self.get_config("saskan/config", "g_menus")
-        # self.W: dict = self.get_config("saskan/config", "g_windows")
-        # self.U: dict = self.get_config("saskan/config", "g_uri")
-        # self.S: dict = self.get_config("saskan/schema", "svc_schema")
-        # self.G: dict = self.get_config("saskan/schema", "saskan_geo")
-        # self.A: dict = self.get_config("saskan/schema", "saskan_astro")
-        # self.T: dict = self.get_config("saskan/schema", "saskan_time")
+        self.BOOT = self.get_bootstrap()
+        if self.BOOT:
+            self.DB_CFG = self.get_db_config()
+            if self.DB_CFG:
+                self.DIR = GD.get_app_config(self)
+            # self.T: dict = self.get_bootstrap("saskan/config", "t_texts_en")
+            # self.F: dict = self.get_bootstrap("saskan/config", "g_frame")
+            # self.M: dict = self.get_bootstrap("saskan/config", "g_menus")
+            # self.W: dict = self.get_bootstrap("saskan/config", "g_windows")
+            # self.U: dict = self.get_bootstrap("saskan/config", "g_uri")
+            # self.S: dict = self.get_bootstrap("saskan/schema", "svc_schema")
+            # self.G: dict = self.get_bootstrap("saskan/schema", "saskan_geo")
+            # self.A: dict = self.get_bootstrap("saskan/schema", "saskan_astro")
+            # self.T: dict = self.get_bootstrap("saskan/schema", "saskan_time")
 
     # Read methods
     # ==============================================================
@@ -196,25 +202,37 @@ class FileIO(object):
             raise (err)
         return obj
 
-    def get_config(self,
-                   p_file_dir: str,
-                   p_cfg_nm: str) -> dict:
-        """Read configuration data from APP config dir.
-        :args:
-        - p_file_dir (str): local app path for file
-        - p_cfg_nm (str): name of config file to read
+    def get_bootstrap(self) -> dict:
+        """Read bootstap config data from APP config dir.
         :returns:
-        - (dict) Config file values as python dict, or None.
+        - (dict) Bootstrap values as python dict else None.
         """
         cfg = dict()
-        p_cfg_nm = p_cfg_nm.lower().replace(".json", "") + ".json"
         try:
-            cfg_j = self.get_file(path.join(
-                SI.get_cwd_home(), p_file_dir, p_cfg_nm))
-            cfg = json.loads(cfg_j)
+            cfg = self.get_json_file(path.join(
+                SI.get_cwd_home(),
+                "saskan/config/b_bootstrap.json"))
             return cfg
         except Exception as err:
-            raise (err)
+            print(err)
+            return None
+
+    def get_db_config(self) -> dict:
+        """Set the database configuration from bootstrap data.
+        :returns:
+        - (dict) DB config values as python dict else None."""
+        cfg = dict()
+        try:
+            cfg["sql"] = path.join(SI.get_cwd_home(),
+                                   self.BOOT['app_dir'],
+                                   self.BOOT['db_dir'])
+            cfg["main_db"] = path.join(cfg["sql"], self.BOOT['main_db'])
+            cfg["version"] = self.BOOT['db_version']
+            cfg["bkup_db"] = path.join(cfg["sql"], self.BOOT['bkup_db'])
+            return cfg
+        except Exception as err:
+            print(err)
+            return None
 
     # Write methods
     # ==============================================================

@@ -4,6 +4,14 @@
 :author:    GM (genuinemerit @ pm.me)
 
 Saskan Data Management middleware.
+
+The SQL and DB create methods in this module
+require that an instantiated DB object be passed
+into them. This should be done in most cases from
+the saskan_install module, though it could be
+simulated in a terminal.
+
+This is necessary to prevent circular imports.
 """
 
 # import ast          # abstract syntax trees
@@ -23,11 +31,9 @@ from pprint import pformat as pf    # noqa: F401
 from pprint import pprint as pp     # noqa: F401
 # from typing import Tuple, Union
 
-from io_db import DataBase
 from io_file import FileIO
 from io_shell import ShellIO
 
-DB = DataBase()
 FI = FileIO()
 SI = ShellIO()
 
@@ -1036,7 +1042,7 @@ class CompareRect(object):
 # =============================================================
 def _orm_to_dict(ORM: object) -> dict:
     """Convert object to an OrderedDict.
-    This ensures order of attributes matches SQL order in DB.
+    This ensures order of attributes matches SQL order in the database.
     :args:
     - ORM object
     """
@@ -1432,11 +1438,13 @@ class GalacticCluster(object):
     a boundary box.
 
     @DEV:
-    - This and following models use GROUPed data structures. Those
-      are not supported natively in SQLite. Consider simplifying and
-      just defining columns in the model that are not GROUPed.
+    - This and other models use GROUPed data structures.  These are
+      cases where I used customized data structures to represent a
+      database column. This type of thing is not supported natively
+      in SQLite. Consider simplifying and insetad defining columns
+      in the model that are not GROUPed.
     - An alternative would be to convert the grouped set back into
-      the data structure object when reading from the DB.
+      the data structure object when reading from the database.
     """
     _tablename: str = "GALACTIC_CLUSTER"
     galactic_cluster_uid_pk: str = ''
@@ -3233,8 +3241,12 @@ class InitGameDB(object):
         """
         pass
 
-    def create_sql(self):
-        """Pass data object to create SQL files."""
+    def create_sql(self,
+                   DB: object):
+        """Pass data object to create SQL files.
+        :args:
+        - DB - current instance of the DB object.
+        """
         for model in [Backup, Universe, ExternalUniv,
                       GalacticCluster, Galaxy,
                       StarSystem, World, Moon,
@@ -3261,19 +3273,21 @@ class InitGameDB(object):
             DB.generate_sql(model)
 
     def boot_db(self,
+                DB: object,
                 p_create_test_data: bool = False,
                 p_backup_archive: bool = False):
         """
         Drops and recreates empty all DB tables.
         This is a destructive operation.
         - Backup DB if it exists.
-        - Overlay .BAK copy of DB.
+        - Overlay .BAK copy of database.
         Do not wipe out any existing archived DB's.
         - Logged records appear in .BAK, not in the
           refreshed database.
         :args:
+        - DB - current instance of the DB object.
         - p_create_test_data: bool. If True, create test data.
-        - p_backup_archive: bool. If True, archive DB.
+        - p_backup_archive: bool. If True, archive database.
         """
         if p_backup_archive:
             file_path = Path(DB.DB)
@@ -3281,9 +3295,9 @@ class InitGameDB(object):
                 DB.backup_db()
                 DB.archive_db()
 
-        sql_list = [sql.name for sql in FI.scan_dir(DB.DB_PATH, 'DROP*')]
+        sql_list = [sql.name for sql in FI.scan_dir(DB.SQL, 'DROP*')]
         DB.execute_dml(sql_list, p_foreign_keys_on=False)
-        sql_list = [sql.name for sql in FI.scan_dir(DB.DB_PATH, 'CREATE*')]
+        sql_list = [sql.name for sql in FI.scan_dir(DB.SQL, 'CREATE*')]
         DB.execute_dml(sql_list, p_foreign_keys_on=True)
 
         if p_create_test_data:
@@ -3339,9 +3353,11 @@ class TestData(object):
 # Abstracted 'private' methods
 # =============================================================
     def _get_data_model(self,
+                        DB: object,
                         p_data_model: object) -> bool:
         """Get data model info from object and CREATE SQL file.
         :args:
+        - DB - current instance of the DB object.
         - p_data_model: object.
         :sets:
         - class level attributes
@@ -3411,11 +3427,12 @@ class TestData(object):
         return v
 
     def _get_fk_value(self,
+                      DB: object,
                       p_col_nm: str) -> list:
         """Return test data value for a foreign key field
         :args:
+        - DB - current instance of the DB object.
         - p_col_nm: str. Column name.
-        - p_row_num: int. Row number.
         :returns:
         - value from another table
         """
@@ -3482,17 +3499,19 @@ class TestData(object):
 # 'Public' methods
 # =============================================================
     def make_algo_test_data(self,
+                            DB: object,
                             p_data_model: object) -> tuple:
         """
         Create test data row(s) for specified table.
         :args:
+        - DB: object. Current instance of the DB object.
         - p_data_model: object. Data model object
         :returns: tuple
         - Name of SQL script to insert test data.
         - List of tuple of values to be inserted.
         """
         full_list: list = []
-        self._get_data_model(p_data_model)
+        self._get_data_model(DB, p_data_model)
 
         print(f"\nGenerating test data for:  {self.table_name}...")
 
@@ -3511,7 +3530,8 @@ class TestData(object):
                 elif col_nm in self.ck_constraints.keys():
                     row_list[cx] = random.choice(self.ck_constraints[col_nm])
                 elif col_nm in self.fk_constraints.keys():
-                    row_list[cx] = random.choice(self._get_fk_value(col_nm))
+                    row_list[cx] =\
+                        random.choice(self._get_fk_value(DB, col_nm))
 
                 elif col_nm.startswith('file_'):
                     row_list[cx] = self._get_file_value()

@@ -4,8 +4,9 @@
 :author:    GM (genuinemerit @ pm.me)
 
 Shell services and utilities.
-Service Activator / Deactivator class for Data Schema services.
-Generic system command runner.
+- Service Activator / Deactivator class for Data Schema services.
+- Generic system command runner.
+- Some basic IO utilities so we don't have to import FileIO everywhere.
 """
 import hashlib      # generate hash keys
 import inspect      # getdoc
@@ -45,6 +46,27 @@ class ShellIO(object):
         :returns: (str): pendulum datetime object for US East.
         """
         return pendulum.now('America/New_York')
+
+    @classmethod
+    def get_file(cls,
+                 p_path: str) -> str:
+        """Read in an entire file and return its contents.
+        We assume that this file type is text (string or bytes).
+
+        Args:
+            p_path (str): Legit path to file location.
+        Return
+            File content (Text))
+        """
+        content: str = ''
+        try:
+            if Path(p_path).exists():
+                with open(p_path, "r") as f:
+                    content = f.read().strip()
+                f.close()
+            return content
+        except Exception as err:
+            raise (err)
 
     @classmethod
     def get_iso_time_stamp(cls) -> str:
@@ -247,6 +269,26 @@ class ShellIO(object):
         while response not in ('y', 'n'):
             response = input('Continue? (y/n): ')
         return response
+
+    @classmethod
+    def write_file(cls,
+                   p_path: str,
+                   p_data,
+                   p_file_type: str = "w+"):
+        """Write or overwrite data to specified file.
+        Create file if it does not already exist.
+
+        Args:
+            p_path (str): Legit path to a file location.
+            p_data (str): Text to append to the file.
+            p_file_type (str): default = "w+"
+        """
+        try:
+            f = open(p_path, p_file_type)
+            f.write(p_data)
+            f.close()
+        except Exception as err:
+            raise (err)
 
     def rpt_running_jobs(self,
                          p_job_nm: str):

@@ -23,10 +23,10 @@ from os import path
 # from pathlib import Path
 from pprint import pprint as pp    # noqa: F401
 
-from io_file import FileIO
+# from io_file import FileIO
 from io_shell import ShellIO
 
-FI = FileIO()
+# FI = FileIO()
 SI = ShellIO()
 
 
@@ -34,14 +34,13 @@ class DataBase(object):
     """Support Sqlite3 database setup, usage, maintenance.
     """
 
-    def __init__(self):
+    def __init__(self,
+                 p_db_cfg: dict):
         """Initialize DataBase object."""
-        self.DB_PATH = path.join(FI.D['APP']['root'],
-                                 FI.D['APP']['dirs']['db'])
-        self.DATA_PATH = path.join(FI.D['APP']['root'],
-                                   FI.D['APP']['dirs']['dat'])
-        self.DB = path.join(self.DB_PATH, FI.D['DB']['main'])
-        self.DB_BKUP = path.join(self.DB_PATH, FI.D['DB']['bkup'])
+        self.SQL = p_db_cfg['sql']
+        self.DB = p_db_cfg['main_db']
+        self.DB_BKUP = p_db_cfg['bkup_db']
+        self.DB_VERS = p_db_cfg['version']
         self.db_conn = None    # type: ignore
 
     # Generate SQL files from data models
@@ -252,7 +251,7 @@ class DataBase(object):
 
         sql = f"CREATE TABLE IF NOT EXISTS {p_table_nm} " +\
               f"(\n{''.join(sqlns)});\n"
-        FI.write_file(path.join(self.DB_PATH, f"CREATE_{p_table_nm}.sql"), sql)
+        SI.write_file(path.join(self.SQL, f"CREATE_{p_table_nm}.sql"), sql)
 
         return col_names
 
@@ -266,8 +265,8 @@ class DataBase(object):
         - SQL file to [APP]/sql/DROP_[p_table_name].sql
         """
         sql = f"DROP TABLE IF EXISTS {p_table_name};\n"
-        file_path = path.join(self.DB_PATH, f"DROP_{p_table_name}.sql")
-        FI.write_file(file_path, sql)
+        file_path = path.join(self.SQL, f"DROP_{p_table_name}.sql")
+        SI.write_file(file_path, sql)
 
     def generate_insert_sql(self,
                             p_table_name: str,
@@ -284,8 +283,8 @@ class DataBase(object):
         columns = ',\n'.join(p_col_names)
         sql = f"INSERT INTO {p_table_name} (\n{columns}) " +\
               f"VALUES ({placeholders});\n"
-        file_path = path.join(self.DB_PATH, f"INSERT_{p_table_name}.sql")
-        FI.write_file(file_path, sql)
+        file_path = path.join(self.SQL, f"INSERT_{p_table_name}.sql")
+        SI.write_file(file_path, sql)
 
     def generate_select_all_sql(self,
                                 p_table_name: str,
@@ -309,8 +308,8 @@ class DataBase(object):
 
         sql += ';\n'
 
-        file_path = path.join(self.DB_PATH, f"SELECT_ALL_{p_table_name}.sql")
-        FI.write_file(file_path, sql)
+        file_path = path.join(self.SQL, f"SELECT_ALL_{p_table_name}.sql")
+        SI.write_file(file_path, sql)
 
     def generate_select_pk_sql(self,
                                p_table_name: str,
@@ -338,8 +337,8 @@ class DataBase(object):
 
         sql += ';\n'
 
-        file_path = path.join(self.DB_PATH, f"SELECT_BY_PK_{p_table_name}.sql")
-        FI.write_file(file_path, sql)
+        file_path = path.join(self.SQL, f"SELECT_BY_PK_{p_table_name}.sql")
+        SI.write_file(file_path, sql)
 
     def generate_update_sql(self,
                             p_table_name: str,
@@ -366,8 +365,8 @@ class DataBase(object):
         sql = f"UPDATE {p_table_name} SET\n{set_columns}\n" +\
               f"WHERE {pk_conditions};\n"
 
-        file_path = path.join(self.DB_PATH, f"UPDATE_{p_table_name}.sql")
-        FI.write_file(file_path, sql)
+        file_path = path.join(self.SQL, f"UPDATE_{p_table_name}.sql")
+        SI.write_file(file_path, sql)
 
     def generate_delete_sql(self,
                             p_table_name: str,
@@ -386,8 +385,8 @@ class DataBase(object):
         pk_conditions =\
             ' AND '.join([f'{col}=?' for col in p_constraints['PK']])
         sql = f"DELETE FROM {p_table_name}\nWHERE {pk_conditions};\n"
-        file_path = path.join(self.DB_PATH, f"DELETE_{p_table_name}.sql")
-        FI.write_file(file_path, sql)
+        file_path = path.join(self.SQL, f"DELETE_{p_table_name}.sql")
+        SI.write_file(file_path, sql)
 
     def generate_sql(self,
                      p_data_model: object):
@@ -458,7 +457,10 @@ class DataBase(object):
         self.SASKAN_DB = self.DB if p_db_nm == 'arcv'\
             else self.DB_BKUP if p_db_nm == 'bkup'\
             else self.DB
-        self.db_conn = sq3.connect(self.SASKAN_DB)  # type: ignore
+        try:
+            self.db_conn = sq3.connect(self.SASKAN_DB)  # type: ignore
+        except Exception as err:
+            raise (err)
         self.__set_fk_pragma(p_foreign_keys_on)
         self.cur: sq3.Cursor = self.db_conn.cursor()
 
@@ -474,10 +476,8 @@ class DataBase(object):
         """
         sql_nm = p_sql_nm.replace('.sql', '').replace('.SQL', '')
         sql_nm = sql_nm.upper() + '.sql'
-        sql_path = path.join(FI.D['APP']['root'],
-                             FI.D['APP']['dirs']['db'],
-                             sql_nm)
-        SQL: str = FI.get_file(sql_path)
+        sql_path = path.join(self.SQL, sql_nm)
+        SQL: str = SI.get_file(sql_path)
         if SQL == '':
             raise Exception(f"SQL file {sql_nm} is empty.")
         return SQL
@@ -650,7 +650,7 @@ class DataBase(object):
            that is, assigned as parameters rather than hard-coded in script.
            Values are the column names in specified order.
            For now assume that:
-            - INSERTs will always expect full list of values
+            - Expect full list of values satisfying one row
             - caller knows what values to provide and in what order
         :args:
         - p_sql_nm (str): Name of external SQL file
@@ -732,7 +732,7 @@ class DataBase(object):
         """Copy main DB file to archive location."""
         bkup_dttm = pendulum.now().format('YYYYMMDD_HHmmss')
         file_nm = 'SASKAN_' + bkup_dttm + '.arcv'
-        bkup_nm = path.join(self.DB_PATH, file_nm)
+        bkup_nm = path.join(self.SQL, file_nm)
         self.execute_insert(
             'INSERT_BACKUP',
             (SI.get_uid(),
