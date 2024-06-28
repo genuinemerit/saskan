@@ -20,7 +20,7 @@ from copy import copy
 from os import path
 from pprint import pprint as pp    # noqa: F401
 
-from method_file import FileMethods
+from method_files import FileMethods
 from method_shell import ShellMethods
 
 FM = FileMethods()

@@ -1,18 +1,13 @@
 #!python
 """Saskan Apps file installation procedure.
-:module:    install_app.py
-:class:     SaskanInstall/0
+:module:    app_install.py
+:class:     InstallApp/0
 :author:    GM <genuinemerit @ pm.me>
 
-(saskan) sudo ~/../Saskantinon/saskan_install
-or from python terminal session:
-- comment out the main() call.
-- from saskan_install import SaskanInstall
-- SI = SaskanInstall()
-
-N.B.:
-- If running from python terminal, it will request sudo password.
-- If running from bash script, must run it under sudo account.
+Command line installer.
+From local git repo, Saskantinon directory:
+- mamba activate sasaken
+- python install_app.py
 
 @DEV:
 - If/when I get back to the service architecture...
@@ -24,18 +19,23 @@ import json
 from os import path
 from pprint import pprint as pp  # noqa: F401
 
-from methods_shell import ShellMethods
-from methods_files import FileMethods
-from saskan_io.get_data import GetData
-from saskan_io.set_data import SetData
+from method_configs import ConfigMethods
+from method_shell import ShellMethods
+from method_files import FileMethods
+from data_get import GetData
+from data_set import SetData
+from data_base import DataBase
+from data_model import AppConfig, InitGameDB
 
+AC = AppConfig()
+CM = ConfigMethods()
 SM = ShellMethods()
 FM = FileMethods()
 GD = GetData()
 SD = SetData()
 
 
-class InstallApp(object):
+class AppInstall(object):
     """Configure and install Saskan apps.
 
     @DEV:
@@ -44,33 +44,31 @@ class InstallApp(object):
 
     def __init__(self):
         """Initialize database, directories and files."""
-        print("\n\nSaskan Installer tasks...")
+        print("\n\nSaskan Installer tasks\n=================")
         self.install_bootstrap_data()
-        self.BOOT = self.get_bootstrap()
-        self.DB_CFG = self.get_db_config()
-        print("* Bootstrap data and basic app dirs installed.")
-        self.install_database(self.DB_CFG)
+        self.BOOT, self.DB_CFG = CM.get_configs()
+        print("* Bootstrap and DB config metadata defined:")
+        pp((self.BOOT, self.DB_CFG))
+        self.install_database()
         SD.set_app_config(self.DB_CFG)
         SD.set_texts(self.BOOT, self.DB_CFG)
-        self.DIR = GD.get_app_config(self)
+        self.DIR = GD.get_app_config(self.DB_CFG)
         self.verify_system_dirs()
         self.install_app_dirs()
         self.install_app_files()
-        # NEXT: install other database tables,
-        # using SetData / GetData calls. Probably
-        # use json files from the git Schema directory
-        # to do this in most cases. May be some opportunities
-        # to use ChatGPT or other AI tools to automate some
-        # of the work. Also experiment with using CLI
-        # interfaces and maybe even GUI interfaces to drive
-        # some of the story-telling aspects. Start with the
-        # the most static stuff -- the GUI configuration data,
-        # then move into the story-/world-building stuff.
-        """
-        Come back to service architecture later.
-        It is interesting, but a big rabbit hole
-         to go down!  When I'm ready, investigate
-         using HAProxy to manage the service architecture.
+        # NEXT: Install other database tables,
+        #   using SetData / GetData calls. Probably
+        #   use json files from the git Schema directory.
+        # May be some opportunities to use AI tools.
+        # Experiment with using CLI interfaces and
+        #   GUI interfaces to drive story-telling.
+        # Start with static app config data, then work on
+        #   world-building stuff.
+        #
+        # Come back to service architecture later.
+        # It is interesting, but a big rabbit hole
+        #  to go down!  When I'm ready, investigate
+        #  using HAProxy to manage the service architecture.
         # self.set_ports()
         # self.save_svc_config()
         # self.create_load_bals()
@@ -78,7 +76,6 @@ class InstallApp(object):
         # self.start_servers(svc)
         # self.start_clients()
         # FM.pickle_saskan(self.APP)
-        """
 
     # Helpers
     # ==============================================================
@@ -115,47 +112,14 @@ class InstallApp(object):
         FM.make_dir(config_d)
         FM.make_dir(sql_d)
         FM.write_file(path.join(config_d, "b_bootstrap.json"), boot_j)
-
-    def set_bootstrap(self) -> dict:
-        """Read bootstap config data from APP config dir.
-        :returns:
-        - (dict) Bootstrap values as python dict else None.
-        """
-        cfg = dict()
-        try:
-            cfg = self.get_json_file(path.join(
-                SM.get_cwd_home(),
-                "saskan/config/b_bootstrap.json"))
-            return cfg
-        except Exception as err:
-            print(err)
-            return None
-
-    def set_db_config(self) -> dict:
-        """Set the database configuration from bootstrap data.
-        :returns:
-        - (dict) DB config values as python dict else None."""
-        cfg = dict()
-        try:
-            cfg["sql"] = path.join(SM.get_cwd_home(),
-                                   self.BOOT['app_dir'],
-                                   self.BOOT['db_dir'])
-            cfg["main_db"] = path.join(cfg["sql"], self.BOOT['main_db'])
-            cfg["version"] = self.BOOT['db_version']
-            cfg["bkup_db"] = path.join(cfg["sql"], self.BOOT['bkup_db'])
-            return cfg
-        except Exception as err:
-            print(err)
-            return None
+        print("* Bootstrap file created.")
 
     def install_database(self):
         """Copy SQL files to app sql directory.
         This will delete any existing copies of the SQL files and
           database and replace with new ones.
         """
-        from database import DataBase
         DB = DataBase(self.DB_CFG)
-        from io_data import InitGameDB
         IGDB = InitGameDB()
         IGDB.create_sql(DB)
         IGDB.boot_db(DB)
@@ -169,11 +133,11 @@ class InstallApp(object):
         :args:
         - FI: current instance of FileIO class.
         """
-        for sys_dir in ("bin_dir", "mem_dir"):
-            files = FM.scan_dir(FM.DIR[sys_dir])
+        for sys_dir in ["mem_dir"]:
+            files = FM.scan_dir(self.DIR[sys_dir])
             if files in ([], None):
-                txt = GetData.get_text("en", "err_file")
-                raise Exception(f"{txt} {FM.DIR[sys_dir]}")
+                txt = GD.get_text("en", "err_file", self.DB_CFG)
+                raise Exception(f"{txt} {self.DIR[sys_dir]}")
         print("* System directories verified.")
 
     def install_app_dirs(self):
@@ -187,7 +151,7 @@ class InstallApp(object):
             if a_files is not None:
                 # wipe and remove if already exists
                 a_files += "/*"
-                txt = GetData.get_text("en", "err_process")
+                txt = GD.get_text("en", "err_process", self.DB_CFG)
                 ok, result = SM.run_cmd([f"sudo rm -rf {a_files}"])
                 if not ok:
                     raise Exception(f"{txt} {result}")
@@ -195,9 +159,10 @@ class InstallApp(object):
                 if not ok:
                     raise Exception(f"{txt} {result}")
 
-        for a_dir in ('dat_dir', 'dbg_dat', 'img_dir',
-                      'log_dat', 'mon_dat', 'py_dir', 'sch_dir'):
-            app_dir = path.join(FM.DIR['root_dir'], FM.DIR[a_dir])
+        a_dirs = [d for d in list(AC.to_dict()['APP_CONFIG'].keys())
+                  if '_dir' in d and d not in ['mem_dir', 'root_dir']]
+        for d in a_dirs:
+            app_dir = path.join(self.DIR['root_dir'], self.DIR[d])
             _wipe_and_remove()
             FM.make_dir(app_dir)
             FM.make_executable(app_dir)
@@ -205,7 +170,7 @@ class InstallApp(object):
             FM.make_writable(app_dir)
         print("* Other app directories installed.")
 
-    def install_app_files(self,):
+    def install_app_files(self):
         """Copy app files to app directory.
         For python files, don't copy the install module.
         """
@@ -238,4 +203,4 @@ class InstallApp(object):
 
 
 if __name__ == "__main__":
-    SI = InstallApp()
+    AI = AppInstall()

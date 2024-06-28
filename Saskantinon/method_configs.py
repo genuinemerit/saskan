@@ -10,11 +10,11 @@ author:    GM <genuinemerit @ pm.me>
 from os import path
 from pprint import pprint as pp  # noqa: F401
 
-from methods_shell import ShellMethods
-from io_get_data import GetData
+from method_shell import ShellMethods
+from method_files import FileMethods
 
 SM = ShellMethods()
-GD = GetData()
+FM = FileMethods()
 
 
 class ConfigMethods(object):
@@ -24,18 +24,24 @@ class ConfigMethods(object):
     def __init__(self):
         """Initialize FileIO object.
         """
-        self.BOOT = self.get_bootstrap()
-        self.DB_CFG = self.get_db_config()
-        self.DIR = GD.get_app_config(self)
+        self.BOOT = self.set_bootstrap()
+        self.DB_CFG = self.set_db_config()
 
-    def get_bootstrap(self) -> dict:
-        """Read bootstap config data from APP config dir.
+    def get_configs(self) -> tuple:
+        """Get configs from bootstrap file.
+        :returns:
+        - (tuple) Bootstrap and DB config values.
+        """
+        return (self.BOOT, self.DB_CFG)
+
+    def set_bootstrap(self) -> dict:
+        """Set bootstap config data from APP config dir.
         :returns:
         - (dict) Bootstrap values as python dict else None.
         """
         cfg = dict()
         try:
-            cfg = self.get_json_file(path.join(
+            cfg = FM.get_json_file(path.join(
                 SM.get_cwd_home(),
                 "saskan/config/b_bootstrap.json"))
             return cfg
@@ -43,7 +49,7 @@ class ConfigMethods(object):
             print(err)
             return None
 
-    def get_db_config(self) -> dict:
+    def set_db_config(self) -> dict:
         """Set the database configuration from bootstrap data.
         :returns:
         - (dict) DB config values as python dict else None."""

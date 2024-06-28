@@ -18,10 +18,6 @@ import subprocess as shl
 from os import environ, path, system
 from pathlib import Path
 
-from io_analysis import Analysis  # type: ignore
-
-AL = Analysis()
-
 
 class ShellMethods(object):
     """Run Controller-related commands."""

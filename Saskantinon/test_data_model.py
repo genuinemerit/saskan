@@ -1,6 +1,6 @@
 """
 
-:module:    io_data_model.py
+:module:    test_data_model.py
 :author:    GM (genuinemerit @ pm.me)
 
 Saskan Data Management middleware.
@@ -13,7 +13,7 @@ import string
 from pprint import pformat as pf    # noqa: F401
 from pprint import pprint as pp     # noqa: F401
 
-from io_structs import EntityType
+from data_structs import EntityType
 from method_files import FileMethods
 from method_shell import ShellMethods
 
@@ -21,7 +21,7 @@ FM = FileMethods()
 SM = ShellMethods()
 
 
-class TestData(object):
+class TestDataModel(object):
     """
     Managem test data rows on database
     """

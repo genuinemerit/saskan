@@ -11,26 +11,15 @@ from collections import OrderedDict
 from pprint import pformat as pf    # noqa: F401
 from pprint import pprint as pp     # noqa: F401
 
-from methods_shell import ShellMethods
-from methods_file import FileMethods
-from database import DataBase
-
-# re: io_data:
-# For data models, import specific ones
-# per need. For example, when setting or getting
-# records relating to config data, import the
-# io_data classes like AppConfig, Texts, Frames
-# and so on
-# When reading data from the DB, there are two
-# layers to consider:
-# 1. Pull records in and filtering them; this is
-#    done using io_db and io_data classes.
-# 2. Translate into object formats when needed
-#    to be used in the app; in this case, will
-#    import io_data classes like GamePlane and Struct
+from method_shell import ShellMethods
+from method_files import FileMethods
+from data_base import DataBase
+from data_model import AppConfig, Texts
 
 SM = ShellMethods()
 FM = FileMethods()
+AC = AppConfig()
+TX = Texts()
 
 
 class SetData(object):
@@ -60,13 +49,10 @@ class SetData(object):
         """
         DB = DataBase(DB_CFG)
         sql = 'INSERT_APP_CONFIG'
-        from io_data import AppConfig
-        AC = AppConfig()
         data = OrderedDict(AC.to_dict()['APP_CONFIG'])
         data['config_uid_pk'] = SM.get_uid()
         data['version_id'] = '0.1'
         data['root_dir'] = "/home/dave/saskan"
-        data['bin_dir'] = "/usr/local/bin"
         data['mem_dir'] = "/dev/shm"
         data['cfg_dir'] = "config"
         data['dat_dir'] = "data"
@@ -95,8 +81,6 @@ class SetData(object):
         texts_j = path.join(BOOT['git_source'], 'config',
                             f"t_texts_{BOOT['language']}.json")
         texts = FM.get_json_file(texts_j)
-        from io_data import Texts
-        TX = Texts()
         data = OrderedDict(TX.to_dict()['TEXTS'])
         for tx_name, tx_value in texts.items():
             data['text_uid_pk'] = SM.get_uid()

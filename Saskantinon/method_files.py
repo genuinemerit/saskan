@@ -13,34 +13,23 @@ import pickle
 import shutil
 
 from numbers_parser import Document as NumbersDoc
-from os import path, remove, symlink, system
+from os import remove, symlink, system
 from pathlib import Path
 from pprint import pprint as pp  # noqa: F401
 
-from io_shell import ShellIO
-from io_set_get import GetData
+from method_shell import ShellMethods
 
-SI = ShellIO()
-GD = GetData()
+SM = ShellMethods()
 
 
 class FileMethods(object):
     """File IO utilities.
-    @DEV:
-    - Consider more logical modularization, i.e.,
-      - Put classless generic methods in saskan_methods package
-      - Put boot-related stuff in saskan_boot package
-      - Put config set-up in saskan_io package
     """
 
     def __init__(self):
         """Initialize FileIO object.
         """
-        self.BOOT = self.get_bootstrap()
-        if self.BOOT:
-            self.DB_CFG = self.get_db_config()
-            if self.DB_CFG:
-                self.DIR = GD.get_app_config(self)
+        pass
 
     # Read methods
     # ==============================================================
@@ -197,38 +186,6 @@ class FileMethods(object):
             raise (err)
         return obj
 
-    def get_bootstrap(self) -> dict:
-        """Read bootstap config data from APP config dir.
-        :returns:
-        - (dict) Bootstrap values as python dict else None.
-        """
-        cfg = dict()
-        try:
-            cfg = self.get_json_file(path.join(
-                SI.get_cwd_home(),
-                "saskan/config/b_bootstrap.json"))
-            return cfg
-        except Exception as err:
-            print(err)
-            return None
-
-    def get_db_config(self) -> dict:
-        """Set the database configuration from bootstrap data.
-        :returns:
-        - (dict) DB config values as python dict else None."""
-        cfg = dict()
-        try:
-            cfg["sql"] = path.join(SI.get_cwd_home(),
-                                   self.BOOT['app_dir'],
-                                   self.BOOT['db_dir'])
-            cfg["main_db"] = path.join(cfg["sql"], self.BOOT['main_db'])
-            cfg["version"] = self.BOOT['db_version']
-            cfg["bkup_db"] = path.join(cfg["sql"], self.BOOT['bkup_db'])
-            return cfg
-        except Exception as err:
-            print(err)
-            return None
-
     # Write methods
     # ==============================================================
     @classmethod
@@ -288,7 +245,7 @@ class FileMethods(object):
         """
         try:
             cmd = f"cp -rf {p_path_from}/* {p_path_to}"
-            ok, msg = SI.run_cmd(cmd)
+            ok, msg = SM.run_cmd(cmd)
             if not ok:
                 raise (msg)
         except Exception as err:
@@ -388,7 +345,7 @@ class FileMethods(object):
         """
         try:
             cmd = f"chmod u=rw,g=r,o=r {p_path}"
-            ok, msg = SI.run_cmd(cmd)
+            ok, msg = SM.run_cmd(cmd)
             if not ok:
                 raise (msg)
         except Exception as err:
@@ -403,7 +360,7 @@ class FileMethods(object):
         """
         try:
             cmd = f"chmod u=rwx,g=rwx,o=rwx {p_path}"
-            ok, msg = SI.run_cmd(cmd)
+            ok, msg = SM.run_cmd(cmd)
             if not ok:
                 raise (msg)
         except Exception as err:
@@ -418,7 +375,7 @@ class FileMethods(object):
         """
         try:
             cmd = f"chmod u=rwx,g=rx,o=rx {p_path}"
-            ok, msg = SI.run_cmd(cmd)
+            ok, msg = SM.run_cmd(cmd)
             if not ok:
                 raise (msg)
         except Exception as err:
@@ -489,7 +446,7 @@ class FileMethods(object):
         """
         try:
             cmd = f"diff {p_file_a} {p_file_b}"
-            ok, msg = SI.run_cmd(cmd)
+            ok, msg = SM.run_cmd(cmd)
             if not ok:
                 raise (msg)
             return msg

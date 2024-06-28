@@ -9,10 +9,7 @@ Saskan Data Management middleware.
 from pprint import pformat as pf    # noqa: F401
 from pprint import pprint as pp     # noqa: F401
 
-from method_files import FileMethods
-from database import DataBase
-
-FM = FileMethods()
+from data_base import DataBase
 
 
 class GetData(object):
@@ -70,6 +67,8 @@ class GetData(object):
                     data[c_nm] = c_val[row_num]
             return data
 
+        from method_files import FileMethods
+        FM = FileMethods()
         if FM.is_file_or_dir(DB_CFG['main_db']):
             DB = DataBase(DB_CFG)
             data_rows = DB.execute_select_all(p_table_nm)

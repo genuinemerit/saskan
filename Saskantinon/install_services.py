@@ -1,7 +1,7 @@
 #!python
 """Saskan Services installation procedure.
 :module:    install_services.py
-:class:     InstallServices/0
+:class:     ServicesInstall/0
 :author:    GM <genuinemerit @ pm.me>
 
 (saskan) sudo ~/../Saskantinon/saskan_install
@@ -39,7 +39,7 @@ GetData = GetData()
 SetData = SetData()
 
 
-class InstallServices(object):
+class ServicesInstall(object):
     """Configure and install Saskan services.
 
     @DEV:
@@ -472,5 +472,5 @@ www-data    5108    5106  0 18:45 ?        00:00:00 nginx: worker process
         pass
 
 
-if __name__ == "__main__":
-    SI = InstallServices()
+# if __name__ == "__main__":
+#     SI = InstServicesInstall()
