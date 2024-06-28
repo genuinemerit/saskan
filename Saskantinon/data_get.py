@@ -17,7 +17,7 @@ class GetData(object):
     Provide methods for reading data from the database.
     Generic DB IO methods are in the io_db module.
     These methods are specifcally associated with data
-    models defined in the data_model module. It may also be
+    models defined in the data_model* modules. It may be
     useful to either define views in SQLlite or to use
     this class to effectively create views.
     """

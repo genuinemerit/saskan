@@ -25,7 +25,8 @@ from method_files import FileMethods
 from data_get import GetData
 from data_set import SetData
 from data_base import DataBase
-from data_model import AppConfig, InitGameDB
+from data_model_app import AppConfig
+from data_model_tool import InitGameDB
 
 AC = AppConfig()
 CM = ConfigMethods()
@@ -43,22 +44,10 @@ class AppInstall(object):
     """
 
     def __init__(self):
-        """Initialize database, directories and files."""
-        print("\n\nSaskan Installer tasks\n=================")
-        self.install_bootstrap_data()
-        self.BOOT, self.DB_CFG = CM.get_configs()
-        print("* Bootstrap and DB config metadata defined:")
-        pp((self.BOOT, self.DB_CFG))
-        self.install_database()
-        SD.set_app_config(self.DB_CFG)
-        SD.set_texts(self.BOOT, self.DB_CFG)
-        self.DIR = GD.get_app_config(self.DB_CFG)
-        self.verify_system_dirs()
-        self.install_app_dirs()
-        self.install_app_files()
-        # NEXT: Install other database tables,
-        #   using SetData / GetData calls. Probably
-        #   use json files from the git Schema directory.
+        """Initialize database, directories and files.
+        Then set-up dimensions and structure of apps, api's.
+        Finally, load data for world-buidling and story-telling.
+
         # May be some opportunities to use AI tools.
         # Experiment with using CLI interfaces and
         #   GUI interfaces to drive story-telling.
@@ -76,12 +65,28 @@ class AppInstall(object):
         # self.start_servers(svc)
         # self.start_clients()
         # FM.pickle_saskan(self.APP)
+        """
+        # Environment Set-up
+        print("\n\nSaskan Installer tasks\n=================")
+        self.install_bootstrap_data()
+        self.BOOT, self.DB_CFG = CM.get_configs()
+        print("* Bootstrap and DB config metadata defined:")
+        pp((self.BOOT, self.DB_CFG))
+        self.install_database()
+        SD.set_app_config(self.DB_CFG)
+        SD.set_texts(self.BOOT, self.DB_CFG)
+        self.DIR = GD.get_app_config(self.DB_CFG)
+        self.verify_system_dirs()
+        self.install_app_dirs()
+        self.install_app_files()
 
-    # Helpers
-    # ==============================================================
-
-    # Bootstrap and database set-up
-    # ==============================================================
+        # Apps GUI Set-up
+        SD.set_frames(self.BOOT, self.DB_CFG)
+        # SD.set_menu_bars(self.BOOT, self.DB_CFG)
+        # SD.set_menus(self.BOOT, self.DB_CFG)
+        # SD.set_menu_items(self.BOOT, self.DB_CFG)
+        # SD.set_windows(self.BOOT, self.DB_CFG)
+        # SD.set_links(self.BOOT, self.DB_CFG)
 
     def install_bootstrap_data(self):
         """
@@ -126,12 +131,9 @@ class AppInstall(object):
         print("* Database installed.")
 
     def verify_system_dirs(self):
-        """Verify standard bash directory exists.
-        - /usr/local/bin
+        """
         Verify standard in-memory directory exists.
         - /dev/shm
-        :args:
-        - FI: current instance of FileIO class.
         """
         for sys_dir in ["mem_dir"]:
             files = FM.scan_dir(self.DIR[sys_dir])
@@ -143,8 +145,6 @@ class AppInstall(object):
     def install_app_dirs(self):
         """Create remaining app directories.
         In case they already exist, clean them out.
-        :args:
-        - FI: current instance of FileIO class.
         """
         def _wipe_and_remove():
             a_files = FM.scan_dir(app_dir)
@@ -172,7 +172,7 @@ class AppInstall(object):
 
     def install_app_files(self):
         """Copy app files to app directory.
-        For python files, don't copy the install module.
+        For python files, don't copy the install modules.
         """
         def _copy_files():
             files = FM.scan_dir(git_dir)
@@ -184,14 +184,14 @@ class AppInstall(object):
             files = FM.scan_dir(git_dir)
             py_files = [
                 f for f in files if str(f).endswith(".py") and
-                "_install" not in str(f)
+                "install" not in str(f)
             ]
             if py_files is not None:
                 for f in py_files:
                     FM.copy_one_file(f, app_dir)
 
         git_dir = path.join(self.BOOT['git_source'], "html")
-        app_dir = path.join(self.DIR['root_dir'], self.DIR['dat_dir'])
+        app_dir = path.join(self.DIR['root_dir'], self.DIR['html_dir'])
         _copy_files()
         git_dir = path.join(self.BOOT['git_source'], "images")
         app_dir = path.join(self.DIR['root_dir'], self.DIR['img_dir'])

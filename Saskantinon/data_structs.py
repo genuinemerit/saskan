@@ -490,6 +490,7 @@ class EntityType(object):
                                'contains', 'contained by']
     LAND_OCEAN_RELATION_TYPE = ['borders', 'overlaps',
                                 'contains', 'contained by']
+    LANG_CODE = ['en']
     LEAP_RULE = ['add_to_start_of_nth_month',
                  'add_to_end_of_nth_month', 'add_special_month']
     LINK_CATEGORY = ['help']
@@ -544,7 +545,6 @@ class EntityType(object):
     SPECTRAL_CLASS = ['O', 'B', 'A', 'F', 'G', 'K', 'M']
     STABILITY = ['stable', 'unstable']
     WATER_TYPE = ['freshwater', 'saline', 'brackish']
-    APP_CATEGORY = ['admin', 'game']
     WORLD_TYPE = ['habitable', 'gas giant', 'rocky',
                   'desert', 'oceanic', 'ice planet',
                   'molten', 'other']

@@ -182,6 +182,9 @@ class SetGameData(object):
     I have done the latter previously and should be able to find
     some code to support that. But it makes for a more complex
     GUI and not one that most users would be familiar with.
+
+    All of this gets moved to install and other modules.
+    Only the GUI code should be in this module.
     """
     def __init__(self):
         """Initialize the SetGameData object.
@@ -608,8 +611,7 @@ class GameMenu(object):
         """Initialize the GameMenu object.
         It will be instantiated as GMNU, a global object.
 
-        Menu members and and menu items are stored in memory
-        in class-level attributes (dicts).
+        Menu members and and menu items are stored in class-level dicts.
         """
         self.mbars: dict = dict()
         self.mitems: dict = dict()

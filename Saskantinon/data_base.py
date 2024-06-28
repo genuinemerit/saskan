@@ -8,8 +8,8 @@ Manage data for saskan-app using sqlite3.
 
 Manage data for saskan_data app using sqlite3.
 This is a backend module for handling calls to the DB.
-For data models, see saskan_io.data_model.py
-For setting and getting data, see saskan_io.set_get.py.
+For data models, see data_model_tool, _app, _world
+For setting and getting data, see data_get, data_set
 """
 import pendulum
 import shutil

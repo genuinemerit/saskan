@@ -1,0 +1,28 @@
+{
+    "admin_frame": {
+        "title": "Saskan Eyes",
+        "desc": "Saskan Admin tools",
+        "size_w": 1200,
+        "size_h": 900,
+        "ibar_x": 60,
+        "ibar_y": 872,
+        "pg_hdr_x": 20,
+        "pg_hdr_y": 10,
+        "pg_hdr_w": 1080,
+        "pg_hdr_h": 20,
+        "pg_hdr_text": "Control, Monitor, Test, Edit Saskantinon"
+        },
+    "game_frame": {
+        "title": "Saskanantinon",
+        "desc": "Saskantinon, the Land Between Two Rivers",
+        "size_w": 1200,
+        "size_h": 900,
+        "ibar_x": 60,
+        "ibar_y": 872,
+        "pg_hdr_x": 0,
+        "pg_hdr_y": 0,
+        "pg_hdr_w": 0,
+        "pg_hdr_h": 0,
+        "pg_hdr_text": ""
+    }
+}

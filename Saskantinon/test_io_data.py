@@ -1,7 +1,7 @@
 import unittest
 import pygame as pg
 import random
-from data_model import Astro
+from data_model_world import Astro
 from data_pg_structs import CompareRect
 
 pg.init()     # Initialize PyGame for use in this module
