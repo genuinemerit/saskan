@@ -1,35 +1,12 @@
 """
 
-:module:    io_data.py
+:module:    io_data_model.py
 :author:    GM (genuinemerit @ pm.me)
 
 Saskan Data Management middleware.
-
-The SQL and DB create methods in this module
-require that an instantiated DB object be passed
-into them. This should be done in most cases from
-the saskan_install module, though it could be
-simulated in a terminal.
-
-This is necessary to prevent circular imports.
-
-@DEV:
-- Consider breaking io_data, io_file, io_shell,
-  and io_db (and maybe others) in more smaller
-  modules that are perhaps collected into sub-packages.
-- Maybe even have a separate module for each DB model.
-- This might help reduce complexity.
-- Other things to consider include:
-    - Think functionally. Avoid/eliminate side-effects.
-    - Don't assume that classes have to instantiated
-      globally within a module. Remember that the
-      default is to pass by reference. We are not
-      creating a copy of anything when passing it as
-      a parameter, including instantiated objects.
 """
 
 import json
-import pygame as pg
 import random
 import string
 
@@ -38,992 +15,16 @@ from pathlib import Path
 from pprint import pformat as pf    # noqa: F401
 from pprint import pprint as pp     # noqa: F401
 
-from io_file import FileIO
-from io_shell import ShellIO
+from io_structs import EntityType
+from io_structs import GroupStruct
+from method_files import FileMethods
+from method_shell import ShellMethods
 
-FI = FileIO()
-SI = ShellIO()
-
-pg.init()          # Init PyGame for use in this module
-
-
-#  UNIQUE CONSTANTS / "TRUE" ENUMS
-# ================================
-class Colors(object):
-    """Constants for CLI and PyGame colors.
-    Reference class attributes directly.
-    No need to instantiate this class.
-    """
-    # CLI Colors and accents
-    CL_BLUE = '\033[94m'
-    CL_BOLD = '\033[1m'
-    CL_CYAN = '\033[96m'
-    CL_DARKCYAN = '\033[36m'
-    CL_END = '\033[0m'
-    CL_GREEN = '\033[92m'
-    CL_PURPLE = '\033[95m'
-    CL_RED = '\033[91m'
-    CL_YELLOW = '\033[93m'
-    CL_UNDERLINE = '\033[4m'
-
-    # PyGame Colors
-    CP_BLACK = pg.Color(0, 0, 0)
-    CP_BLUE = pg.Color(0, 0, 255)
-    CP_BLUEPOWDER = pg.Color(176, 224, 230)
-    CP_GRAY = pg.Color(80, 80, 80)
-    CP_GRAY_DARK = pg.Color(20, 20, 20)
-    CP_GREEN = pg.Color(0, 255, 0)
-    CP_PALEPINK = pg.Color(215, 198, 198)
-    CP_RED = pg.Color(255, 0, 0)
-    CP_SILVER = pg.Color(192, 192, 192)
-    CP_WHITE = pg.Color(255, 255, 255)
-
-
-class ImageType(object):
-    """Types of images.
-    Reference class attributes directly.
-    No need to instantiate this class."""
-    JPG = "jpg"
-    PNG = "png"
-    GIF = "gif"
-    BMP = "bmp"
-    SVG = "svg"
-    TIF = "tif"
-    ICO = "ico"
-
-#  COMPLEX CONSTANTS
-# ================================
-class Astro(object):
-    """Constants, including both lists and enums
-    Astronomical and physics units and conversions.
-    - Generally, can just refer directly to the lists.
-    - But the class can also be made into a dict:
-      `astro_dict = {k:v for k,v in Astro.__dict__.items()
-                     if not k.startswith('__')}`
-    """
-    # universe names
-    UNAME = [["Cosmic", "Mysterious", "Eternal", "Radiant",
-             "Infinite", "Celestial"],
-             ["Endless", "Magical", "Spectacular",
-              "Mystical", "Enchanting"],
-             ["Universe", "Cosmos", "Realm", "Dimension",
-              "Oblivion", "Infinity"]]
-    # galactic cluster names
-    GCNAME = [["Runic", "Starry", "Brilliant",
-               "Blessed", "Eternal", "Celestial"],
-              ["Oceanic", "Wonderful", "Waving",
-               "Milky", "Turning"],
-              ["Way", "Home", "Heavens", "Lights",
-               "Path", "Cluster"]]
-    # galaxy names
-    GXNAME = [["Brilliant", "Lustrous", "Twinkling",
-               "Silvery", "Argent", "Glistening"],
-              ["Way", "Trail", "Cloud", "Wave", "Skyway"],
-              ["Galaxy", "Cluster", "Nebula", "Spiral",
-               "Starfield",  "Cosmos", "Nebula",
-               "Megacosm", "Space"]]
-    # timing pulsar names
-    TPNAME = [["Timer", "Chrono", "Clockwork",
-              "Lighthouse", "Beacon", "Pendumlum"],
-              ["Pulsar", "Star", "Nova", "Sentry", "Stupa"]]
-    # mass, matter, energy
-    DE = "dark energy"
-    DM = "dark matter"
-    BM = "baryonic matter"
-    LCLS = "luminosity class"
-    SMS = "solar mass"
-    SL = "solar luminosity"
-    # objects, astronomical
-    BH = "black hole"
-    GB = "galactic bulge"
-    GC = "galactic cluster"
-    GH = "galactic halo"
-    GX = "galaxy"
-    IG = "interstellar matter"
-    SC = "star cluster"
-    SCLS = "star class"
-    TP = "timing pulsar"            # saskan
-    TU = "total universe"           # saskan
-    XU = "external universe"        # saskan
-    # time-related, real world and saskan
-    GS = "galactic second"          # 'galactic' second; saskan
-    GMS = "galactic millisecond"    # 'galactic' millisecond; saskan
-    PMS = "pulses per millisecond"  # 'galactic' second as # of pulses
-    ET = "elapsed time"             # age, duration, time passed
-    GYR = "gavoran year"            # saskan
-    GDY = "gavoran day"             # saskan
-    # rates, speeds, velocities
-    ER = "expansion rate"           # of a volume
-    UER = "universal expansion rate"
-    KSM = "km/s per Mpc"            # km/s per Mpc
-    PRO = "period of rotation"
-    PRV = "period of revolution"
-    PR = "pulse rate"
-    # distance
-    AU = "astronomical unit"     # distance from Fatune to Gavor
-    GLY = "gigalight year"
-    GPC = "gigaparsec"
-    KPC = "kiloparsec"
-    LM = "light minute"
-    LS = "light second"
-    LY = "light year"
-    MPC = "megaparsec"
-    PC = "parsec"
-    # area, volume
-    GLY2 = "square gigalight year"
-    GLY3 = "cubic gigalight year"
-    GPC2 = "square gigaparsec"
-    GPC3 = "cubic gigaparsec"
-    PC2 = "square parsec"
-    PC3 = "cubic parsec"
-    LY2 = "square light year"
-    LY3 = "cubic light year"
-    # constants
-    U_MIN_RAD_GLY = 45.824
-    U_MAX_RAD_GLY = 47.557
-    U_MIN_AGE_GYR = 2.67e10
-    U_MAX_AGE_GYR = 3.12e10
-    U_AVG_MASS_KG = 1.5e53
-    U_EXP_RATE = 73.3  # expansion rate in km/s per Mpc
-    U_VOL_TO_MASS = 3.61441428e+48  # volume to mass multiplier
-    U_DARK_ENERGY_PCT = 0.683       # dark energy percentage
-    U_DARK_MATTER_PCT = 0.274       # dark matter percentage
-    U_BARYONIC_PCT = 0.043          # baryonic matter percentage
-    # conversions -- multiplicative in indicated direction
-    # For `AA_TO_BB`, BB = AA * value
-    # Example: `AU_TO_KM` means `KM = AU * 1.495979e+8`
-    AU_TO_KM = 1.495979e+8        # astronomical units -> km
-    AU_TO_LM = 5.2596e+16         # astro units -> light minutes
-    AU_TO_LS = 0.002004004004     # astro units -> light seconds
-    AU_TO_LY = 0.00001581250799   # astro units -> light years
-    GLY_TO_LY = 1e+9              # gigalight years -> light years
-    GPC_TO_GLY = 3.09             # gigaparsecs -> gigalight years
-    GPC_TO_MPC = 1000.0           # gigaparsecs -> megaparsecs
-    KM_TO_AU = 0.000006684587122  # kilometers -> astro units
-    KPC_TO_MPC = 1000.0           # kiloparsecs -> megaparsecs
-    KPC_TO_PC = 1000.0            # kiloparsecs -> parsecs
-    LM_TO_AU = 0.00000000000002   # light minutes -> astro units
-    LM_TO_LS = 9460730472580800   # light minutes -> light seconds
-    LM_TO_LY = 0.000000000000019  # light minutes -> light years
-    LS_TO_AU = 499.004783676      # light seconds -> astro units
-    LS_TO_LM = 0.000000000000105  # light seconds -> light minutes
-    LY_TO_AU = 63240.87           # light years -> astro units
-    LY_TO_GLY = 1e-9              # light years -> gigalight years
-    LY_TO_LM = 52596000000000000  # light years -> light minutes
-    LY_TO_PC = 0.30659817672196   # light years -> parsecs
-    MPC_TO_GPC = 0.001            # megaparsecs -> gigaparsecs
-    MPC_TO_KPC = 1000.0           # megaparsecs -> kiloparsecs
-    GLY_TO_PC = 3.262e6           # gigalight years -> parsecs
-    PC_TO_GLY = 3.065603923973023e-07  # parsecs -> gigalight years
-    PC_TO_KPC = 0.001             # parsecs -> kiloparsecs
-    PC_TO_LY = 3.261598           # parsecs -> light years
-
-
-class Geog(object):
-    """Constants for computations using variety of units
-    and formulae for measures of distance at a human or
-    (fantasy) planetary geographical scale.
-    """
-    # distance
-    CM = "centimeters"
-    FT = "feet"
-    GA = "gawos"        # saskan
-    IN = "inches"
-    KA = "katas"        # saskan
-    KM = "kilometers"
-    M = "meters"
-    MI = "miles"
-    MM = "millimeters"
-    NM = "nautical miles"
-    NOB = "nobs"        # saskan
-    THWAB = "thwabs"    # saskan
-    TWA = "twas"        # saskan
-    YUZA = "yuzas"      # saskan
-    # area, volume
-    M2 = "square meters"
-    M3 = "cubic meters"
-    # distance, geographical
-    DGLAT = "degrees latitude"
-    DGLONG = "degrees longitude"
-    # direction, geographical
-    LOC = "location"
-    N = "north"
-    E = "east"
-    S = "south"
-    W = "west"
-    NE = "northeast"
-    SE = "southeast"
-    SW = "southwest"
-    NW = "northwest"
-    NS = "north-south"
-    EW = "east-west"
-    # conversions - metric/imperial
-    # conversions -- multiplicative in indicated direction
-    # For `AA_TO_BB`, BB = AA * value
-    # Example: `CM_TO_IN` means `CM = IN * 0.3937007874`
-    CM_TO_IN = 0.3937007874      # centimeters -> inches
-    CM_TO_M = 0.01               # centimeters -> meters
-    CM_TO_MM = 10.0              # centimeters -> millimeters
-    FT_TO_IN = 12.0              # feet -> inches
-    FT_TO_M = 0.3048             # feet -> meters
-    IN_TO_CM = 2.54              # inches -> centimeters
-    IN_TO_FT = 0.08333333333     # inches -> feet
-    IN_TO_MM = 25.4              # inches -> millimeters
-    KM_TO_M = 1000.0             # kilometers -> meters
-    KM_TO_MI = 0.62137119223733  # kilometers -> miles
-    KM_TO_NM = 0.539956803       # kilometers -> nautical miles
-    M_TO_CM = 100.0              # meters -> centimeters
-    M_TO_FT = 3.280839895        # meters -> feet
-    M_TO_KM = 0.001              # meters -> kilometers
-    MI_TO_KM = 1.609344          # miles -> kilometers
-    MI_TO_NM = 0.868976242       # miles -> nautical miles
-    MM_TO_CM = 0.1               # millimeters -> centimeters
-    MM_TO_IN = 0.03937007874     # millimeters -> inches
-    NM_TO_KM = 1.852             # nautical miles -> kilometers
-    NM_TO_MI = 1.150779448       # nautical miles -> miles
-    # conversions - saskan/metric
-    CM_TO_NOB = 0.64             # centimeters -> nobs
-    GABO_TO_MI = 0.636           # gabos -> miles
-    GAWO_TO_KATA = 4.0           # gawos -> kata
-    GAWO_TO_KM = 1.024           # gawos -> kilometers
-    GAWO_TO_M = 1024.0           # gawos -> meters
-    IN_TO_NOB = 2.56             # inches -> nobs
-    KATA_TO_KM = 0.256           # kata -> kilometers
-    KATA_TO_M = 256.0            # kata -> meters
-    KATA_TO_MI = 0.159           # ktaa -> miles
-    KATA_TO_THWAB = 4.0          # kata -> thwabs
-    M_TO_NOB = 64.0              # meters -> nobs
-    M_TO_THWAB = 0.015625        # meters -> thwabs (1/64th)
-    MM_TO_NOB = 0.0064           # millimeters -> nobs
-    NOB_TO_CM = 1.5625           # nobs -> centimeters
-    NOB_TO_IN = 0.390625         # nobs -> inches
-    NOB_TO_MM = 156.25           # nobs -> millimeters
-    THWAB_TO_KATA = 0.25         # thwabs -> kata
-    THWAB_TO_M = 64.0            # thwabs -> meters
-    THWAB_TO_TWA = 64.0          # thwabs -> twas
-    TWA_TO_M = 1.00              # twas -> meters
-    TWA_TO_NOB = 64.0            # twas -> nobs
-    TWA_TO_THWAB = 0.015625      # twas -> thwabs (1/64th)
-    YUZA_TO_GABO = 4.0           # yuzas -> gabos
-    YUZA_TO_KM = 4.096           # yuzas -> kilometers
-    YUZA_TO_M = 4096.0           # yuzas -> meters
-    YUZA_TO_MI = 2.545           # yuzas -> miles
-    # conversions, geographical to metric
-    DGLAT_TO_KM = 111.2           # degree of latitutde -> kilometers
-    DGLONG_TO_KM = 111.32         # degree of longitude -> kilometers
-    KM_TO_DGLAT = 0.00898315284   # kilometers -> degree of latitude
-    KM_TO_DGLONG = 0.00898311175  # kilometers -> degree of longitude
-
-
-class Geom(object):
-    """Constants assigned to meaningful abbreviations
-    and names relating generically to geometry and physics.
-    """
-    # math, general geometry
-    ABC = "(a, b, c)"
-    ANG = "angle"
-    AR = "area"
-    BND = "bounding rectangle"
-    CNT = "count"
-    CON = "container"
-    DC = "decimal"
-    DI = "diameter"
-    DIM = "dimensions"
-    DIR = "direction"
-    HT = "height"
-    INT = "integer"
-    LG = "length"
-    PCT = "percent"
-    PYR = ("pitch, yaw, roll")
-    RD = "radius"
-    ROT = "rotation"
-    SAX = "semi-axes"
-    SZ = "size"
-    VE = "vector"
-    VL = "volume"
-    WD = "width"
-    XY = "(x, y)"
-    XYZD = "((x,x), (y,y), (z,z))"
-    XYZ = "(x, y, z)"
-    # geometry shapes
-    BX = "pg_rect"
-    CI = "circle"
-    EL = "ellipsoid"
-    RC = "rectangle"
-    SH = "sphere"
-    SHA = "shape"
-    SP = "spiral"
-    # weight. mass
-    GM = "grams"
-    KG = "kilograms"
-    LB = "pounds"
-    MS = "mass"
-    OZ = "ounces"
-    # energy
-    AMP = "amperes (A)"
-    OH = "ohms (Ω)"
-    V = "volts (V)"
-    WA = "watts (W)"
-    # names, labels, qualities
-    NM = "name"
-    REL = "relative"
-    SHP = "shape"
-
-
-class AppDisplay(object):
-    """Static values related to constructing GUI's.
-    As long as pg.display is not called, nothing will be rendered.
-    This needs to be modified once io_file is modified to read
-    from the database.
-    """
-    # Typesetting
-    # -------------------
-    DASH16: str = "-" * 16
-    FONT_FXD = 'Courier 10 Pitch'
-    FONT_MED_SZ = 30
-    FONT_SANS = 'DejaVu Sans'
-    FONT_SM_SZ = 24
-    FONT_TINY_SZ = 12
-    LG_FONT_SZ = 36
-    # PyGame Fonts
-    # -------------------
-    F_SANS_TINY = pg.font.SysFont(FONT_SANS, FONT_TINY_SZ)
-    F_SANS_SM = pg.font.SysFont(FONT_SANS, FONT_SM_SZ)
-    F_SANS_MED = pg.font.SysFont(FONT_SANS, FONT_MED_SZ)
-    F_SANS_LG = pg.font.SysFont(FONT_SANS, LG_FONT_SZ)
-    F_FIXED_LG = pg.font.SysFont(FONT_FXD, LG_FONT_SZ)
-    # PyGame Cursors
-    # -------------------
-    CUR_ARROW = pg.cursors.Cursor(pg.SYSTEM_CURSOR_ARROW)
-    CUR_CROSS = pg.cursors.Cursor(pg.SYSTEM_CURSOR_CROSSHAIR)
-    CUR_HAND = pg.cursors.Cursor(pg.SYSTEM_CURSOR_HAND)
-    CUR_IBEAM = pg.cursors.Cursor(pg.SYSTEM_CURSOR_IBEAM)
-    CUR_WAIT = pg.cursors.Cursor(pg.SYSTEM_CURSOR_WAIT)
-    # PyGame Keyboard
-    # -------------------
-    KY_QUIT = (pg.K_q, pg.K_ESCAPE)
-    KY_ANIM = (pg.K_F3, pg.K_F4, pg.K_F5)
-    KY_DATA = (pg.K_a, pg.K_l)
-    KY_RPT_TYPE = (pg.K_KP1, pg.K_KP2, pg.K_KP3)
-    KY_RPT_MODE = (pg.K_UP, pg.K_RIGHT, pg.K_LEFT)
-    # Game Platform
-    # -------------------
-    INFO = pg.display.Info()
-    FRAME = "game_frame"  # --> c_frame.json
-    MENUS = "game_menus"  # --> c_menus.json
-    # PLATFORM = (
-    #     FI.F[FRAME]["dsc"] +
-    #     #  " | " + platform.platform() +
-    #     #  " | " + platform.architecture()[0] +
-    #     f" | monitor (w, h): {INFO.current_w}, {INFO.current_h}" +
-    #     " | Python " + platform.python_version() +
-    #     " | Pygame " + pg.version.ver)
-    # Window/overall frame for Game
-    # -----------------------------
-    WIN_W = round(INFO.current_w * 0.9)
-    WIN_H = round(INFO.current_h * 0.9)
-    WIN_MID = (WIN_W / 2, WIN_H / 2)
-    # pg.display.set_caption(FI.F[FRAME]["ttl"])
-    KEYMOD_NONE = 4096
-    TIMER = pg.time.Clock()
-    # Don't do display.set_mode() command in data structure
-    # It launches the pygame rendering environment
-    # Move this to Saskan game module or a rendering module -->
-    #    `WIN = pg.display.set_mode((WIN_W, WIN_H))`
-    # Menu bar for Game
-    # -------------------
-    MBAR_X = WIN_W * 0.01
-    MBAR_Y = WIN_H * 0.005
-    MBAR_H = WIN_H * 0.04
-    # MBAR_W = 240 if (WIN_W - (MBAR_X * 2)) / len(FI.M[MENUS]["menu"]) > 240\
-    #     else (WIN_W - (MBAR_X * 2)) / len(FI.M[MENUS]["menu"])
-    MBAR_MARGIN = 6
-    # Game Map (grid) window size for Saskan game
-    # -------------------------------------------
-    # GAMEMAP_TTL = FI.W["game_windows"]["gamemap"]["ttl"]
-    GAMEMAP_X = int(round(WIN_W * 0.01))
-    GAMEMAP_Y = int(round(WIN_H * 0.06))
-    GAMEMAP_W = int(round(WIN_W * 0.8))
-    GAMEMAP_H = int(round(WIN_H * 0.9))
-    # Console window for Saskan app
-    # -------------------------------
-    # CONSOLE = FI.W["game_windows"]["console"]
-    CONSOLE_X = int(round(GAMEMAP_X + GAMEMAP_W + 20))
-    CONSOLE_Y = GAMEMAP_Y
-    CONSOLE_W = int(round(WIN_W * 0.15))
-    CONSOLE_H = GAMEMAP_H
-    CONSOLE_BOX = pg.Rect(CONSOLE_X, CONSOLE_Y,
-                          CONSOLE_W, CONSOLE_H)
-    # For now, the header/title on CONSOLE is static
-    # CONSOLE_TTL_TXT = FI.W["game_windows"]["console"]["ttl"]
-    # CONSOLE_TTL_IMG =\
-    #     F_SANS_MED.render(CONSOLE_TTL_TXT, True,
-    #                       Colors.CP_BLUEPOWDER,
-    #                       Colors.CP_BLACK)
-    # CONSOLE_TTL_BOX = CONSOLE_TTL_IMG.get_rect()
-    # CONSOLE_TTL_BOX.topleft = (CONSOLE_X + 5, CONSOLE_Y + 5)
-    # Info Bar for Saskan app
-    IBAR_LOC = (GAMEMAP_X, int(round(WIN_H * 0.97)))
-    # Help Pages -- external web pages, displayed in a browser
-    # WHTM = FI.U["uri"]["help"]
-
-
-#  SIMPLE DATA STRUCTURES
-# ============================
-class Struct(object):
-    """Base class for data structures made of a
-    simple group of attritubes. Structures
-    have default values, but are mutable.
-    Instantiate as sub-class object with no parameters.
-    User assigns values directly.
-    For example:
-        CRI = Struct.ColumnRowIndex()
-        CRI.r = 3
-        CRI.c = 5
-    """
-
-    class ColumnRowIndex(object):
-        """Structure for column and row indexes."""
-        r: int = 0
-        c: int = 0
-
-    class MatrixUpDown(object):
-        """Structure for z-up and z-down indexes."""
-        u: int = 0
-        d: int = 0
-
-    class WidthHeight(object):
-        """Structure for width and height measures."""
-        w: float = 0.0
-        h: float = 0.0
-
-    class CoordXYZ(object):
-        """Structure for x, y, z coordinates."""
-        x: float = 0.0
-        y: float = 0.0
-        z: float = 0.0
-
-    class CoordXY(object):
-        """Structure for x, y coordinates."""
-        x: float = 0.0
-        y: float = 0.0
-
-    class AxesABC(object):
-        """Structure for a, b, c axes."""
-        a: float = 0.0
-        b: float = 0.0
-        c: float = 0.0
-
-    class PitchYawRollAngle(object):
-        """Structure for pitch, yaw,, roll angles."""
-        pitch: float = 0.0
-        yaw: float = 0.0
-        roll: float = 0.0
-
-    class GameRect(object):
-        """Simple structure for defining rectangles.
-        This provides a way to store the minimal set of
-        values needed. See GamePlane and pg.Rect for more
-        complex rectangle structures.
-        """
-        x: float = 0.0
-        y: float = 0.0
-        w: float = 0.0
-        h: float = 0.0
-
-    class GameLatLong(object):
-        """Structure for game latitude and longitude.
-        Game lat and long refer to fantasy world locations.
-        Cannot use standard Earth-based geo-loc modules.
-
-        Latitudes and longitudes are in decimal degrees.
-        Lat north is positive; south is negative.
-        East, between the fantasy-planet equivalent of
-        universal meridien and international date line,
-        is positive; west is negative.
-        """
-        latiutde_dg: float = 0.0
-        longitude_dg: float = 0.0
-
-    class GameGeoLocation(object):
-        """
-        This is a general-purpose, high level geo-location
-        data structure, planar and rectangular.
-        Use degrees as the specifier for locations.
-        Then compute km or other physical dimensions
-        based on scaling to a grid when rendering.
-
-        Provide rough altitudes (average, min and max) meters,
-        to give a general sense of the 3rd dimension.
-        Detail heights and depths in specialized data structures.
-
-        For astronomical, underwater or other "3D" spaces,
-        see Game3DLocation class (below), keeping in mind that
-        3D rendering is beyond the capabilities of a Python-
-        driven game.
-        """
-        latitude_north_dg: float = 0.0
-        latitude_south_dg: float = 0.0
-        longitude_east_dg: float = 0.0
-        longitude_west_dg: float = 0.0
-        avg_altitude_m: float = 0.0
-        max_altitude_m: float = 0.0
-        min_altitude_m: float = 0.0
-
-    class Game3DLocation(object):
-        """
-        This is a general-purpose, high level 3D location/shape
-        container structure, box-shaped, that is, six adjoining
-        rectangles with parallel sides.  Use x, y, z coordinates
-        which can be mapped to whatever units are needed. For
-        example, in a Universe, the x,y,z coordinates might refer
-        to mega-parsecs, whereas in an Undersea world they might
-        refer to kilometers.
-        The box is defined as an x,y,z origin point, which can
-        be conceived of visually as the upper-left, foremost
-        corner of the box. The box is then defined by w, h and d =
-        lateral dimensions in the x, y and z directions.
-        """
-        origin_x: float = 0.0
-        origin_y: float = 0.0
-        origin_z: float = 0.0
-        width_x: float = 0.0
-        height_y: float = 0.0
-        depth_z: float = 0.0
-
-    class Graphic(object):
-        """A data structure for referencing an image file."""
-        pg_surface: pg.Surface
-        pg_rect: pg.Rect
-        img_type: ImageType
-        img_url: str = ''
-        img_desc: str = ''
-
-
-#  COMPLEX DATA STRUCTURES
-#  =============================
-class EntityType(object):
-    """Constants:
-    - This entire class can be made into a dict:
-      `entity_dict = {k:v for k,v in EntityType.__dict__.items()
-                      if not k.startswith('__')}`
-    """
-    ASTRO_DIRECTION = ['prograde', 'retrograde']
-    ASTRO_LOCATION = ['inner', 'outer', 'multiple']
-    ASTRO_SHAPE = ['ellipsoid', 'spherical']
-    BACKUP_TYPE = ["archive", "backup", "compressed",
-                   "export", "encrypted"]
-    CHAR_SET_TYPE = ['alphabet', 'abjad', 'abugida',
-                     'syllabary', 'ideogram']
-    CLUSTER_SHAPE = ['ellipsoid', 'spherical']
-    DENSITY = ['sparse', 'dense']
-    DATA_FORMATS = ["csv", "json", "xml", "xls", "xlsx",
-                    "txt", "html", "pdf", "doc", "docx",
-                    "txt", "ods", "sql", "dbf", "db",
-                    "sqlite", "mdb", "accdb", "zip",
-                    "tar", "gz"]
-    FREQUENCY = ['rare', 'occasional', 'frequent']
-    GLOSS_TYPE = ['word', 'phrase', 'map', 'picture', 'diagram',
-                  'data', 'software', 'sound', 'video']
-    HEMISPHERE_TYPE = ['north', 'south']
-    INTENSITY = ['low', 'medium', 'high']
-    LAKE_SIZE = ['small', 'medium', 'large']
-    LAKE_TYPE = ['lake', 'reservoir', 'pond', 'pool',
-                 'loch',
-                 'hot spring', 'swamp', 'marsh',
-                 'mill pond',
-                 'oxbow lake', 'spring', 'sinkhole',
-                 'acquifer', 'vernal pool', 'wadi']
-    LAND_BODY_TYPE = ['island', 'continent', 'sub-continent',
-                      'region']
-    LAND_LAND_RELATION_TYPE = ['borders', 'overlaps',
-                               'contains', 'contained by']
-    LAND_OCEAN_RELATION_TYPE = ['borders', 'overlaps',
-                                'contains', 'contained by']
-    LEAP_RULE = ['add_to_start_of_nth_month',
-                 'add_to_end_of_nth_month', 'add_special_month']
-    LINK_CATEGORY = ['help']
-    LUMINOSITY_CLASS = ['I', 'II', 'III', 'IV', 'V']
-    MAP_TOUCH_TYPE = ['contains', 'is_contained_by', 'borders',
-                      'overlaps', 'informs', 'layers_above',
-                      'layers_below']
-    MAP_TYPE = ['geo', 'astro', 'underwater',
-                'underground',
-                'informational', 'political']
-    OCEAN_BODY_TYPE = ['fjord', 'sea', 'ocean',
-                       'harbor', 'lagoon', 'bay',
-                       'gulf', 'sound', 'bight',
-                       'delta', 'estuary', 'strait',
-                       'ice field', 'ice sheet',
-                       'ice shelf', 'iceberg',
-                       'ice floe', 'ice pack',
-                       'roadstead', 'tidal pool',
-                       'salt marsh']
-    OCEAN_HAZARD = ['tsunami', 'typhoon', 'volcano',
-                    'tide', 'storm', 'whirlpool',
-                    'current', 'undertow', 'rip tide',
-                    'reef']
-    OCEAN_FEATURE = ['atoll', 'coral reef', 'seamount',
-                     'trench', 'volcanic vent',
-                     'hydrothermal vent', 'tide pool',
-                     'mangrove', 'kelp forest',
-                     'coral bed', 'sargasso',
-                     'gyre', 'upwelling',
-                     'downwelling', 'eddy',
-                     'thermocline', 'halocline',
-                     'polar ice cap', 'ice shelf']
-    OCEAN_WAVE_TYPE = ['low', 'medium', 'high', 'none']
-    ORBITAL_SHAPE = ['circular', 'elliptical']
-    RELATIVE_SIZE = ['small', 'medium', 'large']
-    RIVER_FEATURE = ['delta', 'bridge', 'crossing',
-                     'footbridge', 'pier', 'marina',
-                     'boathouse', 'habitat']
-    RIVER_HAZARD = ['rapids', 'wreckage', 'sandbar',
-                    'waterfall', 'shallow',
-                    'dam', 'weir', 'habitat']
-    RIVER_TYPE = ['perrenial', 'periodic', 'episodic',
-                  'exotic', 'tributary', 'distributary',
-                  'underground', 'aqueduct', 'canal',
-                  'rapids', 'winding', 'stream',
-                  'glacier']
-    RIVER_NAV_TYPE = ["small craft", "large craft",
-                      "none"]
-    SEASON_TYPE = ['winter', 'spring', 'summer', 'fall'
-                   'all', 'winter-spring', 'spring-summer',
-                   'summer-fall', 'fall-winter']
-    SPECTRAL_CLASS = ['O', 'B', 'A', 'F', 'G', 'K', 'M']
-    STABILITY = ['stable', 'unstable']
-    WATER_TYPE = ['freshwater', 'saline', 'brackish']
-    APP_CATEGORY = ['admin', 'game']
-    WORLD_TYPE = ['habitable', 'gas giant', 'rocky',
-                  'desert', 'oceanic', 'ice planet',
-                  'molten', 'other']
-
-
-class GamePlane(object):
-    """
-    A general purpose shape structure that is planar
-    and rectangular, defining only the corners of a
-    rectangular space relative to x,y coordinates in a
-    containing coordinate system is useful for
-    describing areas within a map or grid.
-
-    Line and fill attributes may optonally be set.
-    A pygame Rect object is derived from the corners.
-    """
-    def __init__(self,
-                 p_top_left: Struct.CoordXY,
-                 p_top_right: Struct.CoordXY,
-                 p_bottom_left: Struct.CoordXY,
-                 p_bottom_right: Struct.CoordXY,
-                 p_fill: bool = False,
-                 p_fill_color: pg.Color = pg.Color(0, 0, 0),
-                 p_line_color: pg.Color = pg.Color(0, 0, 0),
-                 p_line_width: float = 0.0):
-        """
-        Set abstract coordinates/location, and optionally
-        fill and line attributes.
-        :args:
-        -- p_top_left: top left coordinate (x, y)
-        -- p_top_right: top right (x, y)
-        -- p_bottom_left: bottom left (x, y)
-        -- p_bottom_right: bottom right (x, y)
-        -- p_fill: fill the shape (True or False)
-        -- p_fill_color: fill color (pygame color object)
-        -- p_line_color: line color (pygame color object)
-        -- p_line_width: line width (float)
-        """
-        self.coords =\
-            self.set_coords(p_top_left,
-                            p_top_right,
-                            p_bottom_left,
-                            p_bottom_right)
-        self.fill =\
-            self.set_fill(p_fill,
-                          p_fill_color)
-        self.line =\
-            self.set_line(p_line_color,
-                          p_line_width)
-        self.box = self.set_pygame_rect()
-
-    def set_coords(self,
-                   p_top_left,
-                   p_top_right,
-                   p_bottom_left,
-                   p_bottom_right) -> dict:
-        """ Set x,y coordinates/corner locations
-        relative to a containing coordinate system.
-        Derive the width and height of the plane and
-        the integer x and y for top and left.
-        """
-        return {'top_left': p_top_left,
-                'top_right': p_top_right,
-                'bottom_left': p_bottom_left,
-                'bottom_right': p_bottom_right,
-                'left': p_top_left.x,
-                'top': p_top_left.y,
-                'width': p_top_right.x - p_top_left.x,
-                'height': p_bottom_left.y - p_top_left.y}
-
-    def set_fill(self,
-                 p_fill,
-                 p_fill_color) -> dict:
-        """ Set attributes of the plane fill.
-        """
-        return {'is_filled': p_fill,
-                'fill_color': p_fill_color}
-
-    def set_line(self,
-                 p_line_color,
-                 p_line_width) -> dict:
-        """ Set attributes of the plane line.
-        """
-        return {'line_color': p_line_color,
-                'line_width': p_line_width}
-
-    def set_pygame_rect(self) -> pg.Rect:
-        """ Set pygame Rect object.
-           (left, top, width, height)
-        """
-        return pg.Rect(self.coords['left'],
-                       self.coords['top'],
-                       self.coords['width'],
-                       self.coords['height'])
-
-
-class GameGridData(object):
-    """
-    PSet up a matrix of cells within a grid, both to direct
-    rendering, and to store data within each cell. The drawing
-    data is 2D oriented, but the data-content supports 3D,
-    like a layer cake or slices of a scan.
-
-    Specs for rendering grid and cells have two inputs:
-    - number of rows and columns -- init params
-    - grid placement in map-window is defined in AppDisplay
-    For smaller cells, assign more rows and columns to the grid.
-    For bigger cells, assign fewer rows and columns.
-
-    - Supports 3 dimensions in layered fashion.
-    - To use as a 2D grid, set p_z values to zero.
-    """
-    def __init__(self,
-                 p_cols: int = 1,
-                 p_rows: int = 1,
-                 p_z_up: int = 0,
-                 p_z_down: int = 0):
-        """
-        Number of cells in matrix:
-        :args:
-        -- p_cols: number of columns ("vertical" or N-S cells)
-        -- p_rows: number of rows ("horizontal" or E-W cells)
-        -- p_z_up: number of "up" cells
-        -- p_z_down: number of "down" cells
-        Location of grid-box in map window is set in AppDisplay.
-        """
-        x_offset = int(round(AppDisplay.GAMEMAP_W * 0.01))
-        y_offset = int(round(AppDisplay.GAMEMAP_H * 0.02))
-        self.visible = False
-        self.plane, self.box =\
-            self._set_grid_rects(x_offset, y_offset)
-        self.grid_size =\
-            self.set_grid_size(p_cols, p_rows, p_z_up, p_z_down)
-        self.cell_size = self.set_cell_size(x_offset, y_offset)
-        self.grid_lines = self.set_grid_lines(x_offset, y_offset)
-        self.grid_data = self.set_grid_data()
-
-    def _set_grid_rects(self,
-                        x_offset: int,
-                        y_offset: int) -> tuple:
-        """ Set GamePlane and pygame Rect objects for the grid.
-        These help place and render the grid as a whole. Since inputs
-        are set by the constant structure 'AppDisplay', this method is
-        treated as "internal".
-        Assumes a 2D rendering of each "z-layer" of the grid.
-        Default z-layer is the zero-layer.
-        No attempt to provide skew for 3D rendering.
-        :returns:
-        - (grid_rect, grid_rect_pygame): tuple of GamePlane and pygame Rect
-        """
-        x = AppDisplay.GAMEMAP_X + x_offset
-        y = AppDisplay.GAMEMAP_Y + y_offset
-        w = AppDisplay.GAMEMAP_W
-        h = AppDisplay.GAMEMAP_H
-        game_plane = GamePlane(
-            p_top_left=Struct.CoordXY(x, 0),
-            p_top_right=Struct.CoordXY(w, 0),
-            p_bottom_left=Struct.CoordXY(x, h),
-            p_bottom_right=Struct.CoordXY(w, h))
-        grid_rect_pygame = pg.Rect(x, y, w, h)
-        return (game_plane, grid_rect_pygame)
-
-    def set_grid_size(self,
-                      p_cols,
-                      p_rows,
-                      p_z_up,
-                      p_z_down) -> dict:
-        """ Set x, y and z dimensions for the grid based on inputs.
-        That is, how many cells are contained in the grid/matrix.
-        In this method, a 3D matrix is supported. Here, z-dimension is
-        handled separately for "up" and "down", rather than using
-        positive and negative values.
-        :returns:
-        - {rc, zz}: dict of column/row and up/down dimensions
-        """
-        rc = Struct.ColumnRowIndex()
-        rc.r = p_cols
-        rc.c = p_rows
-        zz = Struct.MatrixUpDown()
-        zz.z_up = p_z_up
-        zz.z_down = p_z_down
-        return {'rc': rc, 'zz': zz}
-
-    def set_cell_size(self,
-                      x_offset: int,
-                      y_offset: int) -> dict:
-        """ Set width, height in pixels of a single cell.
-        Support placement and rendering of cells within the grid.
-        In this case width and height refer to sizes within the
-        z-zero plane, that is, "height" is in the sense of a 2D grid,
-        not in the sense of the z-directions of the 3D grid.
-
-        At this point, a "cell" is a rectangle, not a cube.
-        :returns:
-        {w, h}: width, height of each cell
-        """
-        w = int(round(AppDisplay.GAMEMAP_W - x_offset) /
-                self.grid_size['rc'].c)
-        h = int(round(AppDisplay.GAMEMAP_H - y_offset) /
-                self.grid_size['rc'].r)
-        return {'w': w, 'h': h}
-
-    def set_grid_lines(self,
-                       x_offset: int,
-                       y_offset: int) -> dict:
-        """ Set dimensions, location, of the cell lines.
-        Support placement and rendering of the cells.  Again,
-        this refers solely to a "flat" plane. No attempt to provide
-        a 3D rendering. Only store the coordinates of the
-        top-left starting-point for the lines, the width of the
-        horizontal lines, and the height of the vertical lines.
-        Handle placement of remaining lines in a rendering method.
-        :returns:
-        {x, y, w, h}: x, y of first line,
-                      width of horizontal lines,
-                      height of vertical lines
-        """
-        x = int(round(self.box.x + x_offset))
-        y = int(round(self.box.y + y_offset))
-        w = self.cell_size['w'] * self.grid_size['rc'].c
-        h = self.cell_size['h'] * self.grid_size['rc'].r
-        return {'x': x, 'y': y, 'w': w, 'h': h}
-
-    def set_grid_data(self) -> dict:
-        """Define a structure that holds cell data of various types.
-        Then assign a copy of that structure to each cell in the grid,
-        including the z directions, which here are keyed as positive (up)
-        and negative (down).
-        Might be more efficient to initialize to empty dicts or None?
-        """
-        grid_matrix = dict()
-        cell_data = {
-            'fill': False,
-            'fill_color': Colors.CP_BLACK,
-            'line_color': Colors.CP_BLACK,
-            'text': '',
-            'img': Struct.Graphic,
-            'state_data': {}
-        }
-        for r in range(self.grid_size['rc'].r + 1):
-            grid_matrix[r] = dict()
-            for c in range(self.grid_size['rc'].c + 1):
-                grid_matrix[r][c] = dict()
-                for z in range(self.grid_size['zz'].z_up + 1):
-                    grid_matrix[r][c][z] = dict()
-                    grid_matrix[r][c][z] = cell_data
-                for d in range(self.grid_size['zz'].z_down + 1):
-                    z = d * -1
-                    grid_matrix[r][c][z] = dict()
-                    grid_matrix[r][c][z] = cell_data
-        return grid_matrix
-
-
-#  GAME-RELATED BASIC DATA ALGORTIHMS
-# ===================================
-class CompareRect(object):
-    """
-    Compare (pygame) rectangles:
-    - Check for containment
-    - Check for intersections (overlap, collision/union)
-    - Check for adjacency/borders (clipline)
-    - Check for equality/sameness
-    """
-
-    def __init__(self):
-        pass
-
-    def rect_contains(self,
-                      p_box_a: pg.Rect,
-                      p_box_b: pg.Rect) -> bool:
-        """Determine if rectangle A contains rectangle B.
-        use pygame contains
-        :args:
-        - p_box_a: (pygame.Rect) rectangle A
-        - p_box_b: (pygame.Rect) rectangle B
-        """
-        if p_box_a.contains(p_box_b):
-            return True
-        else:
-            return False
-
-    def rect_overlaps(self,
-                      p_box_a: pg.Rect,
-                      p_box_b: pg.Rect) -> bool:
-        """Determine if rectangle A and rectangle B overlap.
-        xxx use pygame colliderect xxx
-        use pygame union
-        :args:
-        - p_box_a: (pygame.Rect) rectangle A
-        - p_box_b: (pygame.Rect) rectangle B
-        """
-        # if p_box_a.colliderect(p_box_b):
-        if p_box_a.union(p_box_b):
-            return True
-        else:
-            return False
-
-    def rect_borders(self,
-                     p_rect_a: pg.Rect,
-                     p_rect_b: pg.Rect) -> bool:
-        """Determine if rectangle A and rectangle B share a border.
-        use pygame clipline
-        :args:
-        - p_box_a: (pygame.Rect) rectangle A
-        - p_box_b: (pygame.Rect) rectangle B
-        """
-        if p_rect_a.clipline(p_rect_b):
-            return True
-        else:
-            return False
-
-    def rect_same(self,
-                  p_rect_a: pg.Rect,
-                  p_rect_b: pg.Rect) -> bool:
-        """Determine if rectangle A and rectangle B occupy exactly
-        the same space.
-        :args:
-        - p_box_a: (pygame.Rect) rectangle A
-        - p_box_b: (pygame.Rect) rectangle B
-        """
-        if p_rect_a.topright == p_rect_b.topright and \
-           p_rect_a.bottomleft == p_rect_b.bottomleft:
-            return True
-        else:
-            return False
-
+FM = FileMethods()
+SM = ShellMethods()
 
 # =============================================================
-# DB/ORM table definitions
+# DB/DM table definitions
 #
 # The following models are used to create SQLITE tables and
 #   standard/generic SQL commands (INSERT, UPDATE, SELECT).
@@ -1042,16 +43,17 @@ class CompareRect(object):
 # provinces, cities, towns, villages, scenes, etc.
 # =======================================================
 
+
 # =============================================================
-# Abstracted methods for ORM objects
+# Abstracted methods for Data Model objects
 # =============================================================
-def _orm_to_dict(ORM: object) -> dict:
-    """Convert object to an OrderedDict.
-    This ensures order of attributes matches SQL order in the database.
+def _orm_to_dict(DM: object) -> dict:
+    """Convert data model object to an OrderedDict.
+    Returned attributes order will match SQL order in the database.
     :args:
-    - ORM object
+    - DM object
     """
-    all_vars = OrderedDict(vars(ORM))
+    all_vars = OrderedDict(vars(DM))
     public_vars = OrderedDict({k: v for k, v in all_vars.items()
                                if not k.startswith('_') and
                                k not in ('Constraints',
@@ -1059,32 +61,32 @@ def _orm_to_dict(ORM: object) -> dict:
     return {all_vars['_tablename']: public_vars}
 
 
-def _orm_from_dict(ORM: object,
+def _orm_from_dict(DM: object,
                    p_dict: dict,
                    p_row: int) -> dict:
     """
     Load DB SELECT results into memory.
-    Set object attributes from dict of listed values
-    and return a regular dict of with populated values.
+    Set data model attributes from dict of listed values
+    and return a regular dict with populated values.
     :args:
-    - ORM object
+    - DM - instantiatd data model object
     - p_dict: dict of lists of values
     - p_row: row number of the lists of values to use
     """
     batch_rec =\
-        {k: v for k, v in dict(ORM.to_dict()[ORM._tablename]).items()
+        {k: v for k, v in dict(DM.to_dict()[DM._tablename]).items()
          if k not in ("_tablename", "to_dict", "from_dict")}
     for k, v in batch_rec.items():
-        setattr(ORM._tablename, k, p_dict[k][p_row])
-        batch_rec[k] = getattr(ORM._tablename, k)
+        setattr(DM._tablename, k, p_dict[k][p_row])
+        batch_rec[k] = getattr(DM._tablename, k)
     return batch_rec
 
 
 # =============================================================
 # System Maintenance
 # @DEV:
-#  - Consider adding a version ID to support programmatic
-#    prototyping, undo's and so on.
+#  - Add a version ID wherevr it might be handy
+#    to support programmatic prototyping, undo's and so on.
 # =============================================================
 class Backup(object):
     """Store metadata about DB backup, restore, archive, export.
@@ -1137,13 +139,14 @@ class AppConfig(object):
     mem_dir: str = ''
     cfg_dir: str = ''
     dat_dir: str = ''
+    html_dir: str = ''
     img_dir: str = ''
+    snd_dir: str = ''
     py_dir: str = ''
     db_dir: str = ''
-    sch_dir: str = ''
-    log_dat: str = ''
-    mon_dat: str = ''
-    dbg_dat: str = ''
+    log_dir: str = ''
+    mon_dir: str = ''
+    dbg_dir: str = ''
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -1455,19 +458,19 @@ class GalacticCluster(object):
     galactic_cluster_uid_pk: str = ''
     univ_uid_fk: str = ''
     galactic_cluster_name: str = ''
-    center_from_univ_center_gly: Struct.CoordXYZ = Struct.CoordXYZ()
-    boundary_gly: Struct.Game3DLocation = Struct.Game3DLocation()
+    center_from_univ_center_gly: GroupStruct.CoordXYZ = GroupStruct.CoordXYZ()
+    boundary_gly: GroupStruct.Game3DLocation = GroupStruct.Game3DLocation()
     cluster_shape: str = 'ellipsoid'
-    shape_pc: Struct.CoordXYZ = Struct.CoordXYZ()
-    shape_axes: Struct.AxesABC = Struct.AxesABC()
-    shape_rot: Struct.PitchYawRollAngle = Struct.PitchYawRollAngle()
+    shape_pc: GroupStruct.CoordXYZ = GroupStruct.CoordXYZ()
+    shape_axes: GroupStruct.AxesABC = GroupStruct.AxesABC()
+    shape_rot: GroupStruct.PitchYawRollAngle = GroupStruct.PitchYawRollAngle()
     volume_pc3: float = 0.0
     mass_kg: float = 0.0
     dark_energy_kg: float = 0.0
     dark_matter_kg: float = 0.0
     baryonic_matter_kg: float = 0.0
     timing_pulsar_pulse_per_ms: float = 0.0
-    timing_pulsar_loc_gly: Struct.CoordXYZ = Struct.CoordXYZ()
+    timing_pulsar_loc_gly: GroupStruct.CoordXYZ = GroupStruct.CoordXYZ()
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -1481,12 +484,12 @@ class GalacticCluster(object):
         PK: dict = {"galactic_cluster_uid_pk": ["galactic_cluster_uid_pk"]}
         FK: dict = {"univ_uid_fk": ("UNIVERSE", "univ_uid_pk")}
         CK: dict = {"cluster_shape": EntityType.CLUSTER_SHAPE}
-        GROUP: dict = {"center_from_univ_center_gly": Struct.CoordXYZ,
-                       "boundary_gly": Struct.Game3DLocation,
-                       "shape_pc": Struct.CoordXYZ,
-                       "shape_axes": Struct.AxesABC,
-                       "shape_rot":  Struct.PitchYawRollAngle,
-                       "timing_pulsar_loc_gly": Struct.CoordXYZ}
+        GROUP: dict = {"center_from_univ_center_gly": GroupStruct.CoordXYZ,
+                       "boundary_gly": GroupStruct.Game3DLocation,
+                       "shape_pc": GroupStruct.CoordXYZ,
+                       "shape_axes": GroupStruct.AxesABC,
+                       "shape_rot":  GroupStruct.PitchYawRollAngle,
+                       "timing_pulsar_loc_gly": GroupStruct.CoordXYZ}
         ORDER: list = ["galactic_cluster_name ASC"]
 
 
@@ -1519,22 +522,22 @@ class Galaxy(object):
     galactic_cluster_uid_fk: str = ''
     galaxy_name: str = ''
     relative_size: str = 'medium'
-    center_from_univ_center_kpc: Struct.CoordXYZ = Struct.CoordXYZ()
+    center_from_univ_center_kpc: GroupStruct.CoordXYZ = GroupStruct.CoordXYZ()
     halo_radius_pc: float = 0.0
-    boundary_pc: Struct.Game3DLocation = Struct.Game3DLocation()
+    boundary_pc: GroupStruct.Game3DLocation = GroupStruct.Game3DLocation()
     volume_gpc3: float = 0.0
     mass_kg: float = 0.0
     bulge_shape: str = 'ellipsoid'
-    bulge_center_from_center_ly: Struct.CoordXYZ = Struct.CoordXYZ()
-    bulge_dim_axes: Struct.AxesABC = Struct.AxesABC()
-    bulge_dim_rot: Struct.PitchYawRollAngle = Struct.PitchYawRollAngle()
+    bulge_center_from_center_ly: GroupStruct.CoordXYZ = GroupStruct.CoordXYZ()
+    bulge_dim_axes: GroupStruct.AxesABC = GroupStruct.AxesABC()
+    bulge_dim_rot: GroupStruct.PitchYawRollAngle = GroupStruct.PitchYawRollAngle()
     bulge_black_hole_mass_kg: float = 0.0
     bulge_volume_ly3: float = 0.0
     bulge_total_mass_kg: float = 0.0
     star_field_shape: str = 'ellipsoid'
-    star_field_dim_from_center_ly: Struct.CoordXYZ = Struct.CoordXYZ()
-    star_field_dim_axes: Struct.AxesABC = Struct.AxesABC()
-    star_field_dim_rot: Struct.PitchYawRollAngle = Struct.PitchYawRollAngle()
+    star_field_dim_from_center_ly: GroupStruct.CoordXYZ = GroupStruct.CoordXYZ()
+    star_field_dim_axes: GroupStruct.AxesABC = GroupStruct.AxesABC()
+    star_field_dim_rot: GroupStruct.PitchYawRollAngle = GroupStruct.PitchYawRollAngle()
     star_field_vol_ly3: float = 0.0
     star_field_mass_kg: float = 0.0
     interstellar_mass_kg: float = 0.0
@@ -1555,14 +558,14 @@ class Galaxy(object):
         CK: dict = {"relative_size": EntityType.RELATIVE_SIZE,
                     "bulge_shape": EntityType.ASTRO_SHAPE,
                     "star_field_shape": EntityType.ASTRO_SHAPE}
-        GROUP: dict = {"center_from_univ_center_kpc": Struct.CoordXYZ,
-                       "boundary_pc": Struct.Game3DLocation,
-                       "bulge_center_from_center_ly": Struct.CoordXYZ,
-                       "bulge_dim_axes": Struct.AxesABC,
-                       "bulge_dim_rot": Struct.PitchYawRollAngle,
-                       "star_field_dim_from_center_ly": Struct.CoordXYZ,
-                       "star_field_dim_axes": Struct.AxesABC,
-                       "star_field_dim_rot": Struct.PitchYawRollAngle}
+        GROUP: dict = {"center_from_univ_center_kpc": GroupStruct.CoordXYZ,
+                       "boundary_pc": GroupStruct.Game3DLocation,
+                       "bulge_center_from_center_ly": GroupStruct.CoordXYZ,
+                       "bulge_dim_axes": GroupStruct.AxesABC,
+                       "bulge_dim_rot": GroupStruct.PitchYawRollAngle,
+                       "star_field_dim_from_center_ly": GroupStruct.CoordXYZ,
+                       "star_field_dim_axes": GroupStruct.AxesABC,
+                       "star_field_dim_rot": GroupStruct.PitchYawRollAngle}
         ORDER: list = ["galaxy_name ASC"]
 
 
@@ -1662,13 +665,13 @@ class StarSystem(object):
     star_system_name: str = ''
     is_black_hole: bool = False
     is_pulsar: bool = False
-    boundary_pc: Struct.Game3DLocation = Struct.Game3DLocation()
+    boundary_pc: GroupStruct.Game3DLocation = GroupStruct.Game3DLocation()
     volume_pc3: float = 0.0
     mass_kg: float = 0.0
     system_shape: str = 'ellipsoid'
-    center_from_galaxy_center_pc: Struct.CoordXYZ = Struct.CoordXYZ()
-    system_dim_axes: Struct.AxesABC = Struct.AxesABC()
-    system_dim_rot: Struct.PitchYawRollAngle = Struct.PitchYawRollAngle()
+    center_from_galaxy_center_pc: GroupStruct.CoordXYZ = GroupStruct.CoordXYZ()
+    system_dim_axes: GroupStruct.AxesABC = GroupStruct.AxesABC()
+    system_dim_rot: GroupStruct.PitchYawRollAngle = GroupStruct.PitchYawRollAngle()
     relative_size: str = 'medium'
     spectral_class: str = 'G'
     aprox_age_gyr: float = 0.0
@@ -1707,10 +710,10 @@ class StarSystem(object):
                     "frequency_of_flares": EntityType.FREQUENCY,
                     "intensity_of_flares": EntityType.INTENSITY,
                     "frequency_of_comets": EntityType.FREQUENCY}
-        GROUP: dict = {"boundary_pc": Struct.Game3DLocation,
-                       "center_from_galaxy_center_pc": Struct.CoordXYZ,
-                       "system_dim_axes": Struct.AxesABC,
-                       "system_dim_rot": Struct.PitchYawRollAngle}
+        GROUP: dict = {"boundary_pc": GroupStruct.Game3DLocation,
+                       "center_from_galaxy_center_pc": GroupStruct.CoordXYZ,
+                       "system_dim_axes": GroupStruct.AxesABC,
+                       "system_dim_rot": GroupStruct.PitchYawRollAngle}
         ORDER: list = ["star_system_name ASC"]
 
 
@@ -1787,7 +790,7 @@ class Moon(object):
     moon_uid_pk: str = ''
     world_uid_fk: str = ''
     moon_name: str = ''
-    center_from_world_center_km: Struct.CoordXYZ
+    center_from_world_center_km: GroupStruct.CoordXYZ
     mass_kg: float = 0.0
     radius_km: float = 0.0
     obliquity_dg: float = 0.0    # a/k/a axial tilt
@@ -1812,7 +815,7 @@ class Moon(object):
         FK: dict = {"world_uid_fk": ("WORLD", "world_uid_pk")}
         CK: dict = {"rotation_direction": EntityType.ASTRO_DIRECTION,
                     "orbit_direction": EntityType.ASTRO_DIRECTION}
-        GROUP: dict = {"center_from_world_center_km": Struct.CoordXYZ}
+        GROUP: dict = {"center_from_world_center_km": GroupStruct.CoordXYZ}
         ORDER: list = ["moon_name ASC"]
 
 
@@ -2345,8 +1348,8 @@ class Map(object):
     map_uid_pk: str = ''
     map_name: str = ''
     map_type: str = ''
-    geo_map_loc: Struct.GameGeoLocation = Struct.GameGeoLocation()
-    three_d_map_loc: Struct.Game3DLocation = Struct.Game3DLocation()
+    geo_map_loc: GroupStruct.GameGeoLocation = GroupStruct.GameGeoLocation()
+    three_d_map_loc: GroupStruct.Game3DLocation = GroupStruct.Game3DLocation()
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -2359,8 +1362,8 @@ class Map(object):
     class Constraints(object):
         PK: dict = {"map_uid_pk": ["map_uid_pk"]}
         CK: dict = {"map_type": EntityType.MAP_TYPE}
-        GROUP: dict = {"geo_map_loc": Struct.GameGeoLocation,
-                       "three_d_map_loc": Struct.Game3DLocation}
+        GROUP: dict = {"geo_map_loc": GroupStruct.GameGeoLocation,
+                       "three_d_map_loc": GroupStruct.Game3DLocation}
         ORDER: list = ["map_name ASC"]
 
 
@@ -3202,7 +2205,7 @@ class LandBodyXOceanBody(object):
 
 
 # =======================================================
-# DB/ORM Calls
+# DB/DM Calls
 # - Create SQL files
 # - Create SQLITE tables
 # =======================================================
@@ -3300,9 +2303,9 @@ class InitGameDB(object):
                 DB.backup_db()
                 DB.archive_db()
 
-        sql_list = [sql.name for sql in FI.scan_dir(DB.SQL, 'DROP*')]
+        sql_list = [sql.name for sql in FM.scan_dir(DB.SQL, 'DROP*')]
         DB.execute_dml(sql_list, p_foreign_keys_on=False)
-        sql_list = [sql.name for sql in FI.scan_dir(DB.SQL, 'CREATE*')]
+        sql_list = [sql.name for sql in FM.scan_dir(DB.SQL, 'CREATE*')]
         DB.execute_dml(sql_list, p_foreign_keys_on=True)
 
         if p_create_test_data:
@@ -3396,7 +2399,7 @@ class TestData(object):
         """Return test data value for a file field
         :returns: str
         """
-        v = SI.get_cwd_home() + '/' + SI.get_uid()[10:17] + '/' +\
+        v = SM.get_cwd_home() + '/' + SM.get_uid()[10:17] + '/' +\
             random.choice(['test_data', 'other', 'config', 'backup']) +\
             random.choice(['.txt', '.jpg', '.png', '.pdf', '.dat', '.xls'])
         return v
@@ -3453,7 +2456,7 @@ class TestData(object):
         """Return test data value for a uri field
         :returns: str
         """
-        v = 'https://' + SI.get_host() + '/' + SI.get_uid()[10:17] + '/' +\
+        v = 'https://' + SM.get_host() + '/' + SM.get_uid()[10:17] + '/' +\
             random.choice(['map', 'ideogram', 'sound', 'webby', 'picture']) +\
             random.choice(['.html', '.jpg', '.wav', '.pdf', '.dat', '.csv'])
         return v
@@ -3528,9 +2531,9 @@ class TestData(object):
                 row_list.append(col_default.replace("'", ""))
 
                 if col_nm.endswith('_pk'):
-                    row_list[cx] = SI.get_key()
+                    row_list[cx] = SM.get_key()
                 elif col_nm.endswith('_dttm'):
-                    row_list[cx] = SI.get_iso_time_stamp()
+                    row_list[cx] = SM.get_iso_time_stamp()
 
                 elif col_nm in self.ck_constraints.keys():
                     row_list[cx] = random.choice(self.ck_constraints[col_nm])

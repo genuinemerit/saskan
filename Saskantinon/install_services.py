@@ -1,7 +1,7 @@
 #!python
-"""Saskan Apps file installation procedure.
-:module:    saskan_install.py
-:class:     SaskanInstall/0
+"""Saskan Services installation procedure.
+:module:    install_services.py
+:class:     InstallServices/0
 :author:    GM <genuinemerit @ pm.me>
 
 (saskan) sudo ~/../Saskantinon/saskan_install
@@ -21,67 +21,34 @@ N.B.:
 """
 import json
 
-# import os
-
 from os import path
-from pathlib import Path
 from pprint import pprint as pp  # noqa: F401
 
-# from time import sleep
+from saskan_methods.shell import Shell
+from saskan_methods.files import Files
+from saskan_io.get_data import GetData
+from saskan_io.set_data import SetData
+from saskan_io.wiretap import WireTap
+from saskan_io.analysis import Analysis
 
-from io_shell import ShellIO
-from io_set_get import GetData
-from io_set_get import SetData
-from io_file import FileIO
-from io_db import DataBase
-# from io_get_set import ComputeData
-# from io_get_set import GetData
-# from io_get_set import SetData
-# from io_wiretap import WireTap  # type: ignore
-# from saskan_report import SaskanReport  # type: ignore
-
-SI = ShellIO()
+SH = Shell()
+FI = Files()
+WT = WireTap()
+AL = Analysis()
 GetData = GetData()
 SetData = SetData()
-# SR = SaskanReport()
-# WT = WireTap()
 
 
-class SaskanInstall(object):
-    """Configure and install Saskan apps.
+class InstallServices(object):
+    """Configure and install Saskan services.
 
     @DEV:
     - Create servers, clients, queues, load balancers and so on.
     """
 
     def __init__(self):
-        """Initialize database, directories and files."""
-        FI = FileIO()
-        print("\n\nSaskan Installer tasks...")
-        if FI.BOOT is None:
-            self.install_bootstrap_data(FI)
-        print("* Bootstrap data and basic app dirs installed.")
-        FI = FileIO()
-        self.install_database(FI)
-        SetData.set_app_config(FI)
-        FI = FileIO()
-        pp(('DIR', FI.DIR,
-            'DB_CFG', FI.DB_CFG,
-            'BOOT', FI.BOOT))
-        SetData.set_texts(FI)
-        self.verify_system_dirs(FI)
-        self.install_app_dirs(FI)
-        self.install_app_files(FI)
-        # NEXT: install other database tables,
-        # using SetData / GetData calls. Probably
-        # use json files from the git Schema directory
-        # to do this in most cases. May be some opportunities
-        # to use ChatGPT or other AI tools to automate some
-        # of the work. Also experiment with using CLI
-        # interfaces and maybe even GUI interfaces to drive
-        # some of the story-telling aspects. Start with the
-        # the most static stuff -- the GUI configuration data,
-        # then move into the story-/world-building stuff.
+        """Initialize load balancers, services, clients, queues"""
+        pass
         """
         Come back to service architecture later.
         It is interesting, but a big rabbit hole
@@ -96,163 +63,6 @@ class SaskanInstall(object):
         # FI.pickle_saskan(self.APP)
         """
 
-    # Helpers
-    # ==============================================================
-
-    # Bootstrap and database set-up
-    # ==============================================================
-
-    def install_bootstrap_data(self,
-                               FI: object):
-        """
-        Create basic app directories if needed.
-        Write bootstrap data to app directory.
-        :args:
-        - FI: current instance of FileIO class.
-        @DEV:
-        - It would be interesting to see if I can pull in the
-          installable files directly from GitHub.
-        - Make some of these values param inputs:
-            - db_version
-            - git_source
-            - language
-        """
-        boot_data: dict = {
-            "app_dir": "saskan",
-            "db_dir": "sql",
-            "db_version": "0.1",
-            # "git_source": "https://github.com/genuinemerit/Saskantinon",
-            "git_source": "/home/dave/Dropbox/GitHub/saskan-app/Saskantinon",
-            "language": "en",
-            "main_db": "SASKAN.db",
-            "bkup_db": "SASKAN.bak"}
-        boot_j = json.dumps(boot_data)
-        app_d = path.join(SI.get_cwd_home(), boot_data["app_dir"])
-        config_d = path.join(app_d, "config")
-        sql_d = path.join(app_d, "sql")
-        FI.make_dir(app_d)
-        FI.make_dir(config_d)
-        FI.make_dir(sql_d)
-        FI.write_file(path.join(config_d, "b_bootstrap.json"), boot_j)
-
-    def install_database(self,
-                         FI: object):
-        """Copy SQL files to app sql directory.
-        This will delete any existing copies of the SQL files and
-          database and replace with new ones.
-        :args:
-        - FI: current instance of FileIO class.
-        """
-        DB = DataBase(FI.DB_CFG)
-        from io_data import InitGameDB
-        IGDB = InitGameDB()
-        IGDB.create_sql(DB)
-        IGDB.boot_db(DB)
-        print("* Database installed.")
-
-    def verify_system_dirs(self,
-                           FI: object):
-        """Verify standard bash directory exists.
-        - /usr/local/bin
-        Verify standard in-memory directory exists.
-        - /dev/shm
-        :args:
-        - FI: current instance of FileIO class.
-        """
-        for sys_dir in ("bin_dir", "mem_dir"):
-            files = FI.scan_dir(FI.DIR[sys_dir])
-            if files in ([], None):
-                txt = GetData.get_text("en", "err_file", FI)
-                raise Exception(f"{txt} {FI.DIR[sys_dir]}")
-        print("* System directories verified.")
-
-    def install_app_dirs(self,
-                         FI: object):
-        """Create remaining app directories.
-        In case they already exist, clean them out.
-        :args:
-        - FI: current instance of FileIO class.
-        """
-        def _wipe_and_remove():
-            a_files = FI.scan_dir(app_dir)
-            if a_files is not None:
-                # wipe and remove if already exists
-                a_files += "/*"
-                txt = GetData.get_text("en", "err_process", FI)
-                ok, result = SI.run_cmd([f"sudo rm -rf {a_files}"])
-                if not ok:
-                    raise Exception(f"{txt} {result}")
-                ok, result = SI.run_cmd([f"sudo rmdir {app_dir}"])
-                if not ok:
-                    raise Exception(f"{txt} {result}")
-
-        for a_dir in ('dat_dir', 'dbg_dat', 'img_dir',
-                      'log_dat', 'mon_dat', 'py_dir', 'sch_dir'):
-            app_dir = path.join(FI.DIR['root_dir'], FI.DIR[a_dir])
-            _wipe_and_remove()
-            FI.make_dir(app_dir)
-            FI.make_executable(app_dir)
-            FI.make_executable(app_dir)
-            FI.make_writable(app_dir)
-        print("* Other app directories installed.")
-
-    def install_app_files(self,
-                          FI: object):
-        """Copy app files to app directory.
-        For python files, don't copy the install module.
-        :args:
-        - FI: current instance of FileIO class.
-        @DEV:
-        - Ignore the 'schema' files for now.
-          That should all end up in the database or
-          as data-create methods.
-        """
-        def _copy_files():
-            files = FI.scan_dir(git_dir)
-            if files is not None:
-                for f in files:
-                    FI.copy_one_file(f, app_dir)
-
-        def _copy_python_files():
-            files = FI.scan_dir(git_dir)
-            py_files = [
-                f for f in files if str(f).endswith(".py") and
-                "_install" not in str(f)
-            ]
-            if py_files is not None:
-                for f in py_files:
-                    FI.copy_one_file(f, app_dir)
-
-        git_dir = path.join(FI.BOOT['git_source'], "html")
-        app_dir = path.join(FI.DIR['root_dir'], FI.DIR['dat_dir'])
-        _copy_files()
-        git_dir = path.join(FI.BOOT['git_source'], "images")
-        app_dir = path.join(FI.DIR['root_dir'], FI.DIR['img_dir'])
-        _copy_files()
-        git_dir = FI.BOOT['git_source']
-        app_dir = path.join(FI.DIR['root_dir'], FI.DIR['py_dir'])
-        _copy_python_files()
-        print("* App files installed.")
-
-    def install_bash_install_script(self,
-                                    FI):
-        """Copy specific bash file(s) to /usr/local/bin
-        Set up the command-line exectuables for saskan.
-        Check/modify before copying to correctly locate the
-        python file in the saskan app directory.
-        Drop this. Too many problems. Just execute the
-        bash script from the git directory after activating
-        the saskan venv. We can work out the best way to
-        launch the installer and the apps later. No need
-        to run the bash script under sudo I don't think?
-        """
-        bash_f_nm = "saskan_install"
-        bash_f_src = path.join(FI.BOOT['git_source'], bash_f_nm)
-        bash_f_tgt = path.join(FI.DIR['bin_dir'], bash_f_nm)
-        FI.copy_one_file(bash_f_src, FI.DIR['bin_dir'])
-        FI.make_executable(bash_f_tgt)
-        print("* Bash install script installed.")
-
     def get_free_ports(self, p_next_port: int, p_req_port_cnt: int) -> tuple:
         """Get a set of free ports
         :args:
@@ -262,7 +72,7 @@ class SaskanInstall(object):
                   int: next port number to check)
         """
         # print(f"Selecting {p_req_port_cnt} ports starting at {p_next_port}")
-        _, net_stat_result = SI.run_cmd(["netstat -lant"])
+        _, net_stat_result = SH.run_cmd(["netstat -lant"])
         ports: list = list()
         while len(ports) < p_req_port_cnt:
             if (
@@ -289,15 +99,15 @@ class SaskanInstall(object):
         For now, it would be overkill.
         """
         print("Reset all firewall rules...")
-        ok, result = SI.run_cmd("ufw reset")
+        ok, result = SH.run_cmd("ufw reset")
         print(f"Set firewall rules for {len(p_ports)} ports...")
         if ok:
             for port in p_ports:
-                ok, result = SI.run_cmd(f"ufw allow in {port}")
+                ok, result = SH.run_cmd(f"ufw allow in {port}")
                 if not ok:
                     raise Exception(f"{FI.T['err_cmd']} {result}")
             print("Enable new firewall rules...")
-            ok, result = SI.run_cmd("ufw enable")
+            ok, result = SH.run_cmd("ufw enable")
             if ok:
                 print(result)
         if not ok:
@@ -542,7 +352,7 @@ www-data    5108    5106  0 18:45 ?        00:00:00 nginx: worker process
         - svc: service config dictionary
         """
         pgm_nm = "sv_server"
-        SI.kill_jobs("/" + pgm_nm)
+        SH.kill_jobs("/" + pgm_nm)
         # Launch new sv_server instances
         pypath = path.join(self.APP, FI.D["ADIRS"]["PY"], f"{pgm_nm}.py")
         logpath = path.join(
@@ -553,7 +363,7 @@ www-data    5108    5106  0 18:45 ?        00:00:00 nginx: worker process
             for p_typ in [pt for pt in c_meta.keys()
                           if pt not in ("host", "desc")]:
                 for port in c_meta[p_typ]["port"]:
-                    SI.run_nohup_py(
+                    SH.run_nohup_py(
                         pypath,
                         logpath,
                         f"/{c_nm}/{p_typ}:{port}",
@@ -561,7 +371,7 @@ www-data    5108    5106  0 18:45 ?        00:00:00 nginx: worker process
                         port,
                         pgm_nm,
                     )
-        result, _ = SR.rpt_running_jobs("/" + pgm_nm)
+        result, _ = AL.rpt_running_jobs("/" + pgm_nm)
         print("Servers (message brokers) started or restarted:")
         print(result)
 
@@ -663,4 +473,4 @@ www-data    5108    5106  0 18:45 ?        00:00:00 nginx: worker process
 
 
 if __name__ == "__main__":
-    SI = SaskanInstall()
+    SI = InstallServices()

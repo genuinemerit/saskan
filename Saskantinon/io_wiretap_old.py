@@ -15,9 +15,9 @@ from datetime import datetime, timedelta, timezone
 from os import path
 from pprint import pprint as pp   # noqa: F401
 
-from method_files import FileMethods    # type: ignore
+from io_file import FileIO    # type: ignore
 
-FM = FileMethods()
+FI = FileIO()
 
 
 class WireTap(object):
@@ -73,16 +73,16 @@ class WireTap(object):
         self.DEBUG: int = 10
         self.NOTSET: int = 0
         """
-        self.mon_ns = path.join(FM.D["MEM"], FM.D["APP"],
-                                FM.D['ADIRS']["SAV"],
-                                FM.D['NSDIRS']["MON"])    # not used
-        self.log_level = self.llvl[FM.D["LOGCFG"]]
-        self.log_dir_nm = path.join(FM.D["MEM"], FM.D["APP"],
-                                    FM.D['ADIRS']["SAV"],
-                                    FM.D['NSDIRS']["LOG"])
-        self.mon_dir_nm = path.join(FM.D["MEM"], FM.D["APP"],
-                                    FM.D['ADIRS']["SAV"],
-                                    FM.D['NSDIRS']["MON"])
+        self.mon_ns = path.join(FI.D["MEM"], FI.D["APP"],
+                                FI.D['ADIRS']["SAV"],
+                                FI.D['NSDIRS']["MON"])    # not used
+        self.log_level = self.llvl[FI.D["LOGCFG"]]
+        self.log_dir_nm = path.join(FI.D["MEM"], FI.D["APP"],
+                                    FI.D['ADIRS']["SAV"],
+                                    FI.D['NSDIRS']["LOG"])
+        self.mon_dir_nm = path.join(FI.D["MEM"], FI.D["APP"],
+                                    FI.D['ADIRS']["SAV"],
+                                    FI.D['NSDIRS']["MON"])
         """
         self.log_dir_nm = "/dev/shm/saskan/cache/log"
         self.log_level = self.llvl["DEBUG"]
@@ -238,8 +238,8 @@ class WireTap(object):
             uuid = WireTap.get_token(16)
             rec_nm = (f"log~{p_lvl}~{log_dt}~{expire_dt}~{uuid}")
             msg = p_lvl + "~" + p_msg
-            FM.write_file(path.join(self.log_dir_nm, rec_nm), msg)
-            # FM.pickle_object(path.join(self.log_dir_nm, rec_nm), msg)
+            FI.write_file(path.join(self.log_dir_nm, rec_nm), msg)
+            # FI.pickle_object(path.join(self.log_dir_nm, rec_nm), msg)
 
         # log() MAIN
         # ==========================================================
@@ -277,7 +277,7 @@ class WireTap(object):
                   p_ns: str,
                   p_key_pattern: str):
         """Return keys of records that match search pattern."""
-        keys = FM.get_dir(p_ns)
+        keys = FI.get_dir(p_ns)
         keys = [f for f in keys if p_key_pattern in str(f)]
         return sorted(keys)
 
@@ -304,8 +304,8 @@ class WireTap(object):
         recs = list()
         keys = WireTap.find_keys(p_ns, p_key_pattern)
         for key in keys:
-            # _, _, rec = FM.unpickle_object(key)
-            rec = FM.get_file(key)
+            # _, _, rec = FI.unpickle_object(key)
+            rec = FI.get_file(key)
             recs.append((key, rec))
         return recs
 
