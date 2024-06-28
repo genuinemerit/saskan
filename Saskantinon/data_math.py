@@ -1,22 +1,23 @@
 #!python
 """
-:module:    saskan_math.py
+:module:    data_math.py
 
 :author:    GM (genuinemerit @ pm.me)
 
 :classes:
-- SaskanRect - Manage extended rectangle functions, buidling on pygame.Rect
-- SaskanMath - Game-related conversions and calculations
+- Math - Game-related conversions and calculations
 
-Transforms, conversions, calculations, algorithms useful to the game,
-including use of game units and terminology.
+Transforms, conversions, calculations, algorithms
+useful to the game, including use of game units and
+terminology. Use this in conjunction with data_structs.py
 
 Units are as follows unless otherwise noted:
 - distance => kilometers, or gigaparsecs
 - mass => kilograms
 - day => 1 rotation of planet Gavor
 - year a/k/a turn => 1 orbit of Gavor around its star, Faton
-- rotation => multiple or fraction of Gavoran days; or galactic seconds
+- rotation => multiple or fraction of Gavoran days;
+or galactic seconds
 - orbit => revolution of Gavor around Faton:
     multiple, fractional Gavoran years (turns); or galactic seconds
 
@@ -27,146 +28,9 @@ Units are as follows unless otherwise noted:
 # import matplotlib.colors as mColors
 from pprint import pformat as pf        # noqa: F401
 from pprint import pprint as pp         # noqa: F401
-from pygame import Rect
-
-from io_data import GameRect
 
 
-class SaskanRect(object):
-    """Manage extended rectangle functions, wrapping the pygame.Rect class.
-
-    - Create and modify rectangles and specify their attributes
-    - Check for containment
-    - Check for intersections (overlap, collision)
-    - Check for adjacency (clipline)
-    - Check for equality
-    """
-
-    def __init__(self):
-        """Initialize a Saskan rectangle object.
-
-        For matplotlib.patches.Rectangle and colors:
-        See: https://matplotlib.org/stable/api/_as_gen/matplotlib.patches.Rectangle.html   # noqa: E501
-        and https://matplotlib.org/stable/tutorials/colors/colors.html
-        """
-        self.game_rect: GameRect
-
-    def make_rect(self,
-                  p_top: float,
-                  p_left: float,
-                  p_width: float,
-                  p_height: float,
-                  p_line_width: float = 0.0,
-                  p_fill: bool = False,
-                  p_fill_color=None,
-                  p_line_color=None):
-        """Create a rectangle from top, left, width, height.
-        Units are in whatever coordinate system makes sense, such as,
-        pixels, meters, kilometers, etc. This class makes no assumptions
-        about what the units represent.
-        :args:
-        - top: (float) top of rectangle (y)
-        - left: (float) left of rectangle (x)
-        - width: (float) width (w) of rectangle
-        - height: (float) height (h) of rectangle
-        - line_width: (float) width of rectangle border
-        - fill: (bool) fill the rectangle with color, default False
-        - fill_color: (matplotlib.colors) color to fill rectangle
-        - line_color: (matplotlib.colors) color of rectangle border
-          Color definitions must be from pygame.Color.
-          See io_data.Colors
-
-        :sets: (GameRect) proprietary rectangle data structure, with pygame
-          Rect object referenced by "box" key
-        N.B.:
-        - Order of arguments is y, x, w, h, not x, y, w, h.
-
-        """
-        self.rect = {
-            'bottom': p_top + p_height,
-            'right': p_left + p_width,
-            'h': p_height,
-            'w': p_width,
-            't': p_top,
-            'y': p_top,
-            'l': p_left,
-            'x': p_left,
-            'b': p_top + p_height,
-            'r': p_left + p_width,
-            'top_left': (p_left, p_top),
-            'top_right': (p_left + p_width, p_top),
-            'bottom_left': (p_left, p_top + p_height),
-            'bottom_right': (p_left + p_width, p_top + p_height),
-            'center': (p_left + p_width / 2.0, p_top + p_height / 2.0),
-            'center_w': p_width / 2.0,
-            'center_x': p_width / 2.0,
-            'center_h': p_height / 2.0,
-            'center_y': p_height / 2.0,
-            'fill': p_fill,
-            'fill_color': p_fill_color,
-            'line_width': p_line_width,
-            'line_color': p_line_color,
-            'box': Rect((p_left, p_top), (p_width, p_height))
-        }
-
-    def rect_contains(self,
-                      p_box_a: Rect,
-                      p_box_b: Rect) -> bool:
-        """Determine if rectangle A contains rectangle B.
-        use pygame contains
-        :args:
-        - p_box_a: (pygame.Rect) rectangle A
-        - p_box_b: (pygame.Rect) rectangle B
-        """
-        if p_box_a.contains(p_box_b):
-            return True
-        else:
-            return False
-
-    def rect_overlaps(self,
-                      p_box_a: Rect,
-                      p_box_b: Rect) -> bool:
-        """Determine if rectangle A and rectangle B overlap.
-        use pygame colliderect
-        :args:
-        - p_box_a: (pygame.Rect) rectangle A
-        - p_box_b: (pygame.Rect) rectangle B
-        """
-        if p_box_a.colliderect(p_box_b):
-            return True
-        else:
-            return False
-
-    def rect_borders(self,
-                     p_rect_a: Rect,
-                     p_rect_b: Rect) -> bool:
-        """Determine if rectangle A and rectangle B share a border.
-        use pygame clipline
-        :args:
-        - p_box_a: (pygame.Rect) rectangle A
-        - p_box_b: (pygame.Rect) rectangle B
-        """
-        if p_rect_a.clipline(p_rect_b):
-            return True
-        else:
-            return False
-
-    def rect_same(self,
-                  p_rect_a: Rect,
-                  p_rect_b: Rect) -> bool:
-        """Determine if rectangle A and rectangle B occupy exactly
-        the same space.
-        :args:
-        - p_box_a: (pygame.Rect) rectangle A
-        - p_box_b: (pygame.Rect) rectangle B
-        """
-        if p_rect_a.topright == p_rect_b.topright and \
-           p_rect_a.bottomleft == p_rect_b.bottomleft:
-            return True
-        else:
-            return False
-
-class SaskanMath(object):
+class Math(object):
     """Class for game-related conversions and calculations.
        Includes templates for map grids.
     """
@@ -278,7 +142,7 @@ class SaskanMath(object):
         return inches
 
     def inches_to_cm(self,
-                        p_inches: float) -> float:
+                     p_inches: float) -> float:
         """Convert inches to centimeters."""
         cm = round(float(p_inches) * 2.54, 5)
         return cm
@@ -303,7 +167,7 @@ class SaskanMath(object):
 
     def inches_to_ft(self,
                      p_inches: float,
-                     p_round: bool=True) -> float:
+                     p_round: bool = True) -> float:
         """Convert inches to feet."""
         if p_round:
             ft = round(float(p_inches) * 0.08333333333, 5)
@@ -313,7 +177,7 @@ class SaskanMath(object):
 
     def cm_to_meters(self,
                      p_cm: float,
-                     p_round: bool=True) -> float:
+                     p_round: bool = True) -> float:
         """Convert centimeters to meters."""
         if p_round:
             meters = round(float(p_cm) * 0.01, 5)
@@ -323,7 +187,7 @@ class SaskanMath(object):
 
     def meters_to_cm(self,
                      p_meters: float,
-                     p_round: bool=True) -> float:
+                     p_round: bool = True) -> float:
         """Convert meters to centimeters."""
         if p_round:
             cm = round(float(p_meters) * 100, 5)
@@ -333,7 +197,7 @@ class SaskanMath(object):
 
     def cm_to_mm(self,
                  p_cm: float,
-                    p_round: bool=True) -> float:
+                 p_round: bool = True) -> float:
         """Convert centimeters to millimeters."""
         if p_round:
             mm = round(float(p_cm) * 10, 5)
@@ -343,7 +207,7 @@ class SaskanMath(object):
 
     def km_to_mi(self,
                  p_km: float,
-                 p_round: bool=True) -> float:
+                 p_round: bool = True) -> float:
         """Convert kilometers to miles."""
         if p_round:
             mi = round(float(p_km) * 0.62137119223733, 5)
@@ -353,7 +217,7 @@ class SaskanMath(object):
 
     def km_to_ka(self,
                  p_km: float,
-                 p_round: bool=True) -> float:
+                 p_round: bool = True) -> float:
         """Convert kilometers to katas,
         a game world measurement where 1 kata = 0.256 km."""
         if p_round:
@@ -366,7 +230,7 @@ class SaskanMath(object):
 
     def km_to_ga(self,
                  p_km: float,
-                 p_round: bool=True) -> float:
+                 p_round: bool = True) -> float:
         """Convert kilometers to gawos,
         a game world measurement where 1 gawo = 1.024 km."""
         if p_round:
