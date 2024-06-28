@@ -30,26 +30,23 @@ Goals:
   graph data. Maybe rename this to io_analysis or something.
 """
 
-# import networkx as nx                   # type: ignore
 import pandas as pd                     # type: ignore
-# import pickle
 
-# from copy import deepcopy
 from os import path
 from pandas import DataFrame
 from pprint import pformat as pf        # noqa: F401
 from pprint import pprint as pp         # noqa: F401
 
-from io_file import FileIO              # type: ignore
-from io_shell import ShellIO            # type: ignore
-from saskan_report import SaskanReport  # type: ignore
+from method_files import FileMethods    # type: ignore
+from method_shell import ShellMethods   # type: ignore
+from io_analysis import Analysis        # type: ignore
 
-FI = FileIO()
-SI = ShellIO()
-SR = SaskanReport()
+FM = FileMethods()
+SM = ShellMethods()
+AL = Analysis()
 
 
-class GraphIO(object):
+class Graphs(object):
     """Class for using Networkx Graphing methods.
 
     Define/enable the Networkx graphing functions.
@@ -94,7 +91,7 @@ class GraphIO(object):
 
         @DEV:
         - Eventually point to regular file stores and
-          use FI.get_schema(), as with JSON file.
+          use FM.get_schema(), as with JSON file.
         - Consider dropping use of Excel, ODS, CSV files as scheemas;
           just use JSON (or YAML or OWL) for ontologies.
         - May want to keep for real heavy-duty Pandas work, as an
@@ -121,7 +118,7 @@ class GraphIO(object):
         elif ss_type.lower() in ('txt'):
             sheet_df = pd.read_csv(p_file_path, sep='|', header=True)
         else:
-            raise Exception(f"{FI.T['err_file']} {p_file_path}/{p_sheet_nm}")
+            raise Exception(f"{FM.T['err_file']} {p_file_path}/{p_sheet_nm}")
         return sheet_df
 
     def set_source(self,
@@ -139,9 +136,9 @@ class GraphIO(object):
         - (tuple): (path to schema files, dataset_nm)
         """
         home = path.expanduser("~")
-        src_dir = path.join(home, FI.D["APP"], FI.D["ADIRS"]["ONT"])
+        src_dir = path.join(home, FM.D["APP"], FM.D["ADIRS"]["ONT"])
         dataset_nm = p_sheet_nm if p_sheet_nm else p_file_name.split('.')[0]
-        return(src_dir, dataset_nm)
+        return (src_dir, dataset_nm)
 
     def get_ss_data(self,
                     p_file_name: str,
@@ -170,7 +167,7 @@ class GraphIO(object):
         :args:
         - p_set (str): Name of a schema/ontology, e.g.: "scenes"
         """
-        ds = FI.get_schema(p_set)
+        ds = FM.get_schema(p_set)
         self.DS[p_set] = list(ds.values())[0]
         self.N[p_set] = {"types": list(),
                          "name": dict(), "size": dict(), "color": dict()}
@@ -275,19 +272,19 @@ class GraphIO(object):
         #                 "Magister Showan of the Nywing",
         #                 "Ríkila",
         #                 "Inn of the Full Moons"])
-        G = SR.set_graph(self.E[p_set],
+        G = AL.set_graph(self.E[p_set],
                          ["Thinker Stanley P. Quinn",
                           "Birikay Riverwaq",
                           "Magister Showan of the Nywing"])
-        # G = SR.set_graph(self.N[p_set], self.E[p_set])
-        pp((SR.get_nodes_in_type(self.N[p_set], "people")))
-        pp((SR.get_edges_for_nodes(self.E[p_set],
+        # G = AL.set_graph(self.N[p_set], self.E[p_set])
+        pp((AL.get_nodes_in_type(self.N[p_set], "people")))
+        pp((AL.get_edges_for_nodes(self.E[p_set],
                                    ("people", "scene"),
                                    ['Thinker Stanley P. Quinn',
                                     'Magister Showan of the Nywing'])))
-        pp((SR.get_edges_for_nodes(self.E[p_set],
+        pp((AL.get_edges_for_nodes(self.E[p_set],
                                    ("scene", "people"),
                                    ['001 Full Moons Rising',
                                     '003 Full Moons Waning'])))
-        pp((SR.get_degrees(p_set, G, self.N[p_set])))
-        # SR.draw_graph(p_set, G, self.N[p_set], self.E[p_set])
+        pp((AL.get_degrees(p_set, G, self.N[p_set])))
+        # AL.draw_graph(p_set, G, self.N[p_set], self.E[p_set])

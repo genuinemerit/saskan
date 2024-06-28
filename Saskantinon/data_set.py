@@ -1,6 +1,6 @@
 """
 
-:module:    io_set_data.py
+:module:    data_set.py
 :author:    GM (genuinemerit @ pm.me)
 
 Saskan Data Management middleware.
@@ -31,23 +31,6 @@ from database import DataBase
 
 SM = ShellMethods()
 FM = FileMethods()
-
-
-class ComputeData(object):
-    """
-    Provide methods for setting data as the result of
-    calculations, algorithms or AI calls.
-    """
-    def __init__(self):
-        """
-        Initialize a new instance of the ComputeData class.
-        Also see prototype Astro, Time, Math and Music classes.
-        If they are generic methods, put them in saskan_methods.
-        If they are data-creation methods, put them in saskan_data.
-        Only keep things in saskan_io that are specific to IO
-        middleware.
-        """
-        pass
 
 
 class SetData(object):

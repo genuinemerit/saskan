@@ -1,5 +1,5 @@
 """
-:module:    io_pg_structs.py
+:module:    data_pg_structs.py
 :author:    GM (genuinemerit @ pm.me)
 
 Saskan Data Management middleware.

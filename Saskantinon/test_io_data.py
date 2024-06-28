@@ -1,13 +1,17 @@
 import unittest
 import pygame as pg
 import random
-from io_data import Astro
-from io_data import CompareRect
+from data_model import Astro
+from data_pg_structs import CompareRect
 
 pg.init()     # Initialize PyGame for use in this module
 
 
 class TestAstro(unittest.TestCase):
+    """
+    Modify and rename as needed.
+    This is an example of using unittest.
+    """
 
     def test_galaxy_name_parts(self):
         # Test galaxy name part generation

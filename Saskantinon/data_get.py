@@ -1,6 +1,6 @@
 """
 
-:module:    get_data.py
+:module:    data_get.py
 :author:    GM (genuinemerit @ pm.me)
 
 Saskan Data Management middleware.

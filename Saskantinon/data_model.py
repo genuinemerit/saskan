@@ -522,22 +522,27 @@ class Galaxy(object):
     galactic_cluster_uid_fk: str = ''
     galaxy_name: str = ''
     relative_size: str = 'medium'
-    center_from_univ_center_kpc: GroupStruct.CoordXYZ = GroupStruct.CoordXYZ()
+    center_from_univ_center_kpc: GroupStruct.CoordXYZ =\
+        GroupStruct.CoordXYZ()
     halo_radius_pc: float = 0.0
     boundary_pc: GroupStruct.Game3DLocation = GroupStruct.Game3DLocation()
     volume_gpc3: float = 0.0
     mass_kg: float = 0.0
     bulge_shape: str = 'ellipsoid'
-    bulge_center_from_center_ly: GroupStruct.CoordXYZ = GroupStruct.CoordXYZ()
+    bulge_center_from_center_ly: GroupStruct.CoordXYZ =\
+        GroupStruct.CoordXYZ()
     bulge_dim_axes: GroupStruct.AxesABC = GroupStruct.AxesABC()
-    bulge_dim_rot: GroupStruct.PitchYawRollAngle = GroupStruct.PitchYawRollAngle()
+    bulge_dim_rot: GroupStruct.PitchYawRollAngle =\
+        GroupStruct.PitchYawRollAngle()
     bulge_black_hole_mass_kg: float = 0.0
     bulge_volume_ly3: float = 0.0
     bulge_total_mass_kg: float = 0.0
     star_field_shape: str = 'ellipsoid'
-    star_field_dim_from_center_ly: GroupStruct.CoordXYZ = GroupStruct.CoordXYZ()
+    star_field_dim_from_center_ly: GroupStruct.CoordXYZ =\
+        GroupStruct.CoordXYZ()
     star_field_dim_axes: GroupStruct.AxesABC = GroupStruct.AxesABC()
-    star_field_dim_rot: GroupStruct.PitchYawRollAngle = GroupStruct.PitchYawRollAngle()
+    star_field_dim_rot: GroupStruct.PitchYawRollAngle =\
+        GroupStruct.PitchYawRollAngle()
     star_field_vol_ly3: float = 0.0
     star_field_mass_kg: float = 0.0
     interstellar_mass_kg: float = 0.0
@@ -669,9 +674,11 @@ class StarSystem(object):
     volume_pc3: float = 0.0
     mass_kg: float = 0.0
     system_shape: str = 'ellipsoid'
-    center_from_galaxy_center_pc: GroupStruct.CoordXYZ = GroupStruct.CoordXYZ()
+    center_from_galaxy_center_pc: GroupStruct.CoordXYZ =\
+        GroupStruct.CoordXYZ()
     system_dim_axes: GroupStruct.AxesABC = GroupStruct.AxesABC()
-    system_dim_rot: GroupStruct.PitchYawRollAngle = GroupStruct.PitchYawRollAngle()
+    system_dim_rot: GroupStruct.PitchYawRollAngle =\
+        GroupStruct.PitchYawRollAngle()
     relative_size: str = 'medium'
     spectral_class: str = 'G'
     aprox_age_gyr: float = 0.0

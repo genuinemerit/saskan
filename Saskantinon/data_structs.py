@@ -1,6 +1,6 @@
 """
 
-:module:    structs.py
+:module:    data_structs.py
 :author:    GM (genuinemerit @ pm.me)
 
 Saskan Data Management middleware.
