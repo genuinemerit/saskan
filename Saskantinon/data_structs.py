@@ -493,7 +493,7 @@ class EntityType(object):
     LANG_CODE = ['en']
     LEAP_RULE = ['add_to_start_of_nth_month',
                  'add_to_end_of_nth_month', 'add_special_month']
-    LINK_CATEGORY = ['help']
+    LINK_PROTOCOL = ['https', 'http', 'ftp', 'sftp', 'ssh', 'wc']
     LUMINOSITY_CLASS = ['I', 'II', 'III', 'IV', 'V']
     MAP_TOUCH_TYPE = ['contains', 'is_contained_by', 'borders',
                       'overlaps', 'informs', 'layers_above',
@@ -501,6 +501,14 @@ class EntityType(object):
     MAP_TYPE = ['geo', 'astro', 'underwater',
                 'underground',
                 'informational', 'political']
+    MIME_TYPE = ['image/png', 'image/jpeg', 'image/gif',
+                 'image/svg+xml', 'image/tiff', 'image/bmp',
+                 'image/webp', 'text/plain', 'text/html',
+                 'text/css', 'text/csv', 'text/xml',
+                 'text/javascript', 'application/pdf',
+                 'application/json', 'application/xml',
+                 'audio/mpeg', 'audio/wav', 'audio/ogg',
+                 'video/mp4', 'video/ogg', 'video/webm']
     OCEAN_BODY_TYPE = ['fjord', 'sea', 'ocean',
                        'harbor', 'lagoon', 'bay',
                        'gulf', 'sound', 'bight',

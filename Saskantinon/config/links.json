@@ -1,0 +1,23 @@
+{
+"help": {
+        "lang_code": "en",
+        "links": {
+            "pygame": {
+                "protocol": "https",
+                "mime_type": "text/html",
+                "name": "Pygame Docs",
+                "value": "www.pygame.org/docs/",
+                "icon": null},
+            "game": {
+                "protocol": "https",
+                "mime_type": "text/html",
+                "name": "Saskantinon Game Docs",
+                "value": "github.com/genuinemerit/saskan-wiki/wiki/Game",
+                "icon": null},
+            "app": {
+                "protocol": "https",
+                "mime_type": "text/html",
+                "name": "Saskantinon Development Docs",
+                "value": "github.com/genuinemerit/saskan-wiki/wiki",
+                "icon": null}}}
+}

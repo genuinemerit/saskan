@@ -159,17 +159,21 @@ class Frames(object):
 
 class MenuBars(object):
     """Define dimensions for Menu Bars used in frames.
-    - menu_bar_id: not unique, can be shared across frames
+    - mbar_id: not unique, can be shared across frames
     There is no displayed text on this structure; it is a container.
     Its width (w) is derived from width of the frame.
-    Its location (top left x,y) is derived from the frame.
+    Its top-left x, y is relative to the frame.
     """
     _tablename: str = "MENU_BARS"
     menu_bar_uid_pk: str = ''
     frame_uid_fk: str = ''
+    lang_code: str = ''
     version_id: str = ''
-    menu_bar_id: str = ''
-    menu_bar_h: float = 0.0
+    mbar_id: str = ''
+    mbar_margin: float = 0.0
+    mbar_h: float = 0.0
+    mbar_x: float = 0.0
+    mbar_y: float = 0.0
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -182,7 +186,8 @@ class MenuBars(object):
     class Constraints(object):
         PK: dict = {"menu_bar_uid_pk": ["menu_bar_uid_pk"]}
         FK: dict = {"frame_uid_fk": ("FRAMES", "frame_uid_pk")}
-        ORDER: list = ["menu_bar_id ASC", "version_id ASC"]
+        CK: dict = {"lang_code": EntityType.LANG_CODE}
+        ORDER: list = ["mbar_id ASC", "version_id ASC"]
 
 
 class Menus(object):
@@ -226,6 +231,7 @@ class MenuItems(object):
     item_id: str = ''
     item_order: int = 0
     item_name: str = ''
+    key_binding: str = ''
     help_text: str = ''
     enabled_default: bool = True
 
@@ -283,14 +289,21 @@ class Windows(object):
 
 class Links(object):
     """Define the values for URIs used in the app.
+    - link_name: displayed name for the link
+    - link_value: URI to retrieve
+    - link_icon: name of a file in app images directory
     """
     _tablename: str = "LINKS"
     link_uid_pk: str = ''
     version_id: str = ''
     lang_code: str = ''
-    link_catg: str = ''
+    link_id: str = ''
+    link_group: str = ''
+    link_protocol: str = ''
+    mime_type: str = ''
     link_name: str = ''
     link_value: str = ''
+    link_icon: str = ''
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -302,6 +315,8 @@ class Links(object):
 
     class Constraints(object):
         PK: dict = {"link_uid_pk": ["link_uid_pk"]}
-        CK: dict = {"link_catg": EntityType.LINK_CATEGORY,
-                    "lang_code": EntityType.LANG_CODE}
-        ORDER: list = ["link_catg ASC", "link_name ASC", "version_id ASC"]
+        CK: dict = {"link_protocol": EntityType.LINK_PROTOCOL,
+                    "lang_code": EntityType.LANG_CODE,
+                    "mime_type": EntityType.MIME_TYPE}
+        ORDER: list = ["link_group ASC", "link_id ASC",
+                       "lang_code ASC"]

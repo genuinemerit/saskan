@@ -92,6 +92,8 @@ class GetData(object):
         - DB_CFG : dict of DB config data
         :returns:
         - db row: unordered dict of data that was requested else None
+        @DEV:
+        - Eventually mod this into a generic 'get_by_version' method.
         """
         data = self._get_by_value('APP_CONFIG',
                                   {'version_id': DB_CFG['version']},
@@ -110,10 +112,33 @@ class GetData(object):
         - p_text_name (str): text name
         - DB_CFG : dict of DB config data
         :returns:
-        - db row: unordered dict of data that was requested else None
+        - data: value of the 'text_value' column
         """
         data = self._get_by_value('TEXTS',
                                   {'lang_code': p_lang_code,
                                    'text_name': p_text_name},
                                   DB_CFG)
         return data['text_value']
+
+    def get_by_id(self,
+                  p_tbl_nm: str,
+                  p_id_nm: str,
+                  p_id_val: str,
+                  DB_CFG: dict):
+        """
+        Use this to retrieve all columns, rows from any table
+        by matching on its `id` (as opposed to its `uid_pk`).
+        @DEV:
+        - May eventually have to deal with multiple rows returned.
+        :args:
+        - p_tbl_nm (str): table name
+        - p_id_nm (str): name of id column
+        - p_id_val (str): id value
+        - DB_CFG : dict of DB config data
+        :returns:
+        - data: unordered dict of all columns in the table
+        """
+        data = self._get_by_value(p_tbl_nm,
+                                  {p_id_nm: p_id_val},
+                                  DB_CFG)
+        return data

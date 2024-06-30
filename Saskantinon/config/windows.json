@@ -1,0 +1,30 @@
+{
+    "admin": {
+        "services": {
+            "title": "Services",
+            "lang_code": "en",
+            "x": 20,
+            "y": 50,
+            "w": 400,
+            "h": 400,
+            "margin": 6}
+    },
+    "game": {
+        "gamemap": {
+            "title": "Map",
+            "lang_code": "en",
+            "x": 20,
+            "y": 50,
+            "w": 800,
+            "h": 800,
+            "margin": 6},
+        "console": {
+            "title": "Console",
+            "lang_code": "en",
+            "x": 820,
+            "y": 50,
+            "w": 300,
+            "h": 800,
+            "margin": 6}
+    }
+}

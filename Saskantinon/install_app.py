@@ -82,17 +82,18 @@ class AppInstall(object):
 
         # Apps GUI Set-up
         SD.set_frames(self.BOOT, self.DB_CFG)
-        # SD.set_menu_bars(self.BOOT, self.DB_CFG)
-        # SD.set_menus(self.BOOT, self.DB_CFG)
-        # SD.set_menu_items(self.BOOT, self.DB_CFG)
-        # SD.set_windows(self.BOOT, self.DB_CFG)
-        # SD.set_links(self.BOOT, self.DB_CFG)
+        SD.set_menu_bars(self.BOOT, self.DB_CFG)
+        SD.set_menus(self.BOOT, self.DB_CFG)
+        SD.set_menu_items(self.BOOT, self.DB_CFG)
+        SD.set_windows(self.BOOT, self.DB_CFG)
+        SD.set_links(self.BOOT, self.DB_CFG)
 
     def install_bootstrap_data(self):
         """
         Create basic app directories if needed.
         Write bootstrap data to app directory.
         @DEV:
+        - Should probably make this a git repo file.
         - It would be interesting to see if I can pull in the
           installable files directly from GitHub.
         - Make some of these values param inputs:
@@ -116,7 +117,7 @@ class AppInstall(object):
         FM.make_dir(app_d)
         FM.make_dir(config_d)
         FM.make_dir(sql_d)
-        FM.write_file(path.join(config_d, "b_bootstrap.json"), boot_j)
+        FM.write_file(path.join(config_d, "bootstrap.json"), boot_j)
         print("* Bootstrap file created.")
 
     def install_database(self):

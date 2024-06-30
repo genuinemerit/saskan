@@ -1,5 +1,5 @@
 {
-    "admin_frame": {
+    "admin": {
         "title": "Saskan Eyes",
         "desc": "Saskan Admin tools",
         "size_w": 1200,
@@ -12,7 +12,7 @@
         "pg_hdr_h": 20,
         "pg_hdr_text": "Control, Monitor, Test, Edit Saskantinon"
         },
-    "game_frame": {
+    "game": {
         "title": "Saskanantinon",
         "desc": "Saskantinon, the Land Between Two Rivers",
         "size_w": 1200,
