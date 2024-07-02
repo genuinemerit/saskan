@@ -7,13 +7,13 @@ Saskan App GUI.  pygame version.
 
 :classes:
     - PG: Frozen constants and static game values
-    - GameMenu: Manage menu objects, draw and click events
     - GameData: Dynamic game values and data structures
+    - GameMenu: Manage menu bars, menu items, draw and click events
     - HtmlDisplay: Manage display of HTML pages in a browser
     - TextInput: Handle text input events in a single input box
     - TextInputGroup: Handle groups of text input boxes, like a form
     - InfoBar: Manage display of info bar/dock at bottom of main frame
-    - GameConsole: Manage display of widgets (text, for now) in DSP.CONSOLE
+    - GameConsole: Manage display of widgets (text, for now) in CDI.CONSOLE
     - GameMap: Manage display of map & related widgets in GAMEMAP
     - SaskanGame: Main class, event loop, state mgmt, event handlers
     - __main__: Entry point for this module, instantitates all classes
@@ -106,24 +106,55 @@ import pygame as pg
 import sys
 import webbrowser
 
-
 from copy import copy
 from pprint import pprint as pp     # noqa: F401, format like pp for files
 from pprint import pformat as pf    # noqa: F401, format like pp for files
 from pygame.locals import *         # noqa: F401, F403
 
-# import data_structs
-from data_pg_structs import PygColors, AppDisplay
+# from io_data import SaskanConstants     # type: ignore
+# from io_data import DataRec             # type: ignore
+# from io_data import Display             # type: ignore
+# from io_data import GameCell            # type: ignore
+# from io_data import GameCoord           # type: ignore
+# from io_data import GameImage           # type: ignore
+# from io_data import GameGrid            # type: ignore
+# from io_data import GameRect            # type: ignore
+# from io_data import SaskanRect          # type: ignore
+
+# from database import DataBase           # type: ignore
 from data_get import GetData
+# from data_model_app import ??
+# from data_pg_structs import ??
+# from data_structs import ??
 from method_files import FileMethods    # type: ignore
 from method_shell import ShellMethods   # type: ignore
 
-CLR = PygColors()
-DSP = AppDisplay()
+# Constants
+# ================================================
+# CON = SaskanConstants()
+# CAS = CON.Astro()
+# CCL = CON.Colors()
+# CDI = Display()
+# CGM = CON.Geom()
+# CGO = CON.Geog()
 
+# Data Records
+# ================================================
+# DR = DataRec()
+
+# In-Game Data Structures
+# ================================================
+# GCL = GameCell()
+# GCO = GameCoord()
+# GGR = GameGrid()
+# GIM = GameImage()
+# GRC = GameRect()
+# GSR = SaskanRect()
+
+# External Methods
+# ================================================
+# DB = DataBase()
 GD = GetData()
-DB_CFG = GD.get_db_config()
-
 FM = FileMethods()
 SM = ShellMethods()
 # CR = CompareRect()
@@ -131,26 +162,453 @@ SM = ShellMethods()
 pg.init()
 
 
-class GameWindowFrame(object):
+class SetGameData(object):
+    """Methods for inserting and updating values on SASKAN.db.
+    Initially, just use these from the command line. Eventually,
+    intergrate them into the GUI when it is useful.  Try to avoid
+    going down a rat-hole of GUI features and functionality, like
+    a "magical" editor that generates forms based on DB table
+    definitions.  Keep it simple, stupid.  If the command line is
+    too tiresome, then use a CSV file or JSON file to load data.
+
+    Simple version:
+    Basically just a wrapper for calls to the DataBase() class.
+    - pull in a list of values, assume they are in correct order.
+    - pull in a dict object, pickle it, and store it in a blob.
+
+    Hmmm...
+    Problem here is that this is a PyGame module. There is no CLI
+    access as long as the game loop is running. So, I need to
+    either define a separate module for data management (yes), or
+    create a CLI-like interface in the GUI. The former is easier.
+    I have done the latter previously and should be able to find
+    some code to support that. But it makes for a more complex
+    GUI and not one that most users would be familiar with.
+
+    All of this gets moved to install and other modules.
+    Only the GUI code should be in this module and simple, basic
+    calls to pull in needed data and data structures.
     """
-    Construct the main game window-frame.
-    Set values in DSP window and timer objects.
+    def __init__(self):
+        """Initialize the SetGameData object.
+        It will be instantiated as SGDT, a global object.
+        """
+        pass
+
+    @classmethod
+    def insert_record(cls,
+                      p_sql_nm: str,
+                      p_values: list,
+                      p_object: dict):
+        """Insert a record to SASKAN.db.
+        """
+        DB.execute_insert(p_sql_nm, (p_values, pickle.dumps(p_object)))
+
+
+class GameDataNew(object):
+    """Get resources for display in GAMEMAP and CDI.CONSOLE.
+    Read mainly from the DB. May be a few config files too.
+    Notes:
+    - "txt" refers to a string of text.
+    - "img" refers to a PyGame image object rendered from the txt.
+    - "box" refers to a PyGame rectangle object around the img.
     """
-    win_frame = GD.get_by_id('FRAMES', 'frame_id', 'game', DB_CFG)
-    pg.display.set_caption(win_frame['frame_title'])
-    DSP.WIN_W = win_frame['size_w']
-    DSP.WIN_H = win_frame['size_h']
-    DSP.WIN_MID = (DSP.WIN_W / 2, DSP.WIN_H / 2)
-    DSP.WIN = pg.display.set_mode((DSP.WIN_W, DSP.WIN_H))
-    DSP.TIMER = pg.time.Clock()
+    pass
+
+
+class GameData(object):
+    """Get and set resources displayed in GAMEMAP and CDI.CONSOLE.
+    This class is instantiated as GDAT, a global object.
+    Notes:
+    - "txt" refers to a string of text.
+    - "img" refers to aCDI.TIMER PyGame image object rendered from the txt.
+    - "box" refers to a PyGame rectangle object around the img.
+    @DEV:
+    - Layers of data, zoom-in, zoom-out, other views
+    - Ee.g.: a region, a town and environs, a village, a scene, star map
+    - GUI controls for scroll, zoom, pan, select-move, etc
+    - Event trigger conditions / business rules
+
+    - This class is quite large. Let's think about 3 classes:
+        - GameData: load data for use in GAMEMAP and CDI.CONSOLE
+        - SetConsole: prep data, incl. widget definitions, for CDI.CONSOLE
+        - SetGameMap: align data to grid for scaling, zooming
+    - And refactor as needed to use io_data and DB structures.
+    - Definitely break out into multiple classes.
+    """
+    def __init__(self):
+        """Dynamically loaded data for GAMEMAP and CDI.CONSOLE.
+        Values are displayed in CDI.CONSOLE but refer to GAMEMAP.
+        For CDI.GRID, static values are read in from PG, then
+           data is extended here.
+        """
+        self.DATASRC = {"actv": False,
+                        "catg": None,
+                        "item": None}
+        self.CONSOLE_REC = {"txt": "",
+                            "img": None,
+                            "box": None}
+        self.CONSOLE_TEXT: list = list()
+        self.MAP_BOX = None
+
+    def make_grid_key(self,
+                      p_col: int,
+                      p_row: int) -> str:
+        """Convert integer coordinates to string key
+           for use in the .grid["G"] (grid data) matrix.
+        :args:
+        - p_col: int, column number
+        - p_row: int, row number
+        :returns:
+        - str, key for specific grid-cell record, in "0n_0n" format
+        """
+        return f"{str(p_col).zfill(2)}_{str(p_row).zfill(2)}"
+
+    # Data load methods
+    # The current version of these methods assumes a
+    #   specific pattern of name:value pairs in data sources.
+
+    # Modify to read from database and io_data structures instead.
+    # =================
+    def set_datasrc(self,
+                    p_datasrc: dict):
+        """ Set data in .DATASRC structure from sources outside
+           the app, like files or services or database.
+           Example: geographical data
+        :args:
+        - p_datasrc (dict): name-value pairs for .DATASRC structure.
+        :sets:
+        - self.DATASRC (dict): name-value pairs
+        """
+        for k, v in p_datasrc.items():
+            self.DATASRC[k] = v
+
+    def set_label_name(self,
+                       p_attr: dict):
+        """Set text for a label (l) and name (n), but no type (t) value.
+           Example: "type" attribute
+        :attr:
+        - p_attr (dict): name-value pairs to format
+        :sets:
+        - self.CDI.CONSOLE[n]["txt"] (list): strings to render as text
+        """
+        for t in [CDI.DASH16,
+                  f"{p_attr['label']}:",
+                  f"  {p_attr['name']}"]:
+            rec = copy(self.CONSOLE_REC)
+            rec['txt'] = t
+            self.CONSOLE_TEXT.append(rec)
+
+    def set_label_name_type(self,
+                            p_attr: dict):
+        """Set text for a label (l), a name (n), and a type (t).
+           Example: "contained_by" attribute
+        :attr:
+        - p_attr (dict): name-value pairs to format
+        :sets:
+        - self.CDI.CONSOLE[n]["txt"] (list): strings to render as text
+        """
+        for t in [CDI.DASH16,
+                  f"{p_attr['label']}:",
+                  f"  {p_attr['name']}",
+                  f"  {p_attr['type']}"]:
+            rec = copy(self.CONSOLE_REC)
+            rec['txt'] = t
+            self.CONSOLE_TEXT.append(rec)
+
+    def set_proper_names(self,
+                         p_attr: dict):
+        """Set text for a "name" attribute, which refers to proper
+            names. Required value is indexed by "common". Optional
+            set of names in various game languages or dialects have
+            "other" in key.
+        :attr:
+        - p_attr (dict): name-value pairs to format
+        :sets:
+        - self.CDI.CONSOLE[n]["txt"] (list): strings to render as text
+        """
+        for t in [CDI.DASH16,
+                  f"{p_attr['label']}:",
+                  f"  {p_attr['common']}"]:
+            rec = copy(self.CONSOLE_REC)
+            rec['txt'] = t
+            self.CONSOLE_TEXT.append(rec)
+        if "other" in p_attr.keys():
+            for k, v in p_attr["other"].items():
+                rec = copy(self.CONSOLE_REC)
+                rec['txt'] = f"    {k}: {v}"
+                self.CONSOLE_TEXT.append(rec)
+
+    def set_map_attr(self,
+                     p_attr: dict):
+        """Set text for a "map" attribute, referring to game-map data.
+           Examples: "distance" or "location" expressed in
+              kilometers, degrees, or other in-game measures
+        :attr:
+        - p_attr (dict): name-value pairs to format
+        :sets:
+        - self.CDI.CONSOLE[n]["txt"] (list): strings to render as text
+        """
+        ky = "distance" if "distance" in p_attr.keys() else\
+            "location" if "location" in p_attr.keys() else None
+        if ky is not None:
+            sub_k = ["height", "width"] if ky == "distance" else\
+                ["top", "bottom", "left", "right"]
+            rec = copy(self.CONSOLE_REC)
+            rec['txt'] = CDI.DASH16
+            self.CONSOLE_TEXT.append(rec)
+            rec = copy(self.CONSOLE_REC)
+            rec["txt"] =\
+                f"{p_attr[ky]['label']}:"
+            self.CONSOLE_TEXT.append(rec)
+            for s in sub_k:
+                rec = copy(self.CONSOLE_REC)
+                rec["txt"] =\
+                    f"  {p_attr[ky][s]['label']}:  " +\
+                    f"{p_attr[ky][s]['amt']} " +\
+                    f"{p_attr[ky]['unit']}"
+                self.CONSOLE_TEXT.append(rec)
+
+    def set_contains_attr(self,
+                          p_attr: dict):
+        """Set text for a "contains" attribute, referring to things
+            contained by another object.
+            Examples: "sub-region", "movement" (i.e, movement paths)
+        :attr:
+        - p_attr (dict): name-value pairs to format
+        :sets:
+        - self.CDI.CONSOLE[n]["txt"] (list): strings to render as text
+        """
+        rec = copy(self.CONSOLE_REC)
+        rec["txt"] = CDI.DASH16
+        self.CONSOLE_TEXT.append(rec)
+        rec = copy(self.CONSOLE_REC)
+        rec["txt"] = f"{p_attr['label']}:"
+        self.CONSOLE_TEXT.append(rec)
+
+        if "sub-region" in p_attr.keys():
+            rec = copy(self.CONSOLE_REC)
+            rec["txt"] =\
+                f"  {p_attr['sub-region']['label']}:"
+            self.CONSOLE_TEXT.append(rec)
+            for n in p_attr["sub-region"]["names"]:
+                rec = copy(self.CONSOLE_REC)
+                rec["txt"] = f"    {n}"
+                self.CONSOLE_TEXT.append(rec)
+
+        if "movement" in p_attr.keys():
+            # roads, waterways, rivers and lakes
+            rec = copy(self.CONSOLE_REC)
+            rec["txt"] = f"  {p_attr['movement']['label']}:"
+            self.CONSOLE_TEXT.append(rec)
+            attr = {k: v for k, v in p_attr["movement"].items()
+                    if k != "label"}
+            for _, v in attr.items():
+                rec = copy(self.CONSOLE_REC)
+                rec["txt"] = f"    {v['label']}:"
+                self.CONSOLE_TEXT.append(rec)
+                for n in v["names"]:
+                    rec = copy(self.CONSOLE_REC)
+                    rec["txt"] = f"      {n}"
+                    self.CONSOLE_TEXT.append(rec)
+
+    # Data rendering methods for CDI.CONSOLE
+    # ==================================
+    def render_text_lines(self):
+        """
+        Store rendering objects for lines of CDI.CONSOLE text.
+        After rendering the img from txt, set the box for the img.
+        Then adjust topleft of the box according to line number.
+        """
+        print('render_text_lines()...')
+
+        x = CDI.CONSOLE_TTL_BOX.x
+        y = CDI.CONSOLE_TTL_BOX.y + CDI.FONT_MED_SZ
+
+        pp(("self.CONSOLE_TEXT: ", self.CONSOLE_TEXT))
+
+        for ix, val in enumerate(self.CONSOLE_TEXT):
+            txt = val["txt"]
+            self.CONSOLE_TEXT[ix]["img"] =\
+                CDI.F_SANS_TINY.render(txt, True,
+                                       CCL.CP_BLUEPOWDER,
+                                       CCL.CP_BLACK)
+            self.CONSOLE_TEXT[ix]["box"] =\
+                self.CONSOLE_TEXT[ix]["img"].get_rect()
+            self.CONSOLE_TEXT[ix]["box"].topleft =\
+                (x, y + ((CDI.FONT_TINY_SZ + 2) * (ix + 1)))
+
+            pp(("ix: ", ix, "self.CONSOLE_TEXT[ix]: ", self.CONSOLE_TEXT[ix]))
+
+    def set_console_text(self):
+        """Format text lines for display in CDI.CONSOLE.
+        - "catg" identifies source of config data to format.
+        - "item" identifies type of data to format.
+
+        @TODO:
+        - Move the geo data, etc. into a database.
+        - May want to revisit, optimize the methods for formatting
+          different types of data. Maybe even store img and box
+          objects in the DB, rather than rendering them here?
+            - Nah. This only gets called once per data source, when
+              the user clicks on a menu item. No point in persisting to DB.
+        - Use config files only for install-level customizations, overrides.
+        """
+        self.CONSOLE_TEXT.clear()
+        # Contents
+
+        pp((self.DATASRC["catg"], self.DATASRC["item"]))
+
+        if self.DATASRC["catg"] == "geo":
+            ci = FM.G[self.DATASRC["catg"]][self.DATASRC["item"]]
+
+            pp((ci))
+
+            if "type" in ci.keys():
+                self.set_label_name(ci["type"])
+            if "contained_by" in ci.keys():
+                self.set_label_name_type(ci["contained_by"])
+            if "name" in ci.keys():
+                self.set_proper_names(ci["name"])
+            if "map" in ci.keys():
+                self.set_map_attr(ci["map"])
+            if "contains" in ci.keys():
+                self.set_contains_attr(ci["contains"])
+            self.render_text_lines()
+
+    def compute_map_scale(self,
+                          p_attr: dict):
+        """Compute scaling, position for the map and grid.
+        :attr:
+        - p_attr (dict): 'map' data for the "Saskan Lands" region from
+            the saskan_geo.json file.
+        :sets:
+        - CDI.GRID['map']: map km dimensions and scaling factors
+
+        - Get km dimensions for entire map rectangle
+        - Reject maps that are too big
+        - Divide g km by m km to get # of grid-cells for map box
+            - This should be a float.
+        - Multiply # of grid-cells in the map box by px per grid-cell
+          to get line height and width in px for the map box.
+        - Center 'map' in the 'grid'; by grid count, by px
+
+        @DEV
+        - Debug, refactor to use io_data structures and eventually
+            DB structures for dynamic grid/map mapping.
+        - Instead of just snapping the "map" as defined here onto
+          the GameGrid structure, think about how to pull in map
+          data from the database and align it to the grid.
+        - Also consider that the grid settings should also be
+          pulled in from a database record.
+        - Take some time here to get it working.
+        """
+        err = ""
+        map = {'ln': dict(),
+               'cl': dict()}
+        # Evaluate map line lengths in kilometers
+        map['ln']['km'] =\
+            {'w': round(int(p_attr["distance"]["width"]["amt"])),
+             'h': round(int(p_attr["distance"]["height"]["amt"]))}
+        if map['ln']['km']['w'] > CDI.G_LNS_KM_W:
+            err = f"Map km w {map['w']} > grid km w {CDI.G_LNS_KM_W}"
+        if map['ln']['km']['h'] > CDI.G_LNS_KM_H:
+            err = f"Map km h {map['h']} > grid km h {CDI.G_LNS_KM_H}"
+        if err != "":
+            raise ValueError(err)
+        # Verified that the map rect is smaller than the grid rect.
+        # Compute a ratio of map to grid.
+        # Divide map km w, h by grid km w, h
+        map['ln']['ratio'] =\
+            {'w': round((map['ln']['km']['w'] / CDI.G_LNS_KM_W), 4),
+             'h': round((map['ln']['km']['h'] / CDI.G_LNS_KM_H), 4)}
+        # Compute map line dimensions in px
+        # Multiply grid line px w, h by map ratio w, h
+        map['ln']['px'] =\
+            {'w': int(round(CDI.G_LNS_PX_W * map['ln']['ratio']['w'])),
+             'h': int(round(CDI.G_LNS_PX_H * map['ln']['ratio']['h']))}
+        # The map rect needs to be centered in the grid rect.
+        #  Compute the offset of the map rect from the grid rect.
+        #  Compute topleft of the map in relation to topleft of the grid.
+        #  The map top is offset from grid top by half the px difference
+        #  between grid height and map height.
+        #  The map left is offset from grid left by half the px difference
+        #  between grid width and map width.
+        # Then adjusted once more for offset of the grid from the window.
+        map['ln']['px']['left'] =\
+            int(round((CDI.G_LNS_PX_W - map['ln']['px']['w']) / 2) +
+                CDI.GRID_OFFSET_X)
+        map['ln']['px']['top'] =\
+            int(round((CDI.G_LNS_PX_H - map['ln']['px']['h']) / 2) +
+                     (CDI.GRID_OFFSET_Y * 4))  # not sure why, but I need this
+        CDI.GRID["map"] = map
+
+    def set_map_grid_collisions(self):
+        """ Store collisions between CDI.GRIDS and 'map' box.
+        """
+        cells = {k: v for k, v in CDI.GRID.items() if k != "map"}
+        for ck, crec in cells.items():
+            CDI.GRID[ck]["is_inside"] = False
+            CDI.GRID[ck]["overlaps"] = False
+            if CR.rect_contains(
+                    CDI.GRID["map"]["box"], crec["box"]):
+                CDI.GRID[ck]["is_inside"] = True
+            elif CR.rect_overlaps(
+                    CDI.GRID["map"]["box"], crec["box"]):
+                CDI.GRID[ck]["overlaps"] = True
+
+    # Set "map" dimensions and other content in CDI.GRIDS
+    # =================================================
+    def set_gamemap_dims(self,
+                         p_attr: dict):
+        """This method handles placing/creating/drawing map displays
+           over the "grid" on the GAMEMAP display.
+        :attr:
+        - p_attr (dict): game map name-value pairs from geo config data
+            For example, 'map' data for the "Saskan Lands" region from
+            the saskan_geo.json file.
+
+        - Compute ratio, offsets of map to g_ width & height.
+        - Define saskan rect and pygame box for the map
+        - Do collision checks between the map box and grid cells
+        """
+        self.compute_map_scale(p_attr)
+        map_px = CDI.GRID["map"]["ln"]["px"]
+        CDI.GRID["map"]["s_rect"] = CR.make_rect(map_px["top"],
+                                                 map_px["left"],
+                                                 map_px["w"],
+                                                 map_px["h"])
+        CDI.GRID["map"]["box"] =\
+            CDI.GRID["map"]["s_rect"]["pg_rect"]
+        self.set_map_grid_collisions()
+
+    def set_map_grid(self):
+        """
+        Based on currently selected .DATASRC["catg"] and .DATASRC["item"]:
+        - assign values to CDI.GRIDS for "map".
+        Note:
+        - For now, only "geo" data (saskan_geo.json) is handled
+        """
+        if self.DATASRC["catg"] == "geo":
+            data = FM.G[self.DATASRC["catg"]][self.DATASRC["item"]]
+            if "map" in data.keys():
+                self.set_gamemap_dims(data["map"])
 
 
 class GameMenu(object):
-    """Manage Menu objects. Populate DSP.MENUS and DSP.MITEMS.
+    """Manage Menu Bar, Menus and Menu Items for Saskan Game app.
     Define a surface for clickable top-level menu bar members,
     drop-down menus associated with them, and items on each menu.
     Clicking on a menu bar member opens or closes a Menu.
     Clicking on Menu Item triggers an event and may also close Menu.
+
+    Define in-memory objects for both Menu bar members, Menus and
+    Menu Items with both static and dynamic value attributes.
+    A menu bar is a conceptual horizontal row of menu bar members.
+       There is no actual menu bar object.
+    A menu bar member is a clickable item in the menu bar.
+    A menu is a vertical list of menu items.
+    A menu item is a clickable item in a menu.
     """
     def __init__(self):
         """Initialize the GameMenu object.
@@ -158,69 +616,34 @@ class GameMenu(object):
 
         Menu members and and menu items are stored in class-level dicts.
         """
+        self.mbars: dict = dict()
+        self.mitems: dict = dict()
         self.set_menu_bars()
-        # self.mitems: dict = self.set_menus()
+        self.set_menus()
+        self.draw_menu_bars()
+        for mb_k in self.mitems.keys():
+            self.draw_menu_items(mb_k)
 
-        # self.draw_menu_bars()
-        # for mb_k in self.mitems.keys():
-        #     self.draw_menu_items(mb_k)
-
-    def set_menu_bars(self) -> dict:
-        """Set up the menu bar and its members (menu names).
-        Load all menu bar members and items info from DB.
-        A menu bar is a horizontal row of menu bar members.
-        There is no disticnt rendered menu bar object.
-        Center text in each menu bar member and fix spacing per text width.
-        Set text & bounding boxes, and selected-status flags.
-        - 'tbox' = standard rect that contains the menu name text
-        - 'mbox' = pg rect object around the tbox, plus margin
-        Both used in the drawing/rendering process.
-        :sets:
-        - DSP.MENUS: dict of menu bars and menu (names)
-        """
-        # get MENU_BAR (dimensions) from DB
-        # get MENU from DB, it contains the "members", e.g. names
-        mbar_data = GD.get_by_id('MENU_BARS', 'frame_uid_fk',
-                                 GWF.win_frame['frame_uid_pk'], DB_CFG)
-
-        pp((mbar_data))
-
-        menu_data = GD.get_by_id(
-            'MENUS', 'menu_bar_uid_fk',
-            mbar_data['menu_bar_uid_pk'], DB_CFG,
-            p_first_only=False)
-        DSP.MENUS = {m['menu_name']: {'x': 0.0, 'y': 0.0,
-                                      'txt': '', 'selected': False,
-                                      'tbox': None, 'mbox': None}
-                     for m in menu_data}
-        # x of first menu = x of menu_bar object
-        x = mbar_data['mbar_x']
-        for m_ix, m_nm in enumerate(list(DSP.MENUS.keys())):
-            DSP.MENUS[m_nm]['txt'] =\
-                DSP.F_SANS_SM.render(m_nm, True, CLR.CP_BLUEPOWDER,
-                                     CLR.CP_GRAY_DARK)
-            DSP.MENUS[m_nm]['tbox'] =\
-                DSP.MENUS[m_nm]['txt'].get_rect()
-            DSP.MENUS[m_nm]['mbox'] =\
-                pg.Rect((mbar_data['mbar_x'], mbar_data['mbar_y']),
-                        (mbar_data['mbar_w'], mbar_data['mbar_h'] +
-                         (mbar_data['mbar_margin'] * 2)))
-            x += (m_ix * DSP.MENUS[m_nm]['mbox'].right)
-            DSP.MENUS[m_nm]['x'] = x
-            DSP.MENUS[m_nm]['y'] = mbar_data['mbar_y']
-
-        pp((DSP.MENUS))
-
+    def set_menu_bars(self):
+        """Set up the menu bar and the menu bar members,
+           storing them in GMNU.
+        A menu bar is a conceptual horizontal row of menu bar members.
+            There is no actual menu bar object.
+        Center text in each menu bar member and kludge the spacing
+            based on the text width.
+        Load all menu bar members and items info from config into mbars
+        Extend the configuration data with text, bounding box and
+            selected-status flag for each menu bar member.
         """
         self.mbars =\
             {ky: {"name": val["name"]}
-             for ky, val in FM.M[DSP.MENUS]["menu"].items()}
+             for ky, val in FM.M[CDI.MENUS]["menu"].items()}
         # x --> left edge of first, leftmost menu bar member
-        x = DSP.MBAR_X
+        x = CDI.MBAR_X
         for mb_k, v in self.mbars.items():
             self.mbars[mb_k] =\
                 {"name": v["name"],
-                 "txt": DSP.F_SANS_SM.render(
+                 "txt": CDI.F_SANS_SM.render(
                      v["name"], True, CCL.CP_BLUEPOWDER, CCL.CP_GRAY_DARK),
                  "selected": False,
                  "tbox": None,
@@ -228,22 +651,18 @@ class GameMenu(object):
             # Rect based on text size and location
             self.mbars[mb_k]["tbox"] =\
                 self.mbars[mb_k]["txt"].get_rect()
-
             # Default rect for menu bar member container
             self.mbars[mb_k]["mbox"] =\
-                pg.Rect((x, DSP.MBAR_Y), (DSP.MBAR_W, DSP.MBAR_H +
-                                          (DSP.MBAR_MARGIN * 2)))
+                pg.Rect((x, CDI.MBAR_Y), (CDI.MBAR_W, CDI.MBAR_H +
+                                          (CDI.MBAR_MARGIN * 2)))
             x = self.mbars[mb_k]["mbox"].right  # shift x for next bar
-
-            # is there a cleaner way to do this?...
             # Center text rect in menu bar member rect
             # Kludge to account for visual niceness of text
             self.mbars[mb_k]["tbox"].left =\
                 self.mbars[mb_k]["mbox"].left +\
                 (self.mbars[mb_k]["mbox"].width / 2) - 12
             self.mbars[mb_k]["tbox"].top =\
-                self.mbars[mb_k]["mbox"].top + DSP.MBAR_MARGIN + 5
-        """
+                self.mbars[mb_k]["mbox"].top + CDI.MBAR_MARGIN + 5
 
     def set_menu_list_box(self,
                           p_mb_k: str):
@@ -261,7 +680,7 @@ class GameMenu(object):
             left = self.mbars[p_mb_k]["mbox"].left
             top = self.mbars[p_mb_k]["mbox"].bottom
             self.mbars[p_mb_k]["mlist_box"] =\
-                pg.Rect((left, top), (DSP.MBAR_W, 0))
+                pg.Rect((left, top), (CDI.MBAR_W, 0))
 
     def set_menu_item_box(self,
                           p_mb_k: str,
@@ -270,7 +689,7 @@ class GameMenu(object):
         """
         Define bounding box for text in menu item.
         - width is text width plus margin on each side
-        - height is fixed amount (DSP.MBAR_H)
+        - height is fixed amount (CDI.MBAR_H)
         - top is bottom of menu bar member box
             plus fixed height X menu item index (order in list)
             plus margin
@@ -283,15 +702,15 @@ class GameMenu(object):
         - p_mi_x: order (index) of the menu item in the list
         """
         text_w = self.mitems[p_mb_k][p_mi_k]["mi_text_enabled"].get_width()
-        width = text_w + (DSP.MBAR_MARGIN * 2)
+        width = text_w + (CDI.MBAR_MARGIN * 2)
         top = self.mbars[p_mb_k]["mbox"].bottom +\
-            (DSP.MBAR_H * p_mi_x) + DSP.MBAR_MARGIN
+            (CDI.MBAR_H * p_mi_x) + CDI.MBAR_MARGIN
         left = self.mbars[p_mb_k]["mbox"].left +\
-            (DSP.MBAR_MARGIN * 4)
+            (CDI.MBAR_MARGIN * 4)
         self.mitems[p_mb_k][p_mi_k]["mitm_box"] =\
-            pg.Rect((left, top), (width, DSP.MBAR_H))
+            pg.Rect((left, top), (width, CDI.MBAR_H))
 
-        self.mbars[p_mb_k]["mlist_box"].height += DSP.MBAR_H
+        self.mbars[p_mb_k]["mlist_box"].height += CDI.MBAR_H
 
     def set_menu_item(self,
                       p_mb_k: str,
@@ -320,10 +739,10 @@ class GameMenu(object):
         self.mitems[p_mb_k][p_mi_k]['enabled'] =\
             p_mi_v['enabled'] if 'enabled' in p_mi_v.keys() else True
         self.mitems[p_mb_k][p_mi_k]["mi_text_enabled"] =\
-            DSP.F_SANS_SM.render(p_mi_v["name"], True,
+            CDI.F_SANS_SM.render(p_mi_v["name"], True,
                                  CCL.CP_BLUEPOWDER, CCL.CP_GRAY_DARK)
         self.mitems[p_mb_k][p_mi_k]["mi_text_disabled"] =\
-            DSP.F_SANS_SM.render(p_mi_v["name"], True,
+            CDI.F_SANS_SM.render(p_mi_v["name"], True,
                                  CCL.CP_GRAY, CCL.CP_GRAY_DARK)
         self.set_menu_item_box(p_mb_k, p_mi_k, p_mi_x)
 
@@ -335,7 +754,7 @@ class GameMenu(object):
         """
         # Init menu items from config
         self.mitems = {ky: val["items"]
-                       for ky, val in FM.M[DSP.MENUS]["menu"].items()}
+                       for ky, val in FM.M[CDI.MENUS]["menu"].items()}
         for mb_k, mlist in self.mitems.items():
             self.set_menu_list_box(mb_k)
             mi_x = 0
@@ -353,12 +772,12 @@ class GameMenu(object):
         - menu bar members, the "menu bar"
         """
         for _, mb_vals in self.mbars.items():
-            pg.draw.rect(DSP.WIN, CCL.CP_BLUEPOWDER, mb_vals["mbox"], 2)
-            DSP.WIN.blit(mb_vals["txt"], mb_vals["tbox"])
+            pg.draw.rect(CDI.WIN, CCL.CP_BLUEPOWDER, mb_vals["mbox"], 2)
+            CDI.WIN.blit(mb_vals["txt"], mb_vals["tbox"])
         mbox = [mb_vals["mbox"] for _, mb_vals in self.mbars.items()
                 if mb_vals["selected"] is True]
         if len(mbox) > 0:
-            pg.draw.rect(DSP.WIN, CCL.CP_GREEN, mbox[0], 2)
+            pg.draw.rect(CDI.WIN, CCL.CP_GREEN, mbox[0], 2)
 
     def draw_menu_items(self,
                         mb_k: str = ''):
@@ -372,13 +791,13 @@ class GameMenu(object):
         """
         if mb_k not in ('', None) and\
                 self.mbars[mb_k]["selected"] is True:
-            pg.draw.rect(DSP.WIN, CCL.CP_GRAY_DARK,
+            pg.draw.rect(CDI.WIN, CCL.CP_GRAY_DARK,
                          self.mbars[mb_k]["mlist_box"], 0)
             for _, mi_v in self.mitems[mb_k].items():
                 if mi_v["enabled"]:
-                    DSP.WIN.blit(mi_v["mi_text_enabled"], mi_v["mitm_box"])
+                    CDI.WIN.blit(mi_v["mi_text_enabled"], mi_v["mitm_box"])
                 else:
-                    DSP.WIN.blit(mi_v["mi_text_disabled"], mi_v["mitm_box"])
+                    CDI.WIN.blit(mi_v["mi_text_disabled"], mi_v["mitm_box"])
 
     def click_mbar(self,
                    p_mouse_loc: tuple) -> str:
@@ -466,447 +885,29 @@ class GameMenu(object):
                 txt_color = CCL.CP_BLUEPOWDER
             # Set text color and content of identified item
             self.mitems[mb_k][mi_ky]["mi_text"] =\
-                DSP.F_SANS_SM.render(self.mitems[mb_k][mi_ky]["name"],
+                CDI.F_SANS_SM.render(self.mitems[mb_k][mi_ky]["name"],
                                      True, txt_color, CCL.CP_GRAY_DARK)
         else:
             # Default selected item to enabled status
             self.mitems[mb_k][mi_ky]["enabled"] = True
             self.mitems[mb_k][mi_ky]["mi_text"] =\
-                DSP.F_SANS_SM.render(self.mitems[mb_k][mi_ky]["name"],
+                CDI.F_SANS_SM.render(self.mitems[mb_k][mi_ky]["name"],
                                      True, CCL.CP_BLUEPOWDER, CCL.CP_GRAY_DARK)
             # Identify dependent menu items and modify their enabled status
             if "disable" in list(self.mitems[mb_k][mi_ky].keys()):
                 for dep_ky in self.mitems[mb_k][mi_ky]["disable"]:
                     self.mitems[mb_k][dep_ky]["enabled"] = False
                     self.mitems[mb_k][dep_ky]["mi_text"] =\
-                        DSP.F_SANS_SM.render(self.mitems[mb_k][dep_ky]["name"],
+                        CDI.F_SANS_SM.render(self.mitems[mb_k][dep_ky]["name"],
                                              True, CCL.CP_GRAY,
                                              CCL.CP_GRAY_DARK)
             if "enable" in list(self.mitems[mb_k][mi_ky].keys()):
                 for dep_ky in self.mitems[mb_k][mi_ky]["enable"]:
                     self.mitems[mb_k][dep_ky]["enabled"] = True
                     self.mitems[mb_k][dep_ky]["mi_text"] =\
-                        DSP.F_SANS_SM.render(self.mitems[mb_k][dep_ky]["name"],
+                        CDI.F_SANS_SM.render(self.mitems[mb_k][dep_ky]["name"],
                                              True, CCL.CP_BLUEPOWDER,
                                              CCL.CP_GRAY_DARK)
-
-
-
-class SetGameData(object):
-    """Methods for inserting and updating values on SASKAN.db.
-    Initially, just use these from the command line. Eventually,
-    intergrate them into the GUI when it is useful.  Try to avoid
-    going down a rat-hole of GUI features and functionality, like
-    a "magical" editor that generates forms based on DB table
-    definitions.  Keep it simple, stupid.  If the command line is
-    too tiresome, then use a CSV file or JSON file to load data.
-
-    Simple version:
-    Basically just a wrapper for calls to the DataBase() class.
-    - pull in a list of values, assume they are in correct order.
-    - pull in a dict object, pickle it, and store it in a blob.
-
-    Hmmm...
-    Problem here is that this is a PyGame module. There is no CLI
-    access as long as the game loop is running. So, I need to
-    either define a separate module for data management (yes), or
-    create a CLI-like interface in the GUI. The former is easier.
-    I have done the latter previously and should be able to find
-    some code to support that. But it makes for a more complex
-    GUI and not one that most users would be familiar with.
-
-    All of this gets moved to install and other modules.
-    Only the GUI code should be in this module and simple, basic
-    calls to pull in needed data and data structures.
-    """
-    def __init__(self):
-        """Initialize the SetGameData object.
-        It will be instantiated as SGDT, a global object.
-        """
-        pass
-
-    @classmethod
-    def insert_record(cls,
-                      p_sql_nm: str,
-                      p_values: list,
-                      p_object: dict):
-        """Insert a record to SASKAN.db.
-        """
-        DB.execute_insert(p_sql_nm, (p_values, pickle.dumps(p_object)))
-
-
-class GameData(object):
-    """Get and set resources displayed in GAMEMAP and DSP.CONSOLE.
-    This class is instantiated as GDAT, a global object.
-    Notes:
-    - "txt" refers to a string of text.
-    - "img" refers to a PyGame image object rendered from txt.
-    - "box" refers to a PyGame rectangle object around img.
-    @DEV:
-    - Layers of data, zoom-in, zoom-out, other views
-    - Ee.g.: a region, a town and environs, a village, a scene, star map
-    - GUI controls for scroll, zoom, pan, select-move, etc
-    - Event trigger conditions / business rules
-
-    - This class is quite large. Let's think about 3 classes:
-        - GameData: load data for use in GAMEMAP and DSP.CONSOLE
-        - SetConsole: prep data, incl. widget definitions, for DSP.CONSOLE
-        - SetGameMap: align data to grid for scaling, zooming
-    - And refactor as needed to use io_data and DB structures.
-    - Definitely break out into multiple classes.
-
-    @DEV:
-    - Nearly all of this will be replaced. Keeping it here now
-      for reference. We have data structures and DB tables
-      for everything now. Should not need to define so many
-      complex data structures in this module.
-    """
-    def __init__(self):
-        """Dynamically loaded data for GAMEMAP and DSP.CONSOLE.
-        Values are displayed in DSP.CONSOLE but refer to GAMEMAP.
-        For DSP.GRID, static values are read in from PG, then
-           data is extended here.
-        """
-        self.DATASRC = {"actv": False,
-                        "catg": None,
-                        "item": None}
-        self.CONSOLE_REC = {"txt": "",
-                            "img": None,
-                            "box": None}
-        self.CONSOLE_TEXT: list = list()
-        self.MAP_BOX = None
-
-    def make_grid_key(self,
-                      p_col: int,
-                      p_row: int) -> str:
-        """Convert integer coordinates to string key
-           for use in the .grid["G"] (grid data) matrix.
-        :args:
-        - p_col: int, column number
-        - p_row: int, row number
-        :returns:
-        - str, key for specific grid-cell record, in "0n_0n" format
-        """
-        return f"{str(p_col).zfill(2)}_{str(p_row).zfill(2)}"
-
-    # Data load methods
-    # The current version of these methods assumes a
-    #   specific pattern of name:value pairs in data sources.
-
-    # Modify to read from database and io_data structures instead.
-    # =================
-
-
-    def set_label_name(self,
-                       p_attr: dict):
-        """Set text for a label (l) and name (n), but no type (t) value.
-           Example: "type" attribute
-        :attr:
-        - p_attr (dict): name-value pairs to format
-        :sets:
-        - self.DSP.CONSOLE[n]["txt"] (list): strings to render as text
-        """
-        for t in [DSP.DASH16,
-                  f"{p_attr['label']}:",
-                  f"  {p_attr['name']}"]:
-            rec = copy(self.CONSOLE_REC)
-            rec['txt'] = t
-            self.CONSOLE_TEXT.append(rec)
-
-    def set_label_name_type(self,
-                            p_attr: dict):
-        """Set text for a label (l), a name (n), and a type (t).
-           Example: "contained_by" attribute
-        :attr:
-        - p_attr (dict): name-value pairs to format
-        :sets:
-        - self.DSP.CONSOLE[n]["txt"] (list): strings to render as text
-        """
-        for t in [DSP.DASH16,
-                  f"{p_attr['label']}:",
-                  f"  {p_attr['name']}",
-                  f"  {p_attr['type']}"]:
-            rec = copy(self.CONSOLE_REC)
-            rec['txt'] = t
-            self.CONSOLE_TEXT.append(rec)
-
-    def set_proper_names(self,
-                         p_attr: dict):
-        """Set text for a "name" attribute, which refers to proper
-            names. Required value is indexed by "common". Optional
-            set of names in various game languages or dialects have
-            "other" in key.
-        :attr:
-        - p_attr (dict): name-value pairs to format
-        :sets:
-        - self.DSP.CONSOLE[n]["txt"] (list): strings to render as text
-        """
-        for t in [DSP.DASH16,
-                  f"{p_attr['label']}:",
-                  f"  {p_attr['common']}"]:
-            rec = copy(self.CONSOLE_REC)
-            rec['txt'] = t
-            self.CONSOLE_TEXT.append(rec)
-        if "other" in p_attr.keys():
-            for k, v in p_attr["other"].items():
-                rec = copy(self.CONSOLE_REC)
-                rec['txt'] = f"    {k}: {v}"
-                self.CONSOLE_TEXT.append(rec)
-
-    def set_map_attr(self,
-                     p_attr: dict):
-        """Set text for a "map" attribute, referring to game-map data.
-           Examples: "distance" or "location" expressed in
-              kilometers, degrees, or other in-game measures
-        :attr:
-        - p_attr (dict): name-value pairs to format
-        :sets:
-        - self.DSP.CONSOLE[n]["txt"] (list): strings to render as text
-        """
-        ky = "distance" if "distance" in p_attr.keys() else\
-            "location" if "location" in p_attr.keys() else None
-        if ky is not None:
-            sub_k = ["height", "width"] if ky == "distance" else\
-                ["top", "bottom", "left", "right"]
-            rec = copy(self.CONSOLE_REC)
-            rec['txt'] = DSP.DASH16
-            self.CONSOLE_TEXT.append(rec)
-            rec = copy(self.CONSOLE_REC)
-            rec["txt"] =\
-                f"{p_attr[ky]['label']}:"
-            self.CONSOLE_TEXT.append(rec)
-            for s in sub_k:
-                rec = copy(self.CONSOLE_REC)
-                rec["txt"] =\
-                    f"  {p_attr[ky][s]['label']}:  " +\
-                    f"{p_attr[ky][s]['amt']} " +\
-                    f"{p_attr[ky]['unit']}"
-                self.CONSOLE_TEXT.append(rec)
-
-    def set_contains_attr(self,
-                          p_attr: dict):
-        """Set text for a "contains" attribute, referring to things
-            contained by another object.
-            Examples: "sub-region", "movement" (i.e, movement paths)
-        :attr:
-        - p_attr (dict): name-value pairs to format
-        :sets:
-        - self.DSP.CONSOLE[n]["txt"] (list): strings to render as text
-        """
-        rec = copy(self.CONSOLE_REC)
-        rec["txt"] = DSP.DASH16
-        self.CONSOLE_TEXT.append(rec)
-        rec = copy(self.CONSOLE_REC)
-        rec["txt"] = f"{p_attr['label']}:"
-        self.CONSOLE_TEXT.append(rec)
-
-        if "sub-region" in p_attr.keys():
-            rec = copy(self.CONSOLE_REC)
-            rec["txt"] =\
-                f"  {p_attr['sub-region']['label']}:"
-            self.CONSOLE_TEXT.append(rec)
-            for n in p_attr["sub-region"]["names"]:
-                rec = copy(self.CONSOLE_REC)
-                rec["txt"] = f"    {n}"
-                self.CONSOLE_TEXT.append(rec)
-
-        if "movement" in p_attr.keys():
-            # roads, waterways, rivers and lakes
-            rec = copy(self.CONSOLE_REC)
-            rec["txt"] = f"  {p_attr['movement']['label']}:"
-            self.CONSOLE_TEXT.append(rec)
-            attr = {k: v for k, v in p_attr["movement"].items()
-                    if k != "label"}
-            for _, v in attr.items():
-                rec = copy(self.CONSOLE_REC)
-                rec["txt"] = f"    {v['label']}:"
-                self.CONSOLE_TEXT.append(rec)
-                for n in v["names"]:
-                    rec = copy(self.CONSOLE_REC)
-                    rec["txt"] = f"      {n}"
-                    self.CONSOLE_TEXT.append(rec)
-
-    # Data rendering methods for DSP.CONSOLE
-    # ==================================
-    def render_text_lines(self):
-        """
-        Store rendering objects for lines of DSP.CONSOLE text.
-        After rendering the img from txt, set the box for the img.
-        Then adjust topleft of the box according to line number.
-        """
-        print('render_text_lines()...')
-
-        x = DSP.CONSOLE_TTL_BOX.x
-        y = DSP.CONSOLE_TTL_BOX.y + DSP.FONT_MED_SZ
-
-        pp(("self.CONSOLE_TEXT: ", self.CONSOLE_TEXT))
-
-        for ix, val in enumerate(self.CONSOLE_TEXT):
-            txt = val["txt"]
-            self.CONSOLE_TEXT[ix]["img"] =\
-                DSP.F_SANS_TINY.render(txt, True,
-                                       CCL.CP_BLUEPOWDER,
-                                       CCL.CP_BLACK)
-            self.CONSOLE_TEXT[ix]["box"] =\
-                self.CONSOLE_TEXT[ix]["img"].get_rect()
-            self.CONSOLE_TEXT[ix]["box"].topleft =\
-                (x, y + ((DSP.FONT_TINY_SZ + 2) * (ix + 1)))
-
-            pp(("ix: ", ix, "self.CONSOLE_TEXT[ix]: ", self.CONSOLE_TEXT[ix]))
-
-    def set_console_text(self):
-        """Format text lines for display in DSP.CONSOLE.
-        - "catg" identifies source of config data to format.
-        - "item" identifies type of data to format.
-
-        @TODO:
-        - Move the geo data, etc. into a database.
-        - May want to revisit, optimize the methods for formatting
-          different types of data. Maybe even store img and box
-          objects in the DB, rather than rendering them here?
-            - Nah. This only gets called once per data source, when
-              the user clicks on a menu item. No point in persisting to DB.
-        - Use config files only for install-level customizations, overrides.
-        """
-        self.CONSOLE_TEXT.clear()
-        # Contents
-
-        pp((self.DATASRC["catg"], self.DATASRC["item"]))
-
-        if self.DATASRC["catg"] == "geo":
-            ci = FM.G[self.DATASRC["catg"]][self.DATASRC["item"]]
-
-            pp((ci))
-
-            if "type" in ci.keys():
-                self.set_label_name(ci["type"])
-            if "contained_by" in ci.keys():
-                self.set_label_name_type(ci["contained_by"])
-            if "name" in ci.keys():
-                self.set_proper_names(ci["name"])
-            if "map" in ci.keys():
-                self.set_map_attr(ci["map"])
-            if "contains" in ci.keys():
-                self.set_contains_attr(ci["contains"])
-            self.render_text_lines()
-
-    def compute_map_scale(self,
-                          p_attr: dict):
-        """Compute scaling, position for the map and grid.
-        :attr:
-        - p_attr (dict): 'map' data for the "Saskan Lands" region from
-            the saskan_geo.json file.
-        :sets:
-        - DSP.GRID['map']: map km dimensions and scaling factors
-
-        - Get km dimensions for entire map rectangle
-        - Reject maps that are too big
-        - Divide g km by m km to get # of grid-cells for map box
-            - This should be a float.
-        - Multiply # of grid-cells in the map box by px per grid-cell
-          to get line height and width in px for the map box.
-        - Center 'map' in the 'grid'; by grid count, by px
-
-        @DEV
-        - Debug, refactor to use io_data structures and eventually
-            DB structures for dynamic grid/map mapping.
-        - Instead of just snapping the "map" as defined here onto
-          the GameGrid structure, think about how to pull in map
-          data from the database and align it to the grid.
-        - Also consider that the grid settings should also be
-          pulled in from a database record.
-        - Take some time here to get it working.
-        """
-        err = ""
-        map = {'ln': dict(),
-               'cl': dict()}
-        # Evaluate map line lengths in kilometers
-        map['ln']['km'] =\
-            {'w': round(int(p_attr["distance"]["width"]["amt"])),
-             'h': round(int(p_attr["distance"]["height"]["amt"]))}
-        if map['ln']['km']['w'] > DSP.G_LNS_KM_W:
-            err = f"Map km w {map['w']} > grid km w {DSP.G_LNS_KM_W}"
-        if map['ln']['km']['h'] > DSP.G_LNS_KM_H:
-            err = f"Map km h {map['h']} > grid km h {DSP.G_LNS_KM_H}"
-        if err != "":
-            raise ValueError(err)
-        # Verified that the map rect is smaller than the grid rect.
-        # Compute a ratio of map to grid.
-        # Divide map km w, h by grid km w, h
-        map['ln']['ratio'] =\
-            {'w': round((map['ln']['km']['w'] / DSP.G_LNS_KM_W), 4),
-             'h': round((map['ln']['km']['h'] / DSP.G_LNS_KM_H), 4)}
-        # Compute map line dimensions in px
-        # Multiply grid line px w, h by map ratio w, h
-        map['ln']['px'] =\
-            {'w': int(round(DSP.G_LNS_PX_W * map['ln']['ratio']['w'])),
-             'h': int(round(DSP.G_LNS_PX_H * map['ln']['ratio']['h']))}
-        # The map rect needs to be centered in the grid rect.
-        #  Compute the offset of the map rect from the grid rect.
-        #  Compute topleft of the map in relation to topleft of the grid.
-        #  The map top is offset from grid top by half the px difference
-        #  between grid height and map height.
-        #  The map left is offset from grid left by half the px difference
-        #  between grid width and map width.
-        # Then adjusted once more for offset of the grid from the window.
-        map['ln']['px']['left'] =\
-            int(round((DSP.G_LNS_PX_W - map['ln']['px']['w']) / 2) +
-                DSP.GRID_OFFSET_X)
-        map['ln']['px']['top'] =\
-            int(round((DSP.G_LNS_PX_H - map['ln']['px']['h']) / 2) +
-                     (DSP.GRID_OFFSET_Y * 4))  # not sure why, but I need this
-        DSP.GRID["map"] = map
-
-    def set_map_grid_collisions(self):
-        """ Store collisions between DSP.GRIDS and 'map' box.
-        """
-        cells = {k: v for k, v in DSP.GRID.items() if k != "map"}
-        for ck, crec in cells.items():
-            DSP.GRID[ck]["is_inside"] = False
-            DSP.GRID[ck]["overlaps"] = False
-            if CR.rect_contains(
-                    DSP.GRID["map"]["box"], crec["box"]):
-                DSP.GRID[ck]["is_inside"] = True
-            elif CR.rect_overlaps(
-                    DSP.GRID["map"]["box"], crec["box"]):
-                DSP.GRID[ck]["overlaps"] = True
-
-    # Set "map" dimensions and other content in DSP.GRIDS
-    # =================================================
-    def set_gamemap_dims(self,
-                         p_attr: dict):
-        """This method handles placing/creating/drawing map displays
-           over the "grid" on the GAMEMAP display.
-        :attr:
-        - p_attr (dict): game map name-value pairs from geo config data
-            For example, 'map' data for the "Saskan Lands" region from
-            the saskan_geo.json file.
-
-        - Compute ratio, offsets of map to g_ width & height.
-        - Define saskan rect and pygame box for the map
-        - Do collision checks between the map box and grid cells
-        """
-        self.compute_map_scale(p_attr)
-        map_px = DSP.GRID["map"]["ln"]["px"]
-        DSP.GRID["map"]["s_rect"] = CR.make_rect(map_px["top"],
-                                                 map_px["left"],
-                                                 map_px["w"],
-                                                 map_px["h"])
-        DSP.GRID["map"]["box"] =\
-            DSP.GRID["map"]["s_rect"]["pg_rect"]
-        self.set_map_grid_collisions()
-
-    def set_map_grid(self):
-        """
-        Based on currently selected .DATASRC["catg"] and .DATASRC["item"]:
-        - assign values to DSP.GRIDS for "map".
-        Note:
-        - For now, only "geo" data (saskan_geo.json) is handled
-        """
-        if self.DATASRC["catg"] == "geo":
-            data = FM.G[self.DATASRC["catg"]][self.DATASRC["item"]]
-            if "map" in data.keys():
-                self.set_gamemap_dims(data["map"])
 
 
 class InfoBar(object):
@@ -934,17 +935,17 @@ class InfoBar(object):
         Set and draw the Info Bar text.
         Draw the info bar text, optionally including status info.
         """
-        text = DSP.PLATFORM + "   | " + self.status_text
-        self.itxt = DSP.F_SANS_SM.render(text, True, CCL.CP_BLUEPOWDER,
+        text = CDI.PLATFORM + "   | " + self.status_text
+        self.itxt = CDI.F_SANS_SM.render(text, True, CCL.CP_BLUEPOWDER,
                                          CCL.CP_BLACK)
         self.ibox = self.itxt.get_rect()
-        self.ibox.topleft = DSP.IBAR_LOC
-        DSP.WIN.blit(self.itxt, self.ibox)
+        self.ibox.topleft = CDI.IBAR_LOC
+        CDI.WIN.blit(self.itxt, self.ibox)
 
 
 class HtmlDisplay(object):
     """Set content for display in external web browser.
-    This class is instantiated as a global object named DSP.WHTM.
+    This class is instantiated as a global object named CDI.WHTM.
     Pass in a URI to display in the browser.
     """
 
@@ -968,7 +969,7 @@ class HtmlDisplay(object):
 class GameConsole(object):
     """Draw the Game Console window.
     Display game data like score, map descriptions, etc.
-    Instantiated as global object DSP.CONSOLE.
+    Instantiated as global object CDI.CONSOLE.
 
     Note:
     - Objects were rendered, boxed in GDAT and PG classes.
@@ -984,15 +985,15 @@ class GameConsole(object):
         pass
 
     def draw(self):
-        """ Draw DSP.CONSOLE rectange and blit its title text img.
+        """ Draw CDI.CONSOLE rectange and blit its title text img.
         - Blit txt imgs for current data in CONSOLE_TEXT.
         """
         # Draw container rect and header.
-        pg.draw.rect(DSP.WIN, CCL.CP_BLACK, DSP.CONSOLE_BOX, 0)
-        DSP.WIN.blit(DSP.CONSOLE_TTL_IMG, DSP.CONSOLE_TTL_BOX)
+        pg.draw.rect(CDI.WIN, CCL.CP_BLACK, CDI.CONSOLE_BOX, 0)
+        CDI.WIN.blit(CDI.CONSOLE_TTL_IMG, CDI.CONSOLE_TTL_BOX)
         # Draw lines of text
         for txt in GDAT.CONSOLE_TEXT:
-            DSP.WIN.blit(txt["img"], txt["box"])
+            CDI.WIN.blit(txt["img"], txt["box"])
 
 
 class GameMap(object):
@@ -1015,28 +1016,28 @@ class GameMap(object):
         """Draw "grid" and "map" in GAMEMAP using PG, GDAT objects.
         """
         # Draw grid box with thick border
-        pg.draw.rect(DSP.WIN, CCL.CP_SILVER, DSP.GRID_BOX, 5)
+        pg.draw.rect(CDI.WIN, CCL.CP_SILVER, CDI.GRID_BOX, 5)
         # Draw grid lines      # vt and hz are: ((x1, y1), (x2, y2))
-        for vt in DSP.G_LNS_VT:
-            pg.draw.aalines(DSP.WIN, CCL.CP_WHITE, False, vt)
-        for hz in DSP.G_LNS_HZ:
-            pg.draw.aalines(DSP.WIN, CCL.CP_WHITE, False, hz)
+        for vt in CDI.G_LNS_VT:
+            pg.draw.aalines(CDI.WIN, CCL.CP_WHITE, False, vt)
+        for hz in CDI.G_LNS_HZ:
+            pg.draw.aalines(CDI.WIN, CCL.CP_WHITE, False, hz)
         # Highlight grid squares inside or overlapping the map box
-        for _, grec in GDAT.DSP.GRIDS.items():
+        for _, grec in GDAT.CDI.GRIDS.items():
             if "is_inside" in grec.keys() and grec["is_inside"]:
-                pg.draw.rect(DSP.WIN, CCL.CP_WHITE, grec["box"], 0)
+                pg.draw.rect(CDI.WIN, CCL.CP_WHITE, grec["box"], 0)
             elif "overlaps" in grec.keys() and grec["overlaps"]:
-                pg.draw.rect(DSP.WIN, CCL.CP_SILVER, grec["box"], 0)
+                pg.draw.rect(CDI.WIN, CCL.CP_SILVER, grec["box"], 0)
         # Draw map box with thick border
         if GDAT.MAP_BOX is not None:
-            pg.draw.rect(DSP.WIN, CCL.CP_PALEPINK, GDAT.MAP_BOX, 5)
+            pg.draw.rect(CDI.WIN, CCL.CP_PALEPINK, GDAT.MAP_BOX, 5)
 
     def draw_hover_cell(self,
                         p_grid_loc: str):
         """
         Highlight/colorize grid-cell indicating grid that cursor is
         presently hovering over. When this method is called from
-        refesh_screen(), it passes in a DSP.GRID key in p_grid_loc.
+        refesh_screen(), it passes in a CDI.GRID key in p_grid_loc.
         :args:
         - p_grid_loc: (str) Column/Row key of grid to highlight,
             in "0n_0n" (col, row) format, using leading zeros.
@@ -1050,8 +1051,8 @@ class GameMap(object):
             - Achieved using Surface alpha argument with blit()
         """
         if p_grid_loc != "":
-            pg.draw.rect(DSP.WIN, CCL.CP_PALEPINK,
-                         GDAT.DSP.GRIDS[p_grid_loc]["box"], 0)
+            pg.draw.rect(CDI.WIN, CCL.CP_PALEPINK,
+                         GDAT.CDI.GRIDS[p_grid_loc]["box"], 0)
 
 
 class TextInput(pg.sprite.Sprite):
@@ -1059,13 +1060,6 @@ class TextInput(pg.sprite.Sprite):
     Use this to get directions, responses from player
     until I have graphic or voice methods available.
     Expand on this to create GUI control buttons, etc.
-
-    @DEV:
-    - Expand the data model and DB to hold widgets:
-    - text input
-    - buttons
-    - text display
-    - video display and so on
     """
     def __init__(self,
                  p_x: int,
@@ -1085,7 +1079,7 @@ class TextInput(pg.sprite.Sprite):
         self.t_rect = CR.make_rect(p_y, p_x, p_w, p_h)
         self.t_box = self.t_rect["box"]
         self.t_value = ""
-        self.t_font = DSP.F_FIXED_LG
+        self.t_font = CDI.F_FIXED_LG
         self.t_color = CCL.CP_GREEN
         self.text = self.t_font.render(self.t_value, True, self.t_color)
         self.is_selected = False
@@ -1124,10 +1118,10 @@ class TextInput(pg.sprite.Sprite):
         self.pos = self.text.get_rect(center=(self.t_box.x + self.t_box.w / 2,
                                               self.t_box.y + self.t_box.h / 2))
         if self.is_selected:
-            pg.draw.rect(DSP.WIN, CCL.CP_BLUEPOWDER, self.t_box, 2)
+            pg.draw.rect(CDI.WIN, CCL.CP_BLUEPOWDER, self.t_box, 2)
         else:
-            pg.draw.rect(DSP.WIN, CCL.CP_BLUE, self.t_box, 2)
-        DSP.WIN.blit(self.text, self.pos)
+            pg.draw.rect(CDI.WIN, CCL.CP_BLUE, self.t_box, 2)
+        CDI.WIN.blit(self.text, self.pos)
 
 
 class TextInputGroup(pg.sprite.Group):
@@ -1189,7 +1183,7 @@ class SaskanGame(object):
         """
         if (event.type == pg.QUIT or
                 (event.type == pg.KEYUP and
-                    event.key in DSP.KY_QUIT)):
+                    event.key in CDI.KY_QUIT)):
             self.exit_appl()
 
     def handle_menu_item_click(self,
@@ -1206,11 +1200,11 @@ class SaskanGame(object):
             self.exit_appl()
         elif "help" in mi_k:
             if mi_k == "pg_help":
-                DSP.WHTM.draw(DSP.WHTM["pygame"])
+                CDI.WHTM.draw(CDI.WHTM["pygame"])
             elif mi_k == "app_help":
-                DSP.WHTM.draw(DSP.WHTM["app"])
+                CDI.WHTM.draw(CDI.WHTM["app"])
             elif mi_k == "game_help":
-                DSP.WHTM.draw(DSP.WHTM["game"])
+                CDI.WHTM.draw(CDI.WHTM["game"])
         elif mi_k == "start":
             GDAT.set_datasrc({"catg": 'geo',
                               "item": 'Saskan Lands',
@@ -1225,8 +1219,8 @@ class SaskanGame(object):
     # Loop Events
     # ==============================================================
     def track_grid(self):
-        """Keep track of what grid mouse is over using DSP.G_LNS_VT,
-           DSP.G_LNS_HZ to ID grid loc. May be a little faster than
+        """Keep track of what grid mouse is over using CDI.G_LNS_VT,
+           CDI.G_LNS_HZ to ID grid loc. May be a little faster than
            parsing thru each element of .grid["G"] matrix.
         Note:
         Since "L" defines lines, it has a count one greater than # of
@@ -1236,17 +1230,17 @@ class SaskanGame(object):
         IBAR.info_status["grid_loc"] = ""
         grid_col = -1
         # vt ande hz are: (x1, y1), (x2, y2)
-        for i in range(0, DSP.GRID_COLS):
-            vt = DSP.G_LNS_VT[i]
+        for i in range(0, CDI.GRID_COLS):
+            vt = CDI.G_LNS_VT[i]
             if mouse_loc[0] >= vt[0][0] and\
-               mouse_loc[0] <= vt[0][0] + DSP.GRID_CELL_PX_W:
+               mouse_loc[0] <= vt[0][0] + CDI.GRID_CELL_PX_W:
                 grid_col = i
                 break
         grid_row = -1
-        for i in range(0, DSP.GRID_ROWS):
-            hz = DSP.G_LNS_HZ[i]
+        for i in range(0, CDI.GRID_ROWS):
+            hz = CDI.G_LNS_HZ[i]
             if mouse_loc[1] >= hz[0][1] and\
-               mouse_loc[1] <= hz[0][1] + DSP.GRID_CELL_PX_H:
+               mouse_loc[1] <= hz[0][1] + CDI.GRID_CELL_PX_H:
                 grid_row = i
                 break
         if grid_row > -1 and grid_col > -1:
@@ -1282,12 +1276,11 @@ class SaskanGame(object):
         the frame count, which is handled in track_state().
         """
         # black out the entire screen
-        DSP.WIN.fill(CLR.CP_BLACK)
+        CDI.WIN.fill(CCL.CP_BLACK)
 
-        """
         # Display info content based on what is currently
         #  posted in the GameData object
-        DSP.CONSOLE.draw()
+        CDI.CONSOLE.draw()
 
         # Check, Draw info bar
         IBAR.set_ibar_status_text()
@@ -1305,10 +1298,9 @@ class SaskanGame(object):
         GMNU.draw_menu_bars()
         for mb_k in GMNU.mitems.keys():
             GMNU.draw_menu_items(mb_k)
-        """
 
         pg.display.update()
-        DSP.TIMER.tick(30)
+        CDI.TIMER.tick(30)
 
     # Main Loop
     # ==============================================================
@@ -1322,7 +1314,7 @@ class SaskanGame(object):
         - Refresh the screen
         """
         while True:
-            # self.track_state()
+            self.track_state()
 
             for event in pg.event.get():
 
@@ -1338,7 +1330,6 @@ class SaskanGame(object):
                         self.MOUSEDOWN = False
                         self.MOUSECLICKED = True
 
-                """
                 if self.MOUSECLICKED:
                     self.MOUSECLICKED = False
                     # Handle menu-bar click
@@ -1355,18 +1346,17 @@ class SaskanGame(object):
                     # self.do_select_txtin(sIBAR.info_status["mouse_loc"])
 
                     # Handle game-window click events
-                """
 
             self.refresh_screen()
 
 
 if __name__ == '__main__':
     """Cache data and resources in memory and launch the app."""
-    GWF = GameWindowFrame()
+
+    GDAT = GameData()
     GMNU = GameMenu()
-    # GDAT = GameData()
-    # IBAR = InfoBar()
-    # DSP.WHTM = HtmlDisplay()  # for Help windows
-    # DSP.CONSOLE = GameConsole()
-    # GAMEMAP = GameMap()
+    IBAR = InfoBar()
+    CDI.WHTM = HtmlDisplay()  # for Help windows
+    CDI.CONSOLE = GameConsole()
+    GAMEMAP = GameMap()
     SaskanGame()

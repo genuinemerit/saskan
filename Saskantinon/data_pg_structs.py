@@ -10,8 +10,7 @@ Define static constants and non-DB data structures
 from pprint import pformat as pf    # noqa: F401
 from pprint import pprint as pp     # noqa: F401
 
-from saskan_io.image_type import ImageType
-from saskan_io.structs import GroupStruct
+from data_structs import ImageType, GroupStruct
 
 import pygame as pg
 pg.init()          # Init PyGame for use in this module
@@ -38,7 +37,8 @@ class PygColors(object):
 
 
 class AppDisplay(object):
-    """Static values related to constructing GUI's.
+    """Static values related to constructing GUI's in PyGame.
+    Object place-holdrss used for rendering.
     As long as pg.display is not called, nothing will be rendered.
     """
     # Typesetting
@@ -71,6 +71,18 @@ class AppDisplay(object):
     KY_DATA = (pg.K_a, pg.K_l)
     KY_RPT_TYPE = (pg.K_KP1, pg.K_KP2, pg.K_KP3)
     KY_RPT_MODE = (pg.K_UP, pg.K_RIGHT, pg.K_LEFT)
+    KEYMOD_NONE = 4096   # No modifier key pressed
+    # Window and Clock objects
+    # ---------------------------
+    WIN_W = 0.0
+    WIN_H = 0.0
+    WIN_MID = 0.0
+    WIN = None
+    TIMER = None
+    # Menu objects
+    # ---------------------------
+    MENUS: dict = {}
+    MITEMS: dict = {}
 
 
 #  SIMPLE DATA STRUCTURES

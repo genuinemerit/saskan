@@ -88,6 +88,9 @@ class AppInstall(object):
         SD.set_windows(self.BOOT, self.DB_CFG)
         SD.set_links(self.BOOT, self.DB_CFG)
 
+        # Save DB_CFG to a file.
+        self.save_db_config(self.BOOT, self.DB_CFG)
+
     def install_bootstrap_data(self):
         """
         Create basic app directories if needed.
@@ -201,6 +204,17 @@ class AppInstall(object):
         app_dir = path.join(self.DIR['root_dir'], self.DIR['py_dir'])
         _copy_python_files()
         print("* App files installed.")
+
+    def save_db_config(self,
+                       BOOT: dict,
+                       DB_CFG: dict):
+        """Save database configuration to app config file."""
+        db_cfg_j = json.dumps(DB_CFG)
+        cfg_d = path.join(
+            SM.get_cwd_home(), BOOT["app_dir"], "config")
+        FM.write_file(
+            path.join(cfg_d, "db_config.json"), db_cfg_j)
+        print("* DB config file created.")
 
 
 if __name__ == "__main__":
