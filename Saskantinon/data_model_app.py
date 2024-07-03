@@ -133,8 +133,8 @@ class Frames(object):
     frame_id: str = ''
     frame_title: str = ''
     frame_desc: str = ''
-    size_w: float = 0.0
-    size_h: float = 0.0
+    frame_w: float = 0.0
+    frame_h: float = 0.0
     ibar_x: float = 0.0
     ibar_y: float = 0.0
     pg_hdr_x: float = 0.0
@@ -159,7 +159,7 @@ class Frames(object):
 
 class MenuBars(object):
     """Define dimensions for Menu Bars used in frames.
-    - mbar_id: not unique, can be shared across frames
+    - frame_id: match to FRAMES record(s)
     There is no displayed text on this structure; it is a container.
     Its width (w) is derived from width of the frame.
     Its top-left x, y is relative to the frame.
@@ -169,7 +169,7 @@ class MenuBars(object):
     frame_uid_fk: str = ''
     lang_code: str = ''
     version_id: str = ''
-    mbar_id: str = ''
+    frame_id: str = ''
     mbar_margin: float = 0.0
     mbar_h: float = 0.0
     mbar_x: float = 0.0
@@ -187,7 +187,7 @@ class MenuBars(object):
         PK: dict = {"menu_bar_uid_pk": ["menu_bar_uid_pk"]}
         FK: dict = {"frame_uid_fk": ("FRAMES", "frame_uid_pk")}
         CK: dict = {"lang_code": EntityType.LANG_CODE}
-        ORDER: list = ["mbar_id ASC", "version_id ASC"]
+        ORDER: list = ["frame_id ASC", "version_id ASC"]
 
 
 class Menus(object):
@@ -198,6 +198,7 @@ class Menus(object):
     _tablename: str = "MENUS"
     menu_uid_pk: str = ''
     menu_bar_uid_fk: str = ''
+    frame_id: str = ''
     lang_code: str = ''
     version_id: str = ''
     menu_id: str = ''
@@ -227,6 +228,7 @@ class MenuItems(object):
     item_uid_pk: str = ''
     menu_uid_fk: str = ''
     lang_code: str = ''
+    frame_id: str = ''
     version_id: str = ''
     item_id: str = ''
     item_order: int = 0
@@ -262,6 +264,7 @@ class Windows(object):
     _tablename: str = "WINDOWS"
     win_uid_pk: str = ''
     frame_uid_fk: str = ''
+    frame_id: str = ''
     lang_code: str = ''
     version_id: str = ''
     win_id: str = ''
@@ -298,7 +301,7 @@ class Links(object):
     version_id: str = ''
     lang_code: str = ''
     link_id: str = ''
-    link_group: str = ''
+    frame_id: str = ''
     link_protocol: str = ''
     mime_type: str = ''
     link_name: str = ''
@@ -318,5 +321,5 @@ class Links(object):
         CK: dict = {"link_protocol": EntityType.LINK_PROTOCOL,
                     "lang_code": EntityType.LANG_CODE,
                     "mime_type": EntityType.MIME_TYPE}
-        ORDER: list = ["link_group ASC", "link_id ASC",
+        ORDER: list = ["frame_id ASC", "link_id ASC",
                        "lang_code ASC"]

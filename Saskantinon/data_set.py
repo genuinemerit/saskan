@@ -95,6 +95,14 @@ class SetData(object):
         DB.execute_insert(sql, tuple(cols.values()))
         print("* APP_CONFIG record initialized.")
 
+    def get_config_path(self,
+                        BOOT: object,
+                        p_config_nm: str):
+        """Return path to specified config file.
+        """
+        return (path.join(BOOT['git_source'], 'config',
+                          f"{p_config_nm}.json"))
+
     def set_texts(self,
                   BOOT: dict,
                   DB_CFG: dict):
@@ -105,8 +113,8 @@ class SetData(object):
         - BOOT: dict of boot values
         - DB_CFG: dict of DB config values
         """
-        config_p = path.join(BOOT['git_source'], 'config',
-                             f"texts_{BOOT['language']}.json")
+        config_p = self.get_config_path(
+            BOOT, f"texts_{BOOT['language']}")
         DB, sql, config, cols =\
             self._prep_set(TXT, DB_CFG, config_p)
         for tx_name, tx_value in config.items():
@@ -118,26 +126,29 @@ class SetData(object):
         print("* TEXTS table initialized.")
 
     def set_frames(self,
+                   p_frame_id: str,
                    BOOT: dict,
                    DB_CFG: dict):
         """
         Get the schema file for frames. Generate FRAMES data.
         :args:
+        - p_frame_id: str - name of app, e.g. 'saskan' or 'admin'
         - BOOT: dict of boot values
         - DB_CFG: dict of DB config values
         """
-        config_p = path.join(BOOT['git_source'], 'config', "frames.json")
+        config_p = self.get_config_path(BOOT, "frames")
         DB, sql, config, cols =\
             self._prep_set(FRM, DB_CFG, config_p)
-        for frame_id, v in config.items():
+        for frame_id, v in {f: v for f, v in config.items()
+                            if f == p_frame_id}.items():
             cols['frame_uid_pk'] = SHM.get_uid()
             cols['frame_id'] = frame_id
-            cols['version_id'] = '0.1'
+            cols['version_id'] = BOOT['db_version']
             cols['lang_code'] = BOOT['language']
             cols['frame_title'] = v['title']
             cols['frame_desc'] = v['desc']
-            cols['size_w'] = v['size_w']
-            cols['size_h'] = v['size_h']
+            cols['frame_w'] = v['frame_w']
+            cols['frame_h'] = v['frame_h']
             cols['ibar_x'] = v['ibar_x']
             cols['ibar_y'] = v['ibar_y']
             cols['pg_hdr_x'] = v['pg_hdr_x']
@@ -146,94 +157,99 @@ class SetData(object):
             cols['pg_hdr_h'] = v['pg_hdr_h']
             cols['pg_hdr_txt'] = v['pg_hdr_text']
             DB.execute_insert(sql, tuple(cols.values()))
-        print("* FRAMES table initialized.")
+        print(f"* FRAMES table initialized for {p_frame_id}.")
 
     def set_menu_bars(self,
+                      p_frame_id: str,
                       BOOT: dict,
                       DB_CFG: dict):
         """
         Get the config file for menus. Generate MENU_BARS data.
         :args:
+        - p_frame_id: str - name of app, e.g. 'saskan' or 'admin'
         - BOOT: dict of boot values
         - DB_CFG: dict of DB config values
-        Should fail if FK to FRAMES is not found.
-        @DEV:
-        - At some point, figure out a cleverer way to handle
-          version numbering. Don't worry about it for now.
+        Should fail if FK to FRAMES is not found..
         """
-        config_p = path.join(BOOT['git_source'], 'config',
-                             "menus.json")
+        config_p = self.get_config_path(BOOT, "menus")
         DB, sql, config, cols =\
             self._prep_set(MNB, DB_CFG, config_p)
-        for mbar_id, v in config.items():
+        for frame_id, v in {f: v for f, v in config.items()
+                            if f == p_frame_id}.items():
             cols['menu_bar_uid_pk'] = SHM.get_uid()
 
             data = GD.get_by_id('FRAMES', 'frame_id',
-                                mbar_id, DB_CFG)
+                                frame_id, DB_CFG)
             cols['frame_uid_fk'] = data['frame_uid_pk']
             cols['lang_code'] = data['lang_code']
-            cols['version_id'] = data['version_id']
+            cols['version_id'] = BOOT['db_version']
+            cols['frame_id'] = frame_id
 
             mb_v = v["menu_bar"]
-            cols['mbar_id'] = mbar_id
             cols['mbar_margin'] = mb_v['margin']
             cols['mbar_h'] = mb_v['h']
             cols['mbar_x'] = mb_v['x']
             cols['mbar_y'] = mb_v['y']
             DB.execute_insert(sql, tuple(cols.values()))
-        print("* MENU_BARS table initialized.")
+        print(f"* MENU_BARS table initialized for {p_frame_id}.")
 
     def set_menus(self,
+                  p_frame_id: str,
                   BOOT: dict,
                   DB_CFG: dict):
         """
         Get the config file for menus. Generate MENUS data.
         :args:
+        - p_frame_id: str - name of app, e.g. 'saskan' or 'admin'
         - BOOT: dict of boot values
         - DB_CFG: dict of DB config values
         Should fail if FK to MENU_BARS is not found.
         """
-        config_p = path.join(BOOT['git_source'], 'config',
-                             "menus.json")
+        config_p = self.get_config_path(BOOT, "menus")
         DB, sql, config, cols =\
             self._prep_set(MNU, DB_CFG, config_p)
-        for mnu_id, v in config.items():
+        for frame_id, v in {f: v for f, v in config.items()
+                            if f == p_frame_id}.items():
 
-            data = GD.get_by_id("MENU_BARS", 'mbar_id',
-                                mnu_id, DB_CFG)
+            data = GD.get_by_id("MENU_BARS", 'frame_id',
+                                frame_id, DB_CFG)
             cols['menu_bar_uid_fk'] = data['menu_bar_uid_pk']
             cols['lang_code'] = data['lang_code']
-            cols['version_id'] = data['version_id']
+            cols['version_id'] = BOOT['db_version']
+            cols['frame_id'] = frame_id
 
             for mnu_id, val in v["menus"].items():
                 cols['menu_uid_pk'] = SHM.get_uid()
                 cols['menu_id'] = mnu_id
                 cols['menu_name'] = val['name']
                 DB.execute_insert(sql, tuple(cols.values()))
-        print("* MENUS table initialized.")
+        print(f"* MENUS table initialized for {p_frame_id}.")
 
     def set_menu_items(self,
+                       p_frame_id: str,
                        BOOT: dict,
                        DB_CFG: dict):
         """
         Get the config file for menu items.
         Generate MENU_ITEMS data.
         :args:
+        - p_frame_id: str - name of app, e.g. 'saskan' or 'admin'
         - BOOT: dict of boot values
         - DB_CFG: dict of DB config values
         Should fail if FK to MENUS is not found.
         """
-        config_p = path.join(BOOT['git_source'], 'config',
-                             "menus.json")
+        config_p = self.get_config_path(BOOT, "menus")
         DB, sql, config, cols =\
             self._prep_set(MNI, DB_CFG, config_p)
-        for frame_id, v in config.items():
+        for frame_id, v in {f: v for f, v in config.items()
+                            if f == p_frame_id}.items():
             for mnu_id, val in v["menus"].items():
                 data = GD.get_by_id("MENUS", 'menu_id',
                                     mnu_id, DB_CFG)
                 cols['menu_uid_fk'] = data['menu_uid_pk']
                 cols['lang_code'] = data['lang_code']
-                cols['version_id'] = data['version_id']
+                cols['version_id'] = BOOT['db_version']
+                cols['frame_id'] = frame_id
                 order = 0
                 for mnu_itm_id, mi_v in val["items"].items():
                     cols['item_uid_pk'] = SHM.get_uid()
@@ -247,27 +263,30 @@ class SetData(object):
                         if 'enabled' in mi_v else True
                     order += 1
                     DB.execute_insert(sql, tuple(cols.values()))
-        print("* MENU_ITEMS table initialized.")
+        print(f"* MENU_ITEMS table initialized for {p_frame_id}.")
 
     def set_windows(self,
+                    p_frame_id: str,
                     BOOT: dict,
                     DB_CFG: dict):
         """
         Get the config file for windows. Generate WINDOWS data.
         :args:
+        - p_frame_id: str - name of app, e.g. 'saskan' or 'admin'
         - BOOT: dict of boot values
         - DB_CFG: dict of DB config values
         Should fail if FK to MENUS is not found.
         """
-        config_p = path.join(BOOT['git_source'], 'config',
-                             "windows.json")
+        config_p = self.get_config_path(BOOT, "windows")
         DB, sql, config, cols =\
             self._prep_set(WIN, DB_CFG, config_p)
-        for frame_id, v in config.items():
+        for frame_id, v in {f: v for f, v in config.items()
+                            if f == p_frame_id}.items():
             data = GD.get_by_id("FRAMES", 'frame_id',
                                 frame_id, DB_CFG)
             cols['frame_uid_fk'] = data['frame_uid_pk']
-            cols['version_id'] = data['version_id']
+            cols['frame_id'] = frame_id
+            cols['version_id'] = BOOT['db_version']
             for win_id, val in v.items():
                 cols['win_uid_pk'] = SHM.get_uid()
                 cols['lang_code'] = val['lang_code']
@@ -279,23 +298,25 @@ class SetData(object):
                 cols['win_w'] = val['w']
                 cols['win_margin'] = val['margin']
                 DB.execute_insert(sql, tuple(cols.values()))
-        print("* WINDOWS table initialized.")
+        print(f"* WINDOWS table initialized for {p_frame_id}.")
 
     def set_links(self,
+                  p_frame_id: str,
                   BOOT: dict,
                   DB_CFG: dict):
         """
         Get the config file for links. Generate LINKS data.
         :args:
+        - p_frame_id: str - name of app, e.g. 'saskan' or 'admin'
         - BOOT: dict of boot values
         - DB_CFG: dict of DB config values
         """
-        config_p = path.join(BOOT['git_source'], 'config',
-                             "links.json")
+        config_p = self.get_config_path(BOOT, "links")
         DB, sql, config, cols =\
             self._prep_set(LNK, DB_CFG, config_p)
-        for lnk_grp, v in config.items():
-            cols["link_group"] = lnk_grp
+        for frame_id, v in {f: v for f, v in config.items()
+                            if f == p_frame_id}.items():
+            cols["frame_id"] = frame_id
             cols["version_id"] = "0.1"
             cols["lang_code"] = v["lang_code"]
             for lnk_id, val in v["links"].items():

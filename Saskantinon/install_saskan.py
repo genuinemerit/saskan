@@ -7,9 +7,15 @@
 Command line installer.
 From local git repo, Saskantinon directory:
 - mamba activate sasaken
-- python install_app.py
+- python install_saskan.py
 
 @DEV:
+- Refactor to install only 'saskan' components
+- Install 'admin'/'saskan_eyes' separately, but like
+  it is a plug-in, sort of, for saskan. In other words,
+  they can use the same directories and database, but
+  have different configs, data records, GUI components,
+  and maybe a few other things.
 - If/when I get back to the service architecture...
 - Prototype/test using haproxy to load balance servers.
 - Simplify the proliferation of ports. I shouldn't need so many.
@@ -67,11 +73,8 @@ class AppInstall(object):
         # FM.pickle_saskan(self.APP)
         """
         # Environment Set-up
-        print("\n\nSaskan Installer tasks\n=================")
         self.install_bootstrap_data()
         self.BOOT, self.DB_CFG = CM.get_configs()
-        print("* Bootstrap and DB config metadata defined:")
-        pp((self.BOOT, self.DB_CFG))
         self.install_database()
         SD.set_app_config(self.DB_CFG)
         SD.set_texts(self.BOOT, self.DB_CFG)
@@ -81,12 +84,13 @@ class AppInstall(object):
         self.install_app_files()
 
         # Apps GUI Set-up
-        SD.set_frames(self.BOOT, self.DB_CFG)
-        SD.set_menu_bars(self.BOOT, self.DB_CFG)
-        SD.set_menus(self.BOOT, self.DB_CFG)
-        SD.set_menu_items(self.BOOT, self.DB_CFG)
-        SD.set_windows(self.BOOT, self.DB_CFG)
-        SD.set_links(self.BOOT, self.DB_CFG)
+        frame_id = 'saskan'
+        SD.set_frames(frame_id, self.BOOT, self.DB_CFG)
+        SD.set_menu_bars(frame_id, self.BOOT, self.DB_CFG)
+        SD.set_menus(frame_id, self.BOOT, self.DB_CFG)
+        SD.set_menu_items(frame_id, self.BOOT, self.DB_CFG)
+        SD.set_windows(frame_id, self.BOOT, self.DB_CFG)
+        SD.set_links(frame_id, self.BOOT, self.DB_CFG)
 
         # Save DB_CFG to a file.
         self.save_db_config(self.BOOT, self.DB_CFG)
@@ -95,20 +99,11 @@ class AppInstall(object):
         """
         Create basic app directories if needed.
         Write bootstrap data to app directory.
-        @DEV:
-        - Should probably make this a git repo file.
-        - It would be interesting to see if I can pull in the
-          installable files directly from GitHub.
-        - Make some of these values param inputs:
-            - db_version
-            - git_source
-            - language
         """
         boot_data: dict = {
             "app_dir": "saskan",
             "db_dir": "sql",
             "db_version": "0.1",
-            # "git_source": "https://github.com/genuinemerit/Saskantinon",
             "git_source": "/home/dave/Dropbox/GitHub/saskan-app/Saskantinon",
             "language": "en",
             "main_db": "SASKAN.db",

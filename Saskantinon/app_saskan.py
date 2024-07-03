@@ -136,13 +136,17 @@ class GameWindowFrame(object):
     Construct the main game window-frame.
     Set values in DSP window and timer objects.
     """
-    win_frame = GD.get_by_id('FRAMES', 'frame_id', 'game', DB_CFG)
-    pg.display.set_caption(win_frame['frame_title'])
-    DSP.WIN_W = win_frame['size_w']
-    DSP.WIN_H = win_frame['size_h']
-    DSP.WIN_MID = (DSP.WIN_W / 2, DSP.WIN_H / 2)
-    DSP.WIN = pg.display.set_mode((DSP.WIN_W, DSP.WIN_H))
-    DSP.TIMER = pg.time.Clock()
+    def __init__(self):
+        """Initialize the class GameWindowFrame
+        It will be instantiated as GWF, a global object.
+        """
+        self.frmrec = GD.get_by_id('FRAMES', 'frame_id', 'game', DB_CFG)
+        pg.display.set_caption(self.frmrec['frame_title'])
+        DSP.WIN_W = self.frmrec['frame_w']
+        DSP.WIN_H = self.frmrec['frame_h']
+        DSP.WIN_MID = (DSP.WIN_W / 2, DSP.WIN_H / 2)
+        DSP.WIN = pg.display.set_mode((DSP.WIN_W, DSP.WIN_H))
+        DSP.TIMER = pg.time.Clock()
 
 
 class GameMenu(object):
@@ -158,8 +162,12 @@ class GameMenu(object):
 
         Menu members and and menu items are stored in class-level dicts.
         """
+        self.mbrec = None  # database records for menu bars
+        self.mnrec = None  # database records for menus
+        self.mirec = None  # database records for menu items
         self.set_menu_bars()
-        # self.mitems: dict = self.set_menus()
+        self.set_menus()
+        pp((DSP.MENUS, DSP.MITEMS))
 
         # self.draw_menu_bars()
         # for mb_k in self.mitems.keys():
@@ -167,83 +175,49 @@ class GameMenu(object):
 
     def set_menu_bars(self) -> dict:
         """Set up the menu bar and its members (menu names).
-        Load all menu bar members and items info from DB.
-        A menu bar is a horizontal row of menu bar members.
-        There is no disticnt rendered menu bar object.
-        Center text in each menu bar member and fix spacing per text width.
+        Load MENU_BARS and MENUSs info from DB.
+        Menu bar - horizontal row of menu names.
+        No distinct rendered menu bar object, just the menus.
+
+        Center menu text; align spacing to text width.
+
+        - pg.Rect(left, top, width, height)  = ((x,y),(w,h))
         Set text & bounding boxes, and selected-status flags.
-        - 'tbox' = standard rect that contains the menu name text
-        - 'mbox' = pg rect object around the tbox, plus margin
-        Both used in the drawing/rendering process.
+        - 'txt; - menu name rendered in pyg font
+        - 'tbox' = standard rect containing text
+        - 'mbox' = pg rect object around tbox, plus margin
+        tbox and mbox are used in rendering the menu bar
+        - 'lbox' - will be set later to the bounding box of the
+           menu's list of menu items
         :sets:
         - DSP.MENUS: dict of menu bars and menu (names)
         """
-        # get MENU_BAR (dimensions) from DB
-        # get MENU from DB, it contains the "members", e.g. names
-        mbar_data = GD.get_by_id('MENU_BARS', 'frame_uid_fk',
-                                 GWF.win_frame['frame_uid_pk'], DB_CFG)
-
-        pp((mbar_data))
-
-        menu_data = GD.get_by_id(
+        self.mbrec = GD.get_by_id('MENU_BARS', 'frame_uid_fk',
+                                  GWF.frmrec['frame_uid_pk'], DB_CFG)
+        self.mnrec = GD.get_by_id(
             'MENUS', 'menu_bar_uid_fk',
-            mbar_data['menu_bar_uid_pk'], DB_CFG,
+            self.mbrec['menu_bar_uid_pk'], DB_CFG,
             p_first_only=False)
-        DSP.MENUS = {m['menu_name']: {'x': 0.0, 'y': 0.0,
-                                      'txt': '', 'selected': False,
-                                      'tbox': None, 'mbox': None}
-                     for m in menu_data}
-        # x of first menu = x of menu_bar object
-        x = mbar_data['mbar_x']
-        for m_ix, m_nm in enumerate(list(DSP.MENUS.keys())):
-            DSP.MENUS[m_nm]['txt'] =\
-                DSP.F_SANS_SM.render(m_nm, True, CLR.CP_BLUEPOWDER,
+        DSP.MENUS = {m['menu_id']: {'name': m['menu_name'],
+                                    'uid': m['menu_uid_pk'],
+                                    'selected': False, 'txt': '',
+                                    'tbox': None, 'mbox': None, 'lbox': None}
+                     for m in self.mnrec}
+        total_w = 0
+        for m_ix, m_id in enumerate(list(DSP.MENUS.keys())):
+            DSP.MENUS[m_id]['txt'] =\
+                DSP.F_SANS_SM.render(DSP.MENUS[m_id]['name'],
+                                     True, CLR.CP_BLUEPOWDER,
                                      CLR.CP_GRAY_DARK)
-            DSP.MENUS[m_nm]['tbox'] =\
-                DSP.MENUS[m_nm]['txt'].get_rect()
-            DSP.MENUS[m_nm]['mbox'] =\
-                pg.Rect((mbar_data['mbar_x'], mbar_data['mbar_y']),
-                        (mbar_data['mbar_w'], mbar_data['mbar_h'] +
-                         (mbar_data['mbar_margin'] * 2)))
-            x += (m_ix * DSP.MENUS[m_nm]['mbox'].right)
-            DSP.MENUS[m_nm]['x'] = x
-            DSP.MENUS[m_nm]['y'] = mbar_data['mbar_y']
-
-        pp((DSP.MENUS))
-
-        """
-        self.mbars =\
-            {ky: {"name": val["name"]}
-             for ky, val in FM.M[DSP.MENUS]["menu"].items()}
-        # x --> left edge of first, leftmost menu bar member
-        x = DSP.MBAR_X
-        for mb_k, v in self.mbars.items():
-            self.mbars[mb_k] =\
-                {"name": v["name"],
-                 "txt": DSP.F_SANS_SM.render(
-                     v["name"], True, CCL.CP_BLUEPOWDER, CCL.CP_GRAY_DARK),
-                 "selected": False,
-                 "tbox": None,
-                 "mbox": None}
-            # Rect based on text size and location
-            self.mbars[mb_k]["tbox"] =\
-                self.mbars[mb_k]["txt"].get_rect()
-
-            # Default rect for menu bar member container
-            self.mbars[mb_k]["mbox"] =\
-                pg.Rect((x, DSP.MBAR_Y), (DSP.MBAR_W, DSP.MBAR_H +
-                                          (DSP.MBAR_MARGIN * 2)))
-            x = self.mbars[mb_k]["mbox"].right  # shift x for next bar
-
-            # is there a cleaner way to do this?...
-            # Center text rect in menu bar member rect
-            # Kludge to account for visual niceness of text
-            self.mbars[mb_k]["tbox"].left =\
-                self.mbars[mb_k]["mbox"].left +\
-                (self.mbars[mb_k]["mbox"].width / 2) - 12
-            self.mbars[mb_k]["tbox"].top =\
-                self.mbars[mb_k]["mbox"].top + DSP.MBAR_MARGIN + 5
-        """
+            DSP.MENUS[m_id]['tbox'] =\
+                DSP.MENUS[m_id]['txt'].get_rect()
+            y = self.mbrec['mbar_y']
+            h = self.mbrec['mbar_h']
+            w = (DSP.MENUS[m_id]['txt'].get_width() +
+                 (self.mbrec['mbar_margin'] * 2))
+            total_w += w
+            x = self.mbrec['mbar_x'] + total_w - w
+            DSP.MENUS[m_id]['mbox'] = pg.Rect(x, y, w, h)
 
     def set_menu_list_box(self,
                           p_mb_k: str):
@@ -293,11 +267,7 @@ class GameMenu(object):
 
         self.mbars[p_mb_k]["mlist_box"].height += DSP.MBAR_H
 
-    def set_menu_item(self,
-                      p_mb_k: str,
-                      p_mi_k: str,
-                      p_mi_x: int,
-                      p_mi_v: dict):
+    def set_menus(self):
         """
         Updates mitems with drawing objects for each item under a menu.
         Not yet managing dependencies between menu items, but keep
@@ -306,11 +276,22 @@ class GameMenu(object):
         For menu items that set state of in-app options or status rather
             than trigger an event, track them in the ADAT object's "app"
             attribute.  For example, the ibar status_option.
-        :args:
-        - p_mb_k: key to the menu bar member data
-        - p_mi_k: key of the menu item data
-        - p_mi_x: order (index) of the menu item in the list
-        - p_mi_v: dict of menu item data
+
+        @DEV:
+        - Examine code that loads MENU_ITEMS DB table.
+        - It is getting the FK's mixed up a little between
+          the Admin App and the Saskan App.
+        - I am thinking I need to have two separate config sets
+          for the two different apps.
+        - They can share a code base, but should config and
+          install them separately I think.
+        """
+        for m_id, mnu in DSP.MENUS.items():
+            self.mirec = GD.get_by_id(
+                'MENU_ITEMS', 'menu_uid_fk', mnu['uid'], DB_CFG,
+                p_first_only=False)
+            pp((m_id, self.mirec))
+
         """
         self.mitems[p_mb_k][p_mi_k] = {
             "name": p_mi_v["name"],
@@ -326,8 +307,9 @@ class GameMenu(object):
             DSP.F_SANS_SM.render(p_mi_v["name"], True,
                                  CCL.CP_GRAY, CCL.CP_GRAY_DARK)
         self.set_menu_item_box(p_mb_k, p_mi_k, p_mi_x)
+        """
 
-    def set_menus(self):
+    def set_menus_old(self):
         """
         Initialize menu items data from config data.
         Define menu list box and items for each

@@ -22,16 +22,17 @@ class ConfigMethods(object):
     """
 
     def __init__(self):
-        """Initialize FileIO object.
+        """Initialize ConfigMethods object.
         """
-        self.BOOT = self.set_bootstrap()
-        self.DB_CFG = self.set_db_config()
+        pass
 
     def get_configs(self) -> tuple:
         """Get configs from bootstrap file.
         :returns:
         - (tuple) Bootstrap and DB config values.
         """
+        self.BOOT = self.set_bootstrap()
+        self.DB_CFG = self.set_db_config()
         return (self.BOOT, self.DB_CFG)
 
     def set_bootstrap(self) -> dict:
@@ -43,7 +44,7 @@ class ConfigMethods(object):
         try:
             cfg = FM.get_json_file(path.join(
                 SM.get_cwd_home(),
-                "saskan/config/b_bootstrap.json"))
+                "saskan/config/bootstrap.json"))
             return cfg
         except Exception as err:
             print(err)
