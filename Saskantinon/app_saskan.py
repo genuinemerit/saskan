@@ -5,19 +5,6 @@
 
 Saskan App GUI.  pygame version.
 
-:classes:
-    - PG: Frozen constants and static game values
-    - GameMenu: Manage menu objects, draw and click events
-    - GameData: Dynamic game values and data structures
-    - HtmlDisplay: Manage display of HTML pages in a browser
-    - TextInput: Handle text input events in a single input box
-    - TextInputGroup: Handle groups of text input boxes, like a form
-    - InfoBar: Manage display of info bar/dock at bottom of main frame
-    - GameConsole: Manage display of widgets (text, for now) in DSP.CONSOLE
-    - GameMap: Manage display of map & related widgets in GAMEMAP
-    - SaskanGame: Main class, event loop, state mgmt, event handlers
-    - __main__: Entry point for this module, instantitates all classes
-
     Note:
     For scaling images, see: https://www.pygame.org/docs/ref/transform.html
     Example: scaled_image =\
@@ -29,75 +16,14 @@ Saskan App GUI.  pygame version.
     - avatar placement/movement
     - physics
     - sound and music
-- Use pygame for graphics, sound, everything else.
+- Use pygame for everything.
 - Go for more features, better performance than earler prototypes,
     but don't worry about interactiviity or complete game yet.
     Focus most on prototyping the windows and widgets.
-- Use io_time, io_graph, io_music modules for dynamic things.
-- Reimplement wiretap and logger modules later on.
-    - Print statements and debugger are OK for now.
-- Sketch out what I want to do before starting to do much code.
-    - Start simple. Experiment, be agile. Use CoPilot and ChatGPT.
-    - See pygame_lab/app4 ("turtles") for some ideas.
-- Work on loading, displaying more complex maps/settings data.
-    - Show key/legend for political boundaries.
-    ---> Work on some geographical data.
-    - Work on some temporal data.
-    - Work on some weather data.
-    - Work on some demographic (population, language, religion) data.
-    - Show region names, using different fonts for stuff.
-    - Show degrees and km data.
-    - Add arrows, some measures (text, degrees N, S, E, W) to the map.
-    - Elaborate borders, textures at more detail.
-    - Zoomi in/out to different levels of detail.
-    - Show terrain and other factors into account for movement.
-    - Track time, season, date, etc.
-- Work on skeletal game events and interactions.
-    - Identify a single AI player.
-        - See code in ontology lab.
-            - Pick a few things to start with.
-            - Parameterize the data.
-            - Set or get a name.
-            - Roll basic attributes, age, home region, DNA, guild affiliation.
-            - Pick starting location.
-        - Sketch of player actions and events, starting w/movement.
-            - Highlight what grid player is in.
-            - Display data for grid that player is in.
-            - Accept input for what grid to travel to.
-            - Compute time to walk, to ride to target grid.
-            - Animate movement, show time passing, highlight grids passed thru.
-        - Start to develop inventory of image widgets, textures, sounds, etc.
-            - Start simple and stupid, then improve.
-            - Sound effects for movement.
-            - Theme music for different regions.
-            - Play a new theme when entering a different region, town, etc.
-        - Add simple sets, scenes.
-        - Work on player functions like:
-            - Energy, market, inventory, food/eating, etc.
-    - Add more AI players.
-        - Start to design some typical encounters.
-        - Start to design some typical scenarios, following script / beatsheet.
-
-    The security concern with pickling is the possiblity of executing code
-    from a remote source which is malicious. The use of it internally unlikely
-    to cause problems. The use of pickle to store data is not a security risk.
-    To be safer, create a hash or a signature of the data and store that with
-    pickled data. When you unpickle the data, you can check hash/signature to
-    make sure the data has not been tampered with. This is not a guarantee, but
-    it is better than nothing. In my use cases, it may not serve much purpose
-    to pickle data; it can just as easily be stored in a database as JSON.
-
-    Now I'm using JSON data structures on the DB only in a few instances. And
-    storing as JSON, not as BLOB/pickled bytes.
 
     @TODO:
-    - review this module for refactoring based on changes to io_data and io_db.
-    - move data-loading/data-prep for both map-window and console-window to
-      separate modules: io_astro for astro data, io_geo for geo data, etc.
-    - these topic- or category-specific modules should have methods or
-        sub-classes for creating test-data, play-data and "rational" updates
-        to the data, along with pulling in records and views needed to
-        construct displays.
+    - Refactor based on DB and data model implementations.
+    - Implement auto-test scenarios.
 """
 
 # trunk-ignore(bandit/B403)
@@ -106,13 +32,13 @@ import pygame as pg
 import sys
 import webbrowser
 
-
 from copy import copy
+from dataclasses import dataclass
 from pprint import pprint as pp     # noqa: F401, format like pp for files
 from pprint import pformat as pf    # noqa: F401, format like pp for files
 from pygame.locals import *         # noqa: F401, F403
 
-# import data_structs
+from data_base import DataBase
 from data_pg_structs import PygColors, AppDisplay
 from data_get import GetData
 from method_files import FileMethods    # type: ignore
@@ -120,306 +46,254 @@ from method_shell import ShellMethods   # type: ignore
 
 CLR = PygColors()
 DSP = AppDisplay()
-
 GD = GetData()
 DB_CFG = GD.get_db_config()
-
+DB = DataBase(DB_CFG)
 FM = FileMethods()
 SM = ShellMethods()
-# CR = CompareRect()
 
 pg.init()
 
 
-class GameWindowFrame(object):
-    """
-    Construct the main game window-frame.
-    Set values in DSP window and timer objects.
-    """
-    def __init__(self):
-        """Initialize the class GameWindowFrame
-        It will be instantiated as GWF, a global object.
-        """
-        self.frmrec = GD.get_by_id('FRAMES', 'frame_id', 'game', DB_CFG)
-        pg.display.set_caption(self.frmrec['frame_title'])
-        DSP.WIN_W = self.frmrec['frame_w']
-        DSP.WIN_H = self.frmrec['frame_h']
-        DSP.WIN_MID = (DSP.WIN_W / 2, DSP.WIN_H / 2)
-        DSP.WIN = pg.display.set_mode((DSP.WIN_W, DSP.WIN_H))
-        DSP.TIMER = pg.time.Clock()
+@dataclass(frozen=True)
+class PG:
+
+    FRM = GD.get_by_id('FRAMES', 'frame_id', 'saskan', DB_CFG)
+    pg.display.set_caption(FRM['frame_title'])
+    DSP.WIN_W = float(FRM['frame_w'])
+    DSP.WIN_H = float(FRM['frame_h'])
+    DSP.WIN_MID = (DSP.WIN_W / 2, DSP.WIN_H / 2)
+    flags = pg.RESIZABLE
+    DSP.WIN = pg.display.set_mode((DSP.WIN_W, DSP.WIN_H), flags)
+    DSP.TIMER = pg.time.Clock()
 
 
 class GameMenu(object):
-    """Manage Menu objects. Populate DSP.MENUS and DSP.MITEMS.
+    """Manage Menu objects. Populate DSP.MENUS.
     Define a surface for clickable top-level menu bar members,
     drop-down menus associated with them, and items on each menu.
     Clicking on a menu bar member opens or closes a Menu.
-    Clicking on Menu Item triggers an event and may also close Menu.
+    Clicking on Menu Item triggers an event or sets a status and
+      may also close Menu.
     """
     def __init__(self):
-        """Initialize the GameMenu object.
-        It will be instantiated as GMNU, a global object.
-
-        Menu members and and menu items are stored in class-level dicts.
+        """Initialize the GameMenu object MNU.
+        Store menu data and rendering info in DSP.MENUS.
         """
-        self.mbrec = None  # database records for menu bars
-        self.mnrec = None  # database records for menus
-        self.mirec = None  # database records for menu items
         self.set_menu_bars()
-        self.set_menus()
-        pp((DSP.MENUS, DSP.MITEMS))
-
-        # self.draw_menu_bars()
-        # for mb_k in self.mitems.keys():
-        #     self.draw_menu_items(mb_k)
+        self.set_menu_items()
+        self.draw_menu_bar()
+        self.draw_menu_items()
 
     def set_menu_bars(self) -> dict:
-        """Set up the menu bar and its members (menu names).
-        Load MENU_BARS and MENUSs info from DB.
-        Menu bar - horizontal row of menu names.
-        No distinct rendered menu bar object, just the menus.
-
-        Center menu text; align spacing to text width.
+        """
+        - Set up menu bars and menus names in DSP.MENUS.
+        - Compute rendering info for menu bar members.
+          Center menu text; align spacing to text width.
 
         - pg.Rect(left, top, width, height)  = ((x,y),(w,h))
-        Set text & bounding boxes, and selected-status flags.
-        - 'txt; - menu name rendered in pyg font
-        - 'tbox' = standard rect containing text
-        - 'mbox' = pg rect object around tbox, plus margin
-        tbox and mbox are used in rendering the menu bar
-        - 'lbox' - will be set later to the bounding box of the
-           menu's list of menu items
-        :sets:
-        - DSP.MENUS: dict of menu bars and menu (names)
+        - txt = menu name rendered in pyg font
+        - tbox = measure for text, not used in rendering
+        - mb_box = pg rect around text + margin
+        - ib_box = bounding box of menu's items
         """
-        self.mbrec = GD.get_by_id('MENU_BARS', 'frame_uid_fk',
-                                  GWF.frmrec['frame_uid_pk'], DB_CFG)
-        self.mnrec = GD.get_by_id(
-            'MENUS', 'menu_bar_uid_fk',
-            self.mbrec['menu_bar_uid_pk'], DB_CFG,
-            p_first_only=False)
-        DSP.MENUS = {m['menu_id']: {'name': m['menu_name'],
-                                    'uid': m['menu_uid_pk'],
-                                    'selected': False, 'txt': '',
-                                    'tbox': None, 'mbox': None, 'lbox': None}
-                     for m in self.mnrec}
-        total_w = 0
-        for m_ix, m_id in enumerate(list(DSP.MENUS.keys())):
-            DSP.MENUS[m_id]['txt'] =\
-                DSP.F_SANS_SM.render(DSP.MENUS[m_id]['name'],
-                                     True, CLR.CP_BLUEPOWDER,
-                                     CLR.CP_GRAY_DARK)
-            DSP.MENUS[m_id]['tbox'] =\
-                DSP.MENUS[m_id]['txt'].get_rect()
-            y = self.mbrec['mbar_y']
-            h = self.mbrec['mbar_h']
-            w = (DSP.MENUS[m_id]['txt'].get_width() +
-                 (self.mbrec['mbar_margin'] * 2))
-            total_w += w
-            x = self.mbrec['mbar_x'] + total_w - w
-            DSP.MENUS[m_id]['mbox'] = pg.Rect(x, y, w, h)
-
-    def set_menu_list_box(self,
-                          p_mb_k: str):
-        """
-        Updates mbars with mlist_box, a Rect() object for the menu items
-           associated with each menu. That is the bounding box for the
-           entire list of menu items under a specific menu bar member.
-        Store it in mbars.
-        :args:
-        - p_mb_k: key to the menu bar member data
-        :sets:
-        - mbars[mb_k]["mlist_box"]: Rect() object for the menu items
-        """
-        if "mlist_box" not in list(self.mbars[p_mb_k].keys()):
-            left = self.mbars[p_mb_k]["mbox"].left
-            top = self.mbars[p_mb_k]["mbox"].bottom
-            self.mbars[p_mb_k]["mlist_box"] =\
-                pg.Rect((left, top), (DSP.MBAR_W, 0))
-
-    def set_menu_item_box(self,
-                          p_mb_k: str,
-                          p_mi_k: str,
-                          p_mi_x: int):
-        """
-        Define bounding box for text in menu item.
-        - width is text width plus margin on each side
-        - height is fixed amount (DSP.MBAR_H)
-        - top is bottom of menu bar member box
-            plus fixed height X menu item index (order in list)
-            plus margin
-        - left is left of menu bar member box plus margin
-        Adjust container (full list) box height for each item added.
-            = fixed height
-        :args:
-        - p_mb_k: key to the menu bar member data
-        - p_mi_k: key of the menu item data
-        - p_mi_x: order (index) of the menu item in the list
-        """
-        text_w = self.mitems[p_mb_k][p_mi_k]["mi_text_enabled"].get_width()
-        width = text_w + (DSP.MBAR_MARGIN * 2)
-        top = self.mbars[p_mb_k]["mbox"].bottom +\
-            (DSP.MBAR_H * p_mi_x) + DSP.MBAR_MARGIN
-        left = self.mbars[p_mb_k]["mbox"].left +\
-            (DSP.MBAR_MARGIN * 4)
-        self.mitems[p_mb_k][p_mi_k]["mitm_box"] =\
-            pg.Rect((left, top), (width, DSP.MBAR_H))
-
-        self.mbars[p_mb_k]["mlist_box"].height += DSP.MBAR_H
-
-    def set_menus(self):
-        """
-        Updates mitems with drawing objects for each item under a menu.
-        Not yet managing dependencies between menu items, but keep
-            that in mind and use configuration data (eventually) to
-            manage them.
-        For menu items that set state of in-app options or status rather
-            than trigger an event, track them in the ADAT object's "app"
-            attribute.  For example, the ibar status_option.
-
-        @DEV:
-        - Examine code that loads MENU_ITEMS DB table.
-        - It is getting the FK's mixed up a little between
-          the Admin App and the Saskan App.
-        - I am thinking I need to have two separate config sets
-          for the two different apps.
-        - They can share a code base, but should config and
-          install them separately I think.
-        """
-        for m_id, mnu in DSP.MENUS.items():
-            self.mirec = GD.get_by_id(
-                'MENU_ITEMS', 'menu_uid_fk', mnu['uid'], DB_CFG,
+        def get_menu_bar_data():
+            """Retrieve menu bar and menu data from data base.
+            """
+            mbar_rec = GD.get_by_id(
+                'MENU_BARS', 'frame_uid_fk',
+                PG.FRM['frame_uid_pk'], DB_CFG)
+            menu_rec = GD.get_by_id(
+                'MENUS', 'menu_bar_uid_fk',
+                mbar_rec['menu_bar_uid_pk'], DB_CFG,
                 p_first_only=False)
-            pp((m_id, self.mirec))
+            DSP.MENUS =\
+                {m['menu_id']:
+                    {'name': m['menu_name'],
+                     'uid': m['menu_uid_pk'],
+                     'selected': False, 'txt': '',
+                     'tbox': None, 'mb_box': None,
+                     'ib_box': None, 'mitems': {}}
+                    for m in menu_rec}
+            return mbar_rec
 
-        """
-        self.mitems[p_mb_k][p_mi_k] = {
-            "name": p_mi_v["name"],
-            "enabled": True,
-            "selected": False,
-            "on": False}
-        self.mitems[p_mb_k][p_mi_k]['enabled'] =\
-            p_mi_v['enabled'] if 'enabled' in p_mi_v.keys() else True
-        self.mitems[p_mb_k][p_mi_k]["mi_text_enabled"] =\
-            DSP.F_SANS_SM.render(p_mi_v["name"], True,
-                                 CCL.CP_BLUEPOWDER, CCL.CP_GRAY_DARK)
-        self.mitems[p_mb_k][p_mi_k]["mi_text_disabled"] =\
-            DSP.F_SANS_SM.render(p_mi_v["name"], True,
-                                 CCL.CP_GRAY, CCL.CP_GRAY_DARK)
-        self.set_menu_item_box(p_mb_k, p_mi_k, p_mi_x)
-        """
+        def set_menu_bar_rendering(mbar_rec: dict):
+            """Computer rendering boxes for menu bar.
+            The mb_box is the box around the text. It gets renedered as a rect.
+            The tbox defines the destination rec in a blit() command, so it is
+              to be defined to be centered inside the mb_box.
+            The txt is the surface for the blit() command.
+            """
+            x = mbar_rec['mbar_x']
+            for m_ix, m_id in enumerate(list(DSP.MENUS.keys())):
+                DSP.MENUS[m_id]['txt'] = DSP.F_SANS_SM.render(
+                    DSP.MENUS[m_id]['name'],
+                    True, CLR.CP_BLUEPOWDER, CLR.CP_GRAY_DARK)
+                tbox = DSP.MENUS[m_id]['txt'].get_rect()
+                mb_box = pg.Rect(tbox)
+                mb_box.x = x
+                mb_box.y = mbar_rec['mbar_y']
+                mb_box.h = mbar_rec['mbar_h'] * 1.5
+                mb_box.w *= 1.5
+                DSP.MENUS[m_id]['mb_box'] = mb_box
+                tbox.center = mb_box.center
+                DSP.MENUS[m_id]['tbox'] = tbox
+                x += mb_box.width
 
-    def set_menus_old(self):
-        """
-        Initialize menu items data from config data.
-        Define menu list box and items for each
-            vertical menu bar / list of menu items.
-        """
-        # Init menu items from config
-        self.mitems = {ky: val["items"]
-                       for ky, val in FM.M[DSP.MENUS]["menu"].items()}
-        for mb_k, mlist in self.mitems.items():
-            self.set_menu_list_box(mb_k)
-            mi_x = 0
-            for mi_k, mi_v in mlist.items():
-                self.set_menu_item(mb_k, mi_k, mi_x, mi_v)
-                mi_x += 1
+        # ====== set_menu_bars method ======
+        mbar_rec = get_menu_bar_data()
+        set_menu_bar_rendering(mbar_rec)
 
-    def draw_menu_bars(self):
-        """ Draw each Menu Bar member.
-        Redraw the same thing on every refresh: bounding box for
-        the menu bar member (draw) and its text surface (blit).
-        First draw everything in unselected mode.
-        Then if one is selected, draw in selected mode (green box).
-        :renders:
-        - menu bar members, the "menu bar"
+    def set_menu_items(self):
         """
-        for _, mb_vals in self.mbars.items():
-            pg.draw.rect(DSP.WIN, CCL.CP_BLUEPOWDER, mb_vals["mbox"], 2)
-            DSP.WIN.blit(mb_vals["txt"], mb_vals["tbox"])
-        mbox = [mb_vals["mbox"] for _, mb_vals in self.mbars.items()
-                if mb_vals["selected"] is True]
-        if len(mbox) > 0:
-            pg.draw.rect(DSP.WIN, CCL.CP_GREEN, mbox[0], 2)
+        - Get menu item datea from DB and put into DSP.MENUS.
+        - Compute rendering info for menu items.
+        - mi_box: pg rect around tbox + margin for each item
+        """
+        def get_menu_item_data():
+            """Retrieve menu iitem data from data base."""
+            for menu_id, mnu in DSP.MENUS.items():
+                mitm_recs =\
+                    GD.get_by_id('MENU_ITEMS', 'menu_uid_fk',
+                                 mnu['uid'], DB_CFG, p_first_only=False)
+                for mi in mitm_recs:
+                    id = mi['item_id']
+                    DSP.MENUS[menu_id]['mitems'][id]: dict = {
+                        "order": mi['item_order'],
+                        "name": mi['item_name'],
+                        "key_binding": mi['key_binding'],
+                        "enabled": mi['enabled_default'],
+                        'txt_enabled': None,
+                        'txt_disabled': None,
+                        'mi_box': None,
+                        'uid': mi['item_uid_pk']}
+                DSP.MENUS[menu_id]['mitems'] =\
+                    SM.convert_dict_to_ordered_dict(
+                        DSP.MENUS[menu_id]['mitems'])
 
-    def draw_menu_items(self,
-                        mb_k: str = ''):
-        """ Draw the list of Menu Items for the selected menu bar.
-        Draw the list bounding box, then blit each menu item using
+        def set_menu_item_rendering():
+            """Compute rendering boxes for menu items."""
+            for mn_id, menu in DSP.MENUS.items():
+                for mi_id, m_item in menu['mitems'].items():
+                    item_k = DSP.MENUS[mn_id]['mitems'][mi_id]
+                    item_k['txt_enabled'] = DSP.F_SANS_SM.render(
+                        m_item['name'], True, CLR.CP_BLUEPOWDER,
+                        CLR.CP_GRAY_DARK)
+                    item_k['txt_disabled'] = DSP.F_SANS_SM.render(
+                        m_item['name'], True, CLR.CP_BLUEPOWDER,
+                        CLR.CP_GRAY_DARK)
+                    tbox = item_k['txt_enabled'].get_rect()
+                    mi_box = pg.Rect(tbox)
+                    mi_box.x = DSP.MENUS[mn_id]['mb_box'].left
+                    mi_box.h = tbox.h * 1.5
+                    mi_box.w = tbox.w * 1.5
+                    mi_box.y = DSP.MENUS[mn_id]['mb_box'].bottom + 12 +\
+                        (mi_box.h * m_item['order'])
+                    item_k['mi_box'] = mi_box
+                    tbox.x += 12
+                    item_k['tbox'] = tbox
+
+        def set_menu_items_bounding_box():
+            """Compute bounding box for menu items.
+            It should be as wide as the widest menu item and
+            and tall as the total height of all items."""
+            pass
+            for mn_id, menu in DSP.MENUS.items():
+                widest_w = 0.0
+                total_h = 0.0
+                for mi_id, m_item in menu['mitems'].items():
+                    widest_w = max(widest_w, m_item['mi_box'].width)
+                    total_h += m_item['mi_box'].height
+                DSP.MENUS[mn_id]['ib_box'] = pg.Rect(
+                    menu['mb_box'].left,
+                    menu['mb_box'].bottom,
+                    widest_w, total_h)
+
+        # ========= set_menu_items() method ====
+        get_menu_item_data()
+        set_menu_item_rendering()
+        set_menu_items_bounding_box()
+
+    def draw_menu_bar(self):
+        """ Draw each each of the Menus on the Menu Bar.
+        Redraw on every refresh. First everything in unselected mode.
+        Then selected, draw box using green box).
+        Only one (or none) menus can be selected.
+        """
+        for mb_i, mb_v in DSP.MENUS.items():
+            box_color = CLR.CP_BLUEPOWDER if mb_v['selected'] is False\
+                else CLR.CP_GREEN
+            pg.draw.rect(DSP.WIN, box_color, mb_v['mb_box'], width=2)
+            DSP.WIN.blit(mb_v["txt"], mb_v["tbox"])
+
+    def draw_menu_items(self):
+        """ Draw menu items for the selected menu bar, if there is
+          one selected.
+        Draw the bounding box, then blit each menu item using
           the text surface that matches its current status.
         :attr:
-        - mb_k: key to the menu bar member data
-        :renders:
-        - menu items, a "menu"
+        - mn_id: id of the clicked menu
         """
-        if mb_k not in ('', None) and\
-                self.mbars[mb_k]["selected"] is True:
-            pg.draw.rect(DSP.WIN, CCL.CP_GRAY_DARK,
-                         self.mbars[mb_k]["mlist_box"], 0)
-            for _, mi_v in self.mitems[mb_k].items():
-                if mi_v["enabled"]:
-                    DSP.WIN.blit(mi_v["mi_text_enabled"], mi_v["mitm_box"])
-                else:
-                    DSP.WIN.blit(mi_v["mi_text_disabled"], mi_v["mitm_box"])
+        for mb_i, mb_v in DSP.MENUS.items():
+            if mb_v['selected'] is True:
+                pg.draw.rect(DSP.WIN, CLR.CP_GRAY_DARK,
+                             DSP.MENUS[mb_i]["ib_box"], 0)
+                for mi_k, mi_v in DSP.MENUS[mb_i]["mitems"].items():
+                    if mi_v["enabled"]:
+                        DSP.WIN.blit(mi_v["txt_enabled"], mi_v["mi_box"])
+                    else:
+                        DSP.WIN.blit(mi_v["txt_disabled"], mi_v["mi_box"])
 
     def click_mbar(self,
                    p_mouse_loc: tuple) -> str:
         """
-        If clicked on a menu bar, toggle its 'selected' attribute.
-        Set all others to not selected and return key of clicked bar.
-        If no click, return key of previously-selected bar, if any.
-
-        Regardless of whether a menu bar was clicked, search all items
-            to determine which is selected, if any.
-        Using a list comprehension, so result is a one item
-            list if valid menu bar was clicked, else an empty list.
+        If clicked, toggle 'selected' attribute of menu.
+        And make sure all others are set to 'False'.
         :attr:
         - p_mouse_loc: tuple (number: x, number: y)
-        :return: id of currently selected menu bar, else ''
         """
-        mbar_key = ''
-        for mb_k, v in self.mbars.items():
-            if v["mbox"].collidepoint(p_mouse_loc):
-                self.mbars[mb_k]["selected"] = True\
-                    if self.mbars[mb_k]["selected"] is False else False
-                for ky in [ky for ky in self.mbars.keys() if ky != mb_k]:
-                    self.mbars[ky]["selected"] = False
+        mb_i_clicked = ''
+        for mb_i, mb_v in DSP.MENUS.items():
+            if mb_v["mb_box"].collidepoint(p_mouse_loc):
+                mb_i_clicked = mb_i
+                if DSP.MENUS[mb_i]['selected'] is True:
+                    DSP.MENUS[mb_i]['selected'] = False
+                else:
+                    DSP.MENUS[mb_i]['selected'] = True
+                for mb_i, mb_v in DSP.MENUS.items():
+                    if mb_i != mb_i_clicked:
+                        DSP.MENUS[mb_i]['selected'] = False
                 break
-        mb_k = [k for k, v in self.mbars.items() if v["selected"] is True]
-        mbar_key = mb_k[0] if len(mb_k) > 0 else ''
-        return mbar_key
 
     def click_mitem(self,
-                    p_mouse_loc: tuple,
-                    mb_k: str = '') -> tuple:
-        """ Return id if clicked on a menu item.
-        - Only look at items in specified menu bar member list
+                    p_mouse_loc: tuple) -> tuple:
+        """ For currently selected menu:
         - Set all menu items in the list to unselected.
         - See which, if any, menu item was clicked.
         - If an item is now selected, set other items on the list to not
           selected and also set the bar member to not selected.
-          This will have the effect of closing the menu, but still
-          passing on info on which item was clicked.
-        If a disabled item is clicked, we still close the menu
-          but no item is marked as selected.
 
         :attr:
         - p_mouse_loc: tuple of mouse location
-        - mb_k: id of currently selected menu bar, abort if ''
         :return:
-        - (str, int) id of bar and ix of selected menu item,
-                     else ('', '')
+        - (str, str) id's of selected/clicked menu and menu item or None
         """
-        selected_itm = ('', '')
-        if mb_k not in (None, ''):  # if a menu bar was provided
-            for mi_k, m_itms in self.mitems[mb_k].items():
-                self.mitems[mb_k][mi_k]["selected"] = False
-                if m_itms['mitm_box'].collidepoint(p_mouse_loc):
-                    if self.mitems[mb_k][mi_k]["enabled"]:
-                        selected_itm = (mb_k, mi_k)
-                        self.mitems[mb_k][mi_k]["selected"] = True
-                    self.mbars[mb_k]["selected"] = False
-        return selected_itm
+        mb_mi_clicked = ("", "")
+        for mn_k, mb_v in DSP.MENUS.items():
+            if mb_v['selected'] is True:
+                for mi_k, mi_v in mb_v["mitems"].items():
+                    DSP.MENUS[mn_k]["mitems"][mi_k]["selected"] = False
+                    if mi_v['mi_box'].collidepoint(p_mouse_loc):
+                        mb_mi_clicked = (mn_k, mi_k)
+                        if DSP.MENUS[mn_k]["mitems"][mi_k]["enabled"]:
+                            DSP.MENUS[mn_k]["mitems"][mi_k]["selected"] = True
+                        DSP.MENUS[mn_k]["selected"] = False
+                        for mi_k, mi_v in mb_v["mitems"].items():
+                            if mi_k != mb_mi_clicked[1]:
+                                DSP.MENUS[mn_k]["mitems"][mi_k]["selected"] =\
+                                    False
+                        break
+        return mb_mi_clicked
 
     def set_menus_state(self,
                         mb_k: str,
@@ -435,43 +309,72 @@ class GameMenu(object):
         - p_use_default: bool - use default enabled value if True
 
         @TODO:
-        - Simplify this. May be able to get rid of it.
+        - Simplify this. Get rid of it if not being used.
         """
         self.mitems[mb_k][mi_ky]["enabled"] = False
-        txt_color = CCL.CP_GRAY
+        txt_color = CLR.CP_GRAY
         # Set enabled status of identified item
         if p_use_default:
             if ("default" in list(self.mitems[mb_k][mi_ky].keys()) and
                 self.mitems[mb_k][mi_ky]["default"] == "enabled") or\
                "default" not in list(self.mitems[mb_k][mi_ky].keys()):
                 self.mitems[mb_k][mi_ky]["enabled"] = True
-                txt_color = CCL.CP_BLUEPOWDER
+                txt_color = CLR.CP_BLUEPOWDER
             # Set text color and content of identified item
             self.mitems[mb_k][mi_ky]["mi_text"] =\
                 DSP.F_SANS_SM.render(self.mitems[mb_k][mi_ky]["name"],
-                                     True, txt_color, CCL.CP_GRAY_DARK)
+                                     True, txt_color, CLR.CP_GRAY_DARK)
         else:
             # Default selected item to enabled status
             self.mitems[mb_k][mi_ky]["enabled"] = True
             self.mitems[mb_k][mi_ky]["mi_text"] =\
                 DSP.F_SANS_SM.render(self.mitems[mb_k][mi_ky]["name"],
-                                     True, CCL.CP_BLUEPOWDER, CCL.CP_GRAY_DARK)
+                                     True, CLR.CP_BLUEPOWDER, CLR.CP_GRAY_DARK)
             # Identify dependent menu items and modify their enabled status
             if "disable" in list(self.mitems[mb_k][mi_ky].keys()):
                 for dep_ky in self.mitems[mb_k][mi_ky]["disable"]:
                     self.mitems[mb_k][dep_ky]["enabled"] = False
                     self.mitems[mb_k][dep_ky]["mi_text"] =\
                         DSP.F_SANS_SM.render(self.mitems[mb_k][dep_ky]["name"],
-                                             True, CCL.CP_GRAY,
-                                             CCL.CP_GRAY_DARK)
+                                             True, CLR.CP_GRAY,
+                                             CLR.CP_GRAY_DARK)
             if "enable" in list(self.mitems[mb_k][mi_ky].keys()):
                 for dep_ky in self.mitems[mb_k][mi_ky]["enable"]:
                     self.mitems[mb_k][dep_ky]["enabled"] = True
                     self.mitems[mb_k][dep_ky]["mi_text"] =\
                         DSP.F_SANS_SM.render(self.mitems[mb_k][dep_ky]["name"],
-                                             True, CCL.CP_BLUEPOWDER,
-                                             CCL.CP_GRAY_DARK)
+                                             True, CLR.CP_BLUEPOWDER,
+                                             CLR.CP_GRAY_DARK)
 
+
+class HtmlDisplay(object):
+    """Set content for display in external web browser.
+    This class is instantiated as a global object named DSP.WHTM.
+    Pass in a URI to display in the browser.
+    """
+
+    def __init__(self):
+        """ Initialize Html Display.
+        """
+        link_recs = DB.execute_select_all('LINKS')
+        pp((link_recs))
+        for l_ix, link_id in enumerate(link_recs['link_id']):
+            DSP.LINKS[link_id] =\
+                {'name': link_recs['link_name'][l_ix],
+                 'url': link_recs['link_protocol'][l_ix] +
+                 '://' + link_recs['link_value'][l_ix]}
+        pp((DSP.LINKS))
+
+    def draw(self,
+             p_link_id: str):
+        """ Open web browser to display HTML resource.
+        It opens subsequent items in the same browser window,
+        in new tabs on my setup (Linux Ubuntu, Firefox browser)
+        May behave differently on other systems.
+
+        Args: (str) ID for link to display
+        """
+        webbrowser.open(DSP.LINKS[p_link_id]['url'])
 
 
 class SetGameData(object):
@@ -727,8 +630,8 @@ class GameData(object):
             txt = val["txt"]
             self.CONSOLE_TEXT[ix]["img"] =\
                 DSP.F_SANS_TINY.render(txt, True,
-                                       CCL.CP_BLUEPOWDER,
-                                       CCL.CP_BLACK)
+                                       CLR.CP_BLUEPOWDER,
+                                       CLR.CP_BLACK)
             self.CONSOLE_TEXT[ix]["box"] =\
                 self.CONSOLE_TEXT[ix]["img"].get_rect()
             self.CONSOLE_TEXT[ix]["box"].topleft =\
@@ -917,34 +820,11 @@ class InfoBar(object):
         Draw the info bar text, optionally including status info.
         """
         text = DSP.PLATFORM + "   | " + self.status_text
-        self.itxt = DSP.F_SANS_SM.render(text, True, CCL.CP_BLUEPOWDER,
-                                         CCL.CP_BLACK)
+        self.itxt = DSP.F_SANS_SM.render(text, True, CLR.CP_BLUEPOWDER,
+                                         CLR.CP_BLACK)
         self.ibox = self.itxt.get_rect()
         self.ibox.topleft = DSP.IBAR_LOC
         DSP.WIN.blit(self.itxt, self.ibox)
-
-
-class HtmlDisplay(object):
-    """Set content for display in external web browser.
-    This class is instantiated as a global object named DSP.WHTM.
-    Pass in a URI to display in the browser.
-    """
-
-    def __init__(self):
-        """ Initialize Html Display.
-        """
-        pass
-
-    def draw(self,
-             p_help_uri: str):
-        """ Open web browser to display HTML resource.
-        It opens subsequent items in the same browser window,
-        in new tabs on my setup (Linux Ubuntu, Firefox browser)
-        May behave differently on other systems.
-
-        Args: (str) UTI to HTML file to display in browser.
-        """
-        webbrowser.open(p_help_uri)
 
 
 class GameConsole(object):
@@ -970,7 +850,7 @@ class GameConsole(object):
         - Blit txt imgs for current data in CONSOLE_TEXT.
         """
         # Draw container rect and header.
-        pg.draw.rect(DSP.WIN, CCL.CP_BLACK, DSP.CONSOLE_BOX, 0)
+        pg.draw.rect(DSP.WIN, CLR.CP_BLACK, DSP.CONSOLE_BOX, 0)
         DSP.WIN.blit(DSP.CONSOLE_TTL_IMG, DSP.CONSOLE_TTL_BOX)
         # Draw lines of text
         for txt in GDAT.CONSOLE_TEXT:
@@ -997,21 +877,21 @@ class GameMap(object):
         """Draw "grid" and "map" in GAMEMAP using PG, GDAT objects.
         """
         # Draw grid box with thick border
-        pg.draw.rect(DSP.WIN, CCL.CP_SILVER, DSP.GRID_BOX, 5)
+        pg.draw.rect(DSP.WIN, CLR.CP_SILVER, DSP.GRID_BOX, 5)
         # Draw grid lines      # vt and hz are: ((x1, y1), (x2, y2))
         for vt in DSP.G_LNS_VT:
-            pg.draw.aalines(DSP.WIN, CCL.CP_WHITE, False, vt)
+            pg.draw.aalines(DSP.WIN, CLR.CP_WHITE, False, vt)
         for hz in DSP.G_LNS_HZ:
-            pg.draw.aalines(DSP.WIN, CCL.CP_WHITE, False, hz)
+            pg.draw.aalines(DSP.WIN, CLR.CP_WHITE, False, hz)
         # Highlight grid squares inside or overlapping the map box
         for _, grec in GDAT.DSP.GRIDS.items():
             if "is_inside" in grec.keys() and grec["is_inside"]:
-                pg.draw.rect(DSP.WIN, CCL.CP_WHITE, grec["box"], 0)
+                pg.draw.rect(DSP.WIN, CLR.CP_WHITE, grec["box"], 0)
             elif "overlaps" in grec.keys() and grec["overlaps"]:
-                pg.draw.rect(DSP.WIN, CCL.CP_SILVER, grec["box"], 0)
+                pg.draw.rect(DSP.WIN, CLR.CP_SILVER, grec["box"], 0)
         # Draw map box with thick border
         if GDAT.MAP_BOX is not None:
-            pg.draw.rect(DSP.WIN, CCL.CP_PALEPINK, GDAT.MAP_BOX, 5)
+            pg.draw.rect(DSP.WIN, CLR.CP_PALEPINK, GDAT.MAP_BOX, 5)
 
     def draw_hover_cell(self,
                         p_grid_loc: str):
@@ -1032,7 +912,7 @@ class GameMap(object):
             - Achieved using Surface alpha argument with blit()
         """
         if p_grid_loc != "":
-            pg.draw.rect(DSP.WIN, CCL.CP_PALEPINK,
+            pg.draw.rect(DSP.WIN, CLR.CP_PALEPINK,
                          GDAT.DSP.GRIDS[p_grid_loc]["box"], 0)
 
 
@@ -1068,7 +948,7 @@ class TextInput(pg.sprite.Sprite):
         self.t_box = self.t_rect["box"]
         self.t_value = ""
         self.t_font = DSP.F_FIXED_LG
-        self.t_color = CCL.CP_GREEN
+        self.t_color = CLR.CP_GREEN
         self.text = self.t_font.render(self.t_value, True, self.t_color)
         self.is_selected = False
 
@@ -1106,9 +986,9 @@ class TextInput(pg.sprite.Sprite):
         self.pos = self.text.get_rect(center=(self.t_box.x + self.t_box.w / 2,
                                               self.t_box.y + self.t_box.h / 2))
         if self.is_selected:
-            pg.draw.rect(DSP.WIN, CCL.CP_BLUEPOWDER, self.t_box, 2)
+            pg.draw.rect(DSP.WIN, CLR.CP_BLUEPOWDER, self.t_box, 2)
         else:
-            pg.draw.rect(DSP.WIN, CCL.CP_BLUE, self.t_box, 2)
+            pg.draw.rect(DSP.WIN, CLR.CP_BLUE, self.t_box, 2)
         DSP.WIN.blit(self.text, self.pos)
 
 
@@ -1160,14 +1040,15 @@ class SaskanGame(object):
 
     def check_exit_appl(self,
                         event: pg.event.Event):
-        """Handle exit if one of the exit modes is triggered.
-        This is triggered by the Q key, ESC key or `X`ing the window.
-
+        """Handle exit via keyboard or screen-level exit modes:
+        - Q key
+        - ESC key
+        - `X`ing the app screen.
         :args:
         - event: (pg.event.Event) event to handle
 
         @TODO:
-        - Add data cleanup events if/when needed.
+        - Add call to data cleanup methods if/when needed.
         """
         if (event.type == pg.QUIT or
                 (event.type == pg.KEYUP and
@@ -1181,18 +1062,14 @@ class SaskanGame(object):
         :args:
         - menu_k: (tuple) menu bar and menu item keys
         """
-        # mb_k = menu_k[0]
+        mn_k = menu_k[0]
         mi_k = menu_k[1]
-        # mi_nm = GMNU.mitems[mb_k][mi_k]["name"]
-        if mi_k == "exit":
+        # mi_nm = MNU.mitems[mb_k][mi_k]["name"]
+        if mn_k == "file" and mi_k == "exit":
             self.exit_appl()
-        elif "help" in mi_k:
-            if mi_k == "pg_help":
-                DSP.WHTM.draw(DSP.WHTM["pygame"])
-            elif mi_k == "app_help":
-                DSP.WHTM.draw(DSP.WHTM["app"])
-            elif mi_k == "game_help":
-                DSP.WHTM.draw(DSP.WHTM["game"])
+        elif mn_k == "help":
+            WEB.draw(mi_k)
+        """
         elif mi_k == "start":
             GDAT.set_datasrc({"catg": 'geo',
                               "item": 'Saskan Lands',
@@ -1203,6 +1080,7 @@ class SaskanGame(object):
         #     IBAR.info_status["on"] = not IBAR.info_status["on"]
         elif mi_k == "pause_resume":
             IBAR.info_status["frozen"] = not IBAR.info_status["frozen"]
+        """
 
     # Loop Events
     # ==============================================================
@@ -1263,8 +1141,9 @@ class SaskanGame(object):
         game, console or info windows except that we stop incrementing
         the frame count, which is handled in track_state().
         """
-        # black out the entire screen
         DSP.WIN.fill(CLR.CP_BLACK)
+        MNU.draw_menu_bar()
+        MNU.draw_menu_items()
 
         """
         # Display info content based on what is currently
@@ -1282,11 +1161,6 @@ class SaskanGame(object):
         # for txtin in self.TIG:
         #     txtin.draw()
         # self.PAGE.draw()
-
-        # refresh the menus
-        GMNU.draw_menu_bars()
-        for mb_k in GMNU.mitems.keys():
-            GMNU.draw_menu_items(mb_k)
         """
 
         pg.display.update()
@@ -1309,46 +1183,38 @@ class SaskanGame(object):
             for event in pg.event.get():
 
                 self.check_exit_appl(event)
-
-                # Avoid flicker due to mouse button down/up events
-                if event.type == pg.MOUSEBUTTONDOWN:  # pyright: ignore[reportUnboundVariable] # noqa: E501
+                if event.type == pg.MOUSEBUTTONDOWN:
                     self.MOUSEDOWN = True
                     self.MOUSECLICKED = False
 
-                if event.type == pg.MOUSEBUTTONUP:   # pyright: ignore[reportUnboundVariable] # noqa: E501
+                if event.type == pg.MOUSEBUTTONUP:
                     if self.MOUSEDOWN:
                         self.MOUSEDOWN = False
                         self.MOUSECLICKED = True
 
-                """
                 if self.MOUSECLICKED:
                     self.MOUSECLICKED = False
-                    # Handle menu-bar click
-                    mb_k = GMNU.click_mbar(
-                        IBAR.info_status["mouse_loc"])
-                    # Handle menu-item click
-                    menu_k = GMNU.click_mitem(
-                        IBAR.info_status["mouse_loc"], mb_k)
-                    if menu_k[1] != '':
-                        self.handle_menu_item_click(menu_k)
+
+                    MNU.click_mbar(pg.mouse.get_pos())
+                    item_clicked = MNU.click_mitem(pg.mouse.get_pos())
+                    if item_clicked[1] != '':
+                        self.handle_menu_item_click(item_clicked)
 
                     # Handle text input events
                     # Will be mainly on the console window I think
                     # self.do_select_txtin(sIBAR.info_status["mouse_loc"])
 
                     # Handle game-window click events
-                """
 
             self.refresh_screen()
 
 
 if __name__ == '__main__':
     """Cache data and resources in memory and launch the app."""
-    GWF = GameWindowFrame()
-    GMNU = GameMenu()
+    MNU = GameMenu()
+    WEB = HtmlDisplay()  # for Help/Link windows
     # GDAT = GameData()
     # IBAR = InfoBar()
-    # DSP.WHTM = HtmlDisplay()  # for Help windows
     # DSP.CONSOLE = GameConsole()
     # GAMEMAP = GameMap()
     SaskanGame()

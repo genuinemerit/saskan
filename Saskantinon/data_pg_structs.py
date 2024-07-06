@@ -79,10 +79,10 @@ class AppDisplay(object):
     WIN_MID = 0.0
     WIN = None
     TIMER = None
-    # Menu objects
+    # In-Memory objects
     # ---------------------------
     MENUS: dict = {}
-    MITEMS: dict = {}
+    LINKS: dict = {}
 
 
 #  SIMPLE DATA STRUCTURES

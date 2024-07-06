@@ -15,6 +15,7 @@ import platform
 import secrets
 import subprocess as shl
 
+from collections import OrderedDict
 from os import environ, path, system
 from pathlib import Path
 
@@ -244,6 +245,14 @@ class ShellMethods(object):
         while response not in ('y', 'n'):
             response = input('Continue? (y/n): ')
         return response
+
+    @classmethod
+    def convert_dict_to_ordered_dict(cls,
+                                     p_dict: dict) -> OrderedDict:
+        """Convert a dictionary to an ordered dictionary."""
+        sort_i = sorted(p_dict.items(), key=lambda x: x[1]['order'])
+        o_dict = OrderedDict(sort_i)
+        return o_dict
 
     def rpt_running_jobs(self,
                          p_job_nm: str):
