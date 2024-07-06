@@ -15,10 +15,10 @@
     "saskan": {
         "title": "Saskanantinon",
         "desc": "Saskantinon, the Land Between Two Rivers",
-        "frame_w": 1600,
+        "frame_w": 1800,
         "frame_h": 1600,
         "ibar_x": 60,
-        "ibar_y": 872,
+        "ibar_y": 1500,
         "pg_hdr_x": 0,
         "pg_hdr_y": 0,
         "pg_hdr_w": 0,

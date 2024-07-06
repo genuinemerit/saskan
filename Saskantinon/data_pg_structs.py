@@ -83,6 +83,8 @@ class AppDisplay(object):
     # ---------------------------
     MENUS: dict = {}
     LINKS: dict = {}
+    INFO: dict = {}
+    WINDOWS: dict = {}
 
 
 #  SIMPLE DATA STRUCTURES

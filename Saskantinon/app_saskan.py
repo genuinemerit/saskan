@@ -26,8 +26,7 @@ Saskan App GUI.  pygame version.
     - Implement auto-test scenarios.
 """
 
-# trunk-ignore(bandit/B403)
-# import pickle           # remove this eventually
+import platform
 import pygame as pg
 import sys
 import webbrowser
@@ -357,13 +356,11 @@ class HtmlDisplay(object):
         """ Initialize Html Display.
         """
         link_recs = DB.execute_select_all('LINKS')
-        pp((link_recs))
         for l_ix, link_id in enumerate(link_recs['link_id']):
             DSP.LINKS[link_id] =\
                 {'name': link_recs['link_name'][l_ix],
                  'url': link_recs['link_protocol'][l_ix] +
                  '://' + link_recs['link_value'][l_ix]}
-        pp((DSP.LINKS))
 
     def draw(self,
              p_link_id: str):
@@ -375,6 +372,45 @@ class HtmlDisplay(object):
         Args: (str) ID for link to display
         """
         webbrowser.open(DSP.LINKS[p_link_id]['url'])
+
+
+class InfoBar(object):
+    """Info Bar object.  Deafault text is system info.
+    Show status text if it is turned on.
+    """
+    def __init__(self):
+        """ Initialize Info Bar. """
+        DSP.INFO = {
+            "frozen": True,
+            "frame_cnt": 0,
+            "mouse_loc": (0, 0),
+            "grid_loc": "",
+            "content": ['', ''],
+            "txt": [None, None],
+            "if_box": [None, None]}
+        line = (f"Platform: {platform.platform()}" +
+                f"  |  Python: {platform.python_version()}" +
+                f"  |  Pygame: {pg.version.ver}")
+        DSP.INFO['content'][0] = line
+        DSP.INFO['txt'][0] = (DSP.F_SANS_SM.render(
+            DSP.INFO['content'][0], True, CLR.CP_BLUEPOWDER, CLR.CP_BLACK))
+        DSP.INFO['if_box'][0] = DSP.INFO['txt'][0].get_rect()
+        DSP.INFO['if_box'][0].x = PG.FRM['ibar_x']
+        DSP.INFO['if_box'][0].y = PG.FRM['ibar_y']
+
+    def draw_info_bar(self):
+        """ Set Info Bar rendering and draw it. """
+        line = (f"Frame: {DSP.INFO['frame_cnt']}" +
+                f"  |  Mouse: {DSP.INFO['mouse_loc']}" +
+                f"  |  Grid: {DSP.INFO['grid_loc']}")
+        DSP.INFO['content'][1] = line
+        DSP.INFO['txt'][1] = (DSP.F_SANS_SM.render(
+            DSP.INFO['content'][1], True, CLR.CP_BLUEPOWDER, CLR.CP_BLACK))
+        DSP.INFO['if_box'][1] = DSP.INFO['txt'][1].get_rect()
+        DSP.INFO['if_box'][1].x = PG.FRM['ibar_x']
+        DSP.INFO['if_box'][1].y = PG.FRM['ibar_y'] + DSP.INFO['if_box'][0].height + 6
+        for i in (0, 1):
+            DSP.WIN.blit(DSP.INFO['txt'][i], DSP.INFO['if_box'][i])
 
 
 class SetGameData(object):
@@ -624,8 +660,6 @@ class GameData(object):
         x = DSP.CONSOLE_TTL_BOX.x
         y = DSP.CONSOLE_TTL_BOX.y + DSP.FONT_MED_SZ
 
-        pp(("self.CONSOLE_TEXT: ", self.CONSOLE_TEXT))
-
         for ix, val in enumerate(self.CONSOLE_TEXT):
             txt = val["txt"]
             self.CONSOLE_TEXT[ix]["img"] =\
@@ -637,7 +671,6 @@ class GameData(object):
             self.CONSOLE_TEXT[ix]["box"].topleft =\
                 (x, y + ((DSP.FONT_TINY_SZ + 2) * (ix + 1)))
 
-            pp(("ix: ", ix, "self.CONSOLE_TEXT[ix]: ", self.CONSOLE_TEXT[ix]))
 
     def set_console_text(self):
         """Format text lines for display in DSP.CONSOLE.
@@ -656,12 +689,9 @@ class GameData(object):
         self.CONSOLE_TEXT.clear()
         # Contents
 
-        pp((self.DATASRC["catg"], self.DATASRC["item"]))
-
         if self.DATASRC["catg"] == "geo":
             ci = FM.G[self.DATASRC["catg"]][self.DATASRC["item"]]
 
-            pp((ci))
 
             if "type" in ci.keys():
                 self.set_label_name(ci["type"])
@@ -794,67 +824,55 @@ class GameData(object):
                 self.set_gamemap_dims(data["map"])
 
 
-class InfoBar(object):
-    """Info Bar object.
-    Deafault text is system info.
-    Show status text if it is turned on.
+class Windows(object):
+    """Manage set-up and drawing of windows inside the screen.
+    - Console window
+    - Map window
     """
     def __init__(self):
-        """ Initialize Info Bar. """
-        self.info_status = {
-            "frozen": True,
-            "frame_cnt": 0,
-            "mouse_loc": (0, 0),
-            "grid_loc": ""}
+        """ Initialize Windows."""
+        self.set_window_dims()
+        self.draw_windows()
 
-    def set_ibar_status_text(self):
-        """ Set Info Bar status text. """
-        self.status_text = (
-            "Frame: " + str(self.info_status["frame_cnt"]) +
-            "    | Mouse: " + str(self.info_status["mouse_loc"]) +
-            "    | Grid: " + str(self.info_status["grid_loc"]))
-
-    def draw(self):
-        """ Draw Info Bar.
-        Set and draw the Info Bar text.
-        Draw the info bar text, optionally including status info.
+    def set_window_dims(self):
+        """Get window specs from database.
+        Save in DSP.WINDOWS.
+        Next: compute location of window title.
         """
-        text = DSP.PLATFORM + "   | " + self.status_text
-        self.itxt = DSP.F_SANS_SM.render(text, True, CLR.CP_BLUEPOWDER,
-                                         CLR.CP_BLACK)
-        self.ibox = self.itxt.get_rect()
-        self.ibox.topleft = DSP.IBAR_LOC
-        DSP.WIN.blit(self.itxt, self.ibox)
+        win_recs = GD.get_by_id(
+            'WINDOWS', 'frame_uid_fk',
+            PG.FRM['frame_uid_pk'], DB_CFG,
+            p_first_only=False)
+        for w_v in win_recs:
+            win_id = w_v["win_id"]
+            DSP.WINDOWS[win_id] =\
+                {"uid": w_v["win_uid_pk"],
+                 "title": w_v["win_title"],
+                 "title_txt": w_v["win_title"],
+                 "margin": w_v["win_margin"],
+                 'w_box': pg.Rect(
+                    w_v["win_x"], w_v["win_y"],
+                    w_v["win_w"] + (2 * w_v["win_margin"]),
+                    w_v["win_h"] + (2 * w_v["win_margin"]))}
+            DSP.WINDOWS[win_id]["txt"] =\
+                DSP.F_SANS_SM.render(
+                    DSP.WINDOWS[win_id]['title'],
+                    True, CLR.CP_BLUEPOWDER, CLR.CP_GRAY_DARK)
+            tbox = DSP.WINDOWS[win_id]["txt"].get_rect()
+            tbox = pg.Rect(tbox)
+            tbox.center = DSP.WINDOWS[win_id]["w_box"].center
+            tbox.top = DSP.WINDOWS[win_id]["w_box"].top - 60
+            tbox.left = DSP.WINDOWS[win_id]["w_box"].left
+            DSP.WINDOWS[win_id]["t_box"] = tbox
 
-
-class GameConsole(object):
-    """Draw the Game Console window.
-    Display game data like score, map descriptions, etc.
-    Instantiated as global object DSP.CONSOLE.
-
-    Note:
-    - Objects were rendered, boxed in GDAT and PG classes.
-    @DEV:
-    - Eventually extend to handle text input fields and/or GUI controls.
-    - Keep this distinct from GameData() class, which handles data and
-      rendering. Methods will grow more complex to handle game play.
-    """
-
-    def __init__(self):
-        """ Initialize GameConsole.
+    def draw_windows(self):
+        """Draw the map and console windows.
+        Next: also draw the window title.
         """
-        pass
-
-    def draw(self):
-        """ Draw DSP.CONSOLE rectange and blit its title text img.
-        - Blit txt imgs for current data in CONSOLE_TEXT.
-        """
-        # Draw container rect and header.
-        pg.draw.rect(DSP.WIN, CLR.CP_BLACK, DSP.CONSOLE_BOX, 0)
-        DSP.WIN.blit(DSP.CONSOLE_TTL_IMG, DSP.CONSOLE_TTL_BOX)
-        # Draw lines of text
-        for txt in GDAT.CONSOLE_TEXT:
-            DSP.WIN.blit(txt["img"], txt["box"])
+        for win_id, w_v in DSP.WINDOWS.items():
+            pg.draw.rect(DSP.WIN, CLR.CP_GRAY_DARK,
+                         w_v["w_box"], 6)
+            DSP.WIN.blit(w_v["txt"], w_v["t_box"])
 
 
 class GameMap(object):
@@ -1041,14 +1059,9 @@ class SaskanGame(object):
     def check_exit_appl(self,
                         event: pg.event.Event):
         """Handle exit via keyboard or screen-level exit modes:
-        - Q key
-        - ESC key
-        - `X`ing the app screen.
+        - Q key, ESC key, `X`ing the app screen.
         :args:
         - event: (pg.event.Event) event to handle
-
-        @TODO:
-        - Add call to data cleanup methods if/when needed.
         """
         if (event.type == pg.QUIT or
                 (event.type == pg.KEYUP and
@@ -1069,17 +1082,16 @@ class SaskanGame(object):
             self.exit_appl()
         elif mn_k == "help":
             WEB.draw(mi_k)
+        elif mn_k == "game":
+            if mi_k == "start":
+                DSP.INFO["frozen"] = False
+            if mi_k == "pause_resume":
+                DSP.INFO["frozen"] = not DSP.INFO["frozen"]
         """
-        elif mi_k == "start":
-            GDAT.set_datasrc({"catg": 'geo',
-                              "item": 'Saskan Lands',
-                              "active": True})
-            GDAT.set_console_text()
-            GDAT.set_map_grid()
         # elif mi_k == "status":
-        #     IBAR.info_status["on"] = not IBAR.info_status["on"]
-        elif mi_k == "pause_resume":
-            IBAR.info_status["frozen"] = not IBAR.info_status["frozen"]
+        # elif mi_k == "restart":
+        # elif mi_k == "save":
+        # elif mi_k == "test":
         """
 
     # Loop Events
@@ -1113,46 +1125,25 @@ class SaskanGame(object):
             IBAR.info_status["grid_loc"] =\
                 GDAT.make_grid_key(grid_col, grid_row)
 
-    def track_state(self):
-        """Keep track of the state of the app on each frame.
-
-        Sets:
-        - mouse_loc: get current mouse location
-        - frame_cnt: increment if tracking status and not in a freeze mode
-        - cursor: if no text input box is activated, set to default
-        """
-        IBAR.info_status["mouse_loc"] = pg.mouse.get_pos()
-        if IBAR.info_status["frozen"] is False:
-            IBAR.info_status["frame_cnt"] += 1
-        self.track_grid()
-
-        # For managing text input boxes:
-        # if self.TIG.current is None:
-        #     pg.mouse.set_cursor(pg.cursors.Cursor())
-
     def refresh_screen(self):
         """Refresh the screen with the current state of the app.
         30 milliseconds between each frame is the normal framerate.
         To go into slow motion, add a wait here, but don't change
         the framerate.
-
-        Frozen refers only to the game animation and time-based
-        event developments. It has no effect on rendering of the
-        game, console or info windows except that we stop incrementing
-        the frame count, which is handled in track_state().
         """
+        DSP.INFO["mouse_loc"] = pg.mouse.get_pos()
+        if not DSP.INFO["frozen"]:
+            DSP.INFO["frame_cnt"] += 1
         DSP.WIN.fill(CLR.CP_BLACK)
         MNU.draw_menu_bar()
         MNU.draw_menu_items()
+        IBAR.draw_info_bar()
+        WINS.draw_windows()
 
         """
         # Display info content based on what is currently
         #  posted in the GameData object
         DSP.CONSOLE.draw()
-
-        # Check, Draw info bar
-        IBAR.set_ibar_status_text()
-        IBAR.draw()
 
         # Draw the game map
         GAMEMAP.draw_map()
@@ -1162,7 +1153,6 @@ class SaskanGame(object):
         #     txtin.draw()
         # self.PAGE.draw()
         """
-
         pg.display.update()
         DSP.TIMER.tick(30)
 
@@ -1178,8 +1168,6 @@ class SaskanGame(object):
         - Refresh the screen
         """
         while True:
-            # self.track_state()
-
             for event in pg.event.get():
 
                 self.check_exit_appl(event)
@@ -1200,11 +1188,13 @@ class SaskanGame(object):
                     if item_clicked[1] != '':
                         self.handle_menu_item_click(item_clicked)
 
+                    # Handle console/widget events
                     # Handle text input events
                     # Will be mainly on the console window I think
-                    # self.do_select_txtin(sIBAR.info_status["mouse_loc"])
+                    # Thinkg of text inputs as WIDGETs.
+                    # May want to add some buttons, other snazzy things.
 
-                    # Handle game-window click events
+                    # Handle game-map click events
 
             self.refresh_screen()
 
@@ -1213,8 +1203,8 @@ if __name__ == '__main__':
     """Cache data and resources in memory and launch the app."""
     MNU = GameMenu()
     WEB = HtmlDisplay()  # for Help/Link windows
+    IBAR = InfoBar()
+    WINS = Windows()
     # GDAT = GameData()
-    # IBAR = InfoBar()
-    # DSP.CONSOLE = GameConsole()
     # GAMEMAP = GameMap()
     SaskanGame()
