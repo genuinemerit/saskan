@@ -265,10 +265,8 @@ class Geog(object):
     YUZA_TO_M = 4096.0           # yuzas -> meters
     YUZA_TO_MI = 2.545           # yuzas -> miles
     # conversions, geographical to metric
-    DGLAT_TO_KM = 111.2           # degree of latitutde -> kilometers
-    DGLONG_TO_KM = 111.32         # degree of longitude -> kilometers
-    KM_TO_DGLAT = 0.00898315284   # kilometers -> degree of latitude
-    KM_TO_DGLONG = 0.00898311175  # kilometers -> degree of longitude
+    DGLAT_TO_KM = 80.0            # degree of latitutde -> kilometers
+    DGLONG_TO_KM = 112.0          # degree of longitude -> kilometers
 
 
 class Geom(object):
@@ -403,7 +401,7 @@ class GroupStruct(object):
         latiutde_dg: float = 0.0
         longitude_dg: float = 0.0
 
-    class GameGeoLocation(object):
+    class GameGeo(object):
         """
         This is a general-purpose, high level geo-location
         data structure, planar and rectangular.
@@ -416,19 +414,18 @@ class GroupStruct(object):
         Detail heights and depths in specialized data structures.
 
         For astronomical, underwater or other "3D" spaces,
-        see Game3DLocation class (below), keeping in mind that
+        see Game3DLoc class (below), keeping in mind that
         3D rendering is beyond the capabilities of a Python-
         driven game.
+        North +, South -, East +, West -
         """
-        latitude_north_dg: float = 0.0
-        latitude_south_dg: float = 0.0
-        longitude_east_dg: float = 0.0
-        longitude_west_dg: float = 0.0
-        avg_altitude_m: float = 0.0
-        max_altitude_m: float = 0.0
-        min_altitude_m: float = 0.0
+        lat_dg: float = 0.0
+        long_dg: float = 0.0
+        avg_alt_m: float = 0.0
+        max_alt_m: float = 0.0
+        min_alt_m: float = 0.0
 
-    class Game3DLocation(object):
+    class Game3DLoc(object):
         """
         This is a general-purpose, high level 3D location/shape
         container structure, box-shaped, that is, six adjoining
@@ -437,10 +434,11 @@ class GroupStruct(object):
         example, in a Universe, the x,y,z coordinates might refer
         to mega-parsecs, whereas in an Undersea world they might
         refer to kilometers.
-        The box is defined as an x,y,z origin point, which can
-        be conceived of visually as the upper-left, foremost
-        corner of the box. The box is then defined by w, h and d =
-        lateral dimensions in the x, y and z directions.
+        The box is defined as an x,y,z origin point, which is the
+        upper-left, foremost corner of the box in the default
+        perspctive. The box is sized by w, h and d =
+        lateral dimensions in the x (horiz), y (vert) and
+        z (depth of field) directions.
         """
         origin_x: float = 0.0
         origin_y: float = 0.0
@@ -499,8 +497,11 @@ class EntityType(object):
                       'overlaps', 'informs', 'layers_above',
                       'layers_below']
     MAP_TYPE = ['geo', 'astro', 'underwater',
-                'underground',
-                'informational', 'political']
+                'underground', 'informational', 'political']
+    MEASURE_TYPE = ['AU', 'GLY', 'GPC', 'KPC', 'LM', 'LS', 'LY',
+                    'MPC', 'CM', 'FT', 'GA', 'IN', 'KA', 'KM', 'M',
+                    'MI', 'MM', 'NM', 'NOB', 'THWAB', 'TWA',
+                    'YUZA', 'DGLAT', 'DGLONG']
     MIME_TYPE = ['image/png', 'image/jpeg', 'image/gif',
                  'image/svg+xml', 'image/tiff', 'image/bmp',
                  'image/webp', 'text/plain', 'text/html',
@@ -556,4 +557,3 @@ class EntityType(object):
     WORLD_TYPE = ['habitable', 'gas giant', 'rocky',
                   'desert', 'oceanic', 'ice planet',
                   'molten', 'other']
-

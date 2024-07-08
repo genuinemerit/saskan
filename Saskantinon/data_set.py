@@ -5,31 +5,36 @@
 
 Saskan Data Management middleware.
 """
+import data_model_app as DMA
+import data_model_world as DMW
 
 from os import path
 from collections import OrderedDict
 from pprint import pformat as pf    # noqa: F401
 from pprint import pprint as pp     # noqa: F401
 
-from method_shell import ShellMethods
-from method_files import FileMethods
 from data_base import DataBase
 from data_get import GetData
-from data_model_app import AppConfig, Frames, Texts
-from data_model_app import MenuBars, Menus, MenuItems
-from data_model_app import Windows, Links
+from method_shell import ShellMethods
+from method_files import FileMethods
 
 GD = GetData()
 SHM = ShellMethods()
 FLM = FileMethods()
-APC = AppConfig()
-TXT = Texts()
-FRM = Frames()
-MNB = MenuBars()
-MNU = Menus()
-MNI = MenuItems()
-WIN = Windows()
-LNK = Links()
+
+APC = DMA.AppConfig()
+TXT = DMA.Texts()
+FRM = DMA.Frames()
+MNB = DMA.MenuBars()
+MNU = DMA.Menus()
+MNI = DMA.MenuItems()
+WIN = DMA.Windows()
+LNK = DMA.Links()
+
+MAP = DMW.Map()
+MXM = DMW.MapXMap()
+GRID = DMW.Grid()
+GXM = DMW.GridXMap()
 
 
 class SetData(object):
@@ -48,7 +53,8 @@ class SetData(object):
         """
         Initialize a new instance of the GetData class.
         """
-        pass
+        self.MAP_UID: dict = {}
+        self.GRID_UID: dict = {}
 
     def _prep_set(self,
                   MODEL: object,
@@ -329,3 +335,56 @@ class SetData(object):
                 cols['link_icon'] = val['icon']
                 DB.execute_insert(sql, tuple(cols.values()))
         print("* LINKS table initialized.")
+
+    def set_maps(self,
+                 DB_CFG: dict):
+        """Define a variety of maps for game use.
+        """
+        DB, sql, config, cols =\
+            self._prep_set(MAP, DB_CFG)
+        cols['map_uid_pk'] = SHM.get_uid()
+        cols['version_id'] = '0.1'
+        cols['map_name'] = 'Saskan Lands Regions'
+        cols['map_type'] = 'political'
+        cols['unit_of_measure'] = 'KM'
+        cols['origin_2d_lat'] = 39.7392
+        cols['origin_2d_lon'] = -104.9902
+        cols['width_e_w_2d'] = 1800.0
+        cols['height_n_s_2d'] = 1350.
+        cols['avg_alt_m'] = 452.0
+        cols['min_alt_m'] = 1.0
+        cols['max_alt_m'] = 2875.0
+        cols['origin_3d_x'] = 0
+        cols['origin_3d_y'] = 0
+        cols['origin_3d_z'] = 0
+        cols['width_3d'] = 0
+        cols['height_3d'] = 0
+        cols['depth_3d'] = 0
+        DB.execute_insert(sql, tuple(cols.values()))
+        self.MAP_UID[cols['map_name']] = cols['map_uid_pk']
+        print("* MAP records initialized.")
+
+    def set_grids(self,
+                  DB_CFG: dict):
+        """Define a variety of grids for game use.
+        Identify Map association/s for each grid.
+        """
+        DB, sql, config, cols =\
+            self._prep_set(GRID, DB_CFG)
+        cols['grid_uid_pk'] = SHM.get_uid()
+        cols['version_id'] = '0.1'
+        cols['grid_name'] = '30r_40c'
+        cols['row_cnt'] = 30
+        cols['col_cnt'] = 40
+        cols['z_up_cnt'] = 0
+        cols['z_down_cnt'] = 0
+        DB.execute_insert(sql, tuple(cols.values()))
+        self.GRID_UID[cols['grid_name']] = cols['grid_uid_pk']
+
+        DB, sql, config, cols =\
+            self._prep_set(GXM, DB_CFG)
+        cols['grid_x_map_uid_pk'] = SHM.get_uid()
+        cols['grid_uid_fk'] = self.GRID_UID['30r_40c']
+        cols['map_uid_fk'] = self.MAP_UID['Saskan Lands Regions']
+        DB.execute_insert(sql, tuple(cols.values()))
+        print("* GRID and GRID_X_MAP records initialized.")

@@ -1,7 +1,7 @@
 #!python
 """Saskan Apps file installation procedure.
-:module:    app_install.py
-:class:     InstallApp/0
+:module:    install_saskan.py
+:class:     SaskanInstall/0
 :author:    GM <genuinemerit @ pm.me>
 
 Command line installer.
@@ -42,7 +42,7 @@ GD = GetData()
 SD = SetData()
 
 
-class AppInstall(object):
+class SaskanInstall(object):
     """Configure and install Saskan apps.
 
     @DEV:
@@ -60,17 +60,15 @@ class AppInstall(object):
         # Start with static app config data, then work on
         #   world-building stuff.
         #
+        # Next -- basic futzing with maps and grids
+        # Then -- some implementations of scenes
+        # At some point, take a break to consider data
+        #  structures for Actors and Scenes
+        #
         # Come back to service architecture later.
         # It is interesting, but a big rabbit hole
         #  to go down!  When I'm ready, investigate
         #  using HAProxy to manage the service architecture.
-        # self.set_ports()
-        # self.save_svc_config()
-        # self.create_load_bals()
-        # self.install_load_bals()
-        # self.start_servers(svc)
-        # self.start_clients()
-        # FM.pickle_saskan(self.APP)
         """
         # Environment Set-up
         self.install_bootstrap_data()
@@ -82,8 +80,11 @@ class AppInstall(object):
         self.verify_system_dirs()
         self.install_app_dirs()
         self.install_app_files()
+        # Save DB_CFG to a file.
+        self.save_db_config(self.BOOT, self.DB_CFG)
 
-        # Apps GUI Set-up
+        # Database Set-up
+        # Apps GUI data
         frame_id = 'saskan'
         SD.set_frames(frame_id, self.BOOT, self.DB_CFG)
         SD.set_menu_bars(frame_id, self.BOOT, self.DB_CFG)
@@ -91,9 +92,9 @@ class AppInstall(object):
         SD.set_menu_items(frame_id, self.BOOT, self.DB_CFG)
         SD.set_windows(frame_id, self.BOOT, self.DB_CFG)
         SD.set_links(frame_id, self.BOOT, self.DB_CFG)
-
-        # Save DB_CFG to a file.
-        self.save_db_config(self.BOOT, self.DB_CFG)
+        # Game World data
+        SD.set_maps(self.DB_CFG)
+        SD.set_grids(self.DB_CFG)
 
     def install_bootstrap_data(self):
         """
@@ -213,4 +214,4 @@ class AppInstall(object):
 
 
 if __name__ == "__main__":
-    AI = AppInstall()
+    AI = SaskanInstall()

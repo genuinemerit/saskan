@@ -20,6 +20,186 @@ SM = ShellMethods()
 
 
 # =============================================================
+# Abstract Maps and Grids
+# =============================================================
+class Map(object):
+    """
+    Map is a rectangle (2D) or box (3D). It provides basic
+    geographical information.
+
+    This structure holds templates of maps that lay over a grid.
+    For example, a map_name associated with provinces is distinct
+    from one that identifieds regions.  Maps might defeine a similar
+    type of info (say, counties) but at distinct levels of granularity.
+
+    A map is associated with other tables providing more detailed info,
+    such as:
+        - geography (continents, regions, mountains, hills, rivers,
+            lakes, seas, oceans, etc.)
+        - political boundaries (countries, provinces, states, counties, etc.)
+        - roads, paths, trails, waterways, bodies of water, etc.
+        - cities, towns, villages, neighborhoods, etc.
+        - other points of interest (ruins, temples, etc.)
+        - natural resources (mines, quarries, etc.)
+        - demographics (population density, etc.)
+
+    - Maps can contain other maps, overlap with other maps, border
+      other maps, provide layers of information, or provide geo-layers
+      associated with other maps. These relationships are handled in
+      the MapXMap table.
+    - 2D maps are defined in terms of degrees of latitude and longitude and
+      meters of altitude.
+    - The units for 3D maps are up to interpretation and require additional
+      overlays of info to identify their measurement.
+
+    @DEV:
+    - See how difficult it is to work with the group structures.
+    - Makes more sense to keep DB clean and separate.
+    - For example, want to store computed values in the "DSP" object,
+      but not in the database. So I would want to have height/width
+      in the DSP object, but not in the DB model.
+    - May want to provide circular dimensions for 3D maps
+    - Might make sense to have separate tables for 2D and 3D maps.
+    """
+    _tablename: str = "MAP"
+    map_uid_pk: str = ''
+    version_id: str = ''
+    map_name: str = ''
+    map_type: str = ''
+    unit_of_measure: str = ''
+    origin_2d_lat: float = 0.0
+    origin_2d_lon: float = 0.0
+    width_e_w_2d: float = 0.0
+    height_n_s_2d: float = 0.0
+    avg_alt_m: float = 0.0
+    min_alt_m: float = 0.0
+    max_alt_m: float = 0.0
+    origin_3d_x: float = 0.0
+    origin_3d_y: float = 0.0
+    origin_3d_z: float = 0.0
+    width_3d: float = 0.0
+    height_3d: float = 0.0
+    depth_3d: float = 0.0
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return DMT.orm_to_dict(Map)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return DMT.orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: dict = {"map_uid_pk": ["map_uid_pk"]}
+        CK: dict = {"map_type": EntityType.MAP_TYPE,
+                    "unit_of_measure": EntityType.MEASURE_TYPE}
+        CK: dict = {"map_type": EntityType.MAP_TYPE}
+        GROUP: dict = {"map_geo_2d": GroupStruct.GameGeo,
+                       "map_geo_3d": GroupStruct.Game3DLoc}
+        ORDER: list = ["map_name ASC"]
+
+
+class MapXMap(object):
+    """
+    Associative keys --
+    - MAPs (n) <--> MAPs (n)
+    The "touch type" reads in direction 1-->2.
+    For example, 1-contains-2, 1-is_contained_by-2, etc.
+    """
+    _tablename: str = "MAP_X_MAP"
+    map_x_map_uid_pk: str = ''
+    map_uid_1_fk: str = ''
+    map_uid_2_fk: str = ''
+    touch_type: str = ''
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return DMT.orm_to_dict(MapXMap)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return DMT.orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: dict = {"map_x_map_uid_pk": ["map_x_map_uid_pk"]}
+        FK: dict = {"map_uid_1_fk": ("MAP", "map_uid_pk"),
+                    "map_uid_2_fk": ("MAP", "map_uid_pk")}
+        CK: dict = {"touch_type": EntityType.MAP_TOUCH_TYPE}
+
+
+class Grid(object):
+    """
+    The Grid structure defines the dimensions of a Map for
+    rendering, drawing and referencing purposes. A rectangular grid.
+    It is effectively a kind of spreadsheet laid over a map.
+
+    Grid size: (r, c) - how many cells, rows, columns
+    Cell dimension: (w, h, z) - define size of a cell in PyGame px.
+
+    Dimensions may be further mapped to km, m, or whatever is
+    needed for a given scenario, but that is not tracked in the structure.
+    Think of w and h as east-west, north-south.
+    The z is up-down, for altitude, depth, or elevation measures. It is
+    more like a layer of cake, or a 3rd dimension to the spreadsheet.
+    The z layer implies another complete set of the r/c, indexed as a
+    layer 'above' or 'below' the primary grid.
+
+    @DEV:
+    Assignment of scale to a grid needs to be handled in some rational
+    manner, but I don't want to hard code it into this table. Maybe an
+    entity-type field, or more specifically, one for w/h and another for z.
+    The actual size of the grid and its cells is determined by
+    rendering software, not by the data model.
+    """
+    _tablename: str = "GRID"
+    grid_uid_pk: str = ''
+    version_id: str = ''
+    grid_name: str = ''
+    row_cnt: int = 0
+    col_cnt: int = 0
+    z_up_cnt: int = 0
+    z_down_cnt: int = 0
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return DMT.orm_to_dict(Grid)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return DMT.orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: dict = {"grid_uid_pk": ["grid_uid_pk"]}
+        ORDER: list = ["grid_name ASC"]
+
+
+class GridXMap(object):
+    """
+    Associative keys --
+    - GRIDs (n) <--> MAPs (n)
+    """
+    _tablename: str = "GRID_X_MAP"
+    grid_x_map_uid_pk: str = ''
+    grid_uid_fk: str = ''
+    map_uid_fk: str = ''
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return DMT.orm_to_dict(GridXMap)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return DMT.orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: dict = {"grid_x_map_uid_pk": ["grid_x_map_uid_pk"]}
+        FK: dict = {"grid_uid_fk":
+                    ("GRID", "grid_uid_pk"),
+                    "map_uid_fk":
+                    ("MAP", "map_uid_pk")}
+
+
+# =============================================================
 # Game Astronomy
 # =============================================================
 class Universe(object):
@@ -103,7 +283,7 @@ class GalacticCluster(object):
     univ_uid_fk: str = ''
     galactic_cluster_name: str = ''
     center_from_univ_center_gly: GroupStruct.CoordXYZ = GroupStruct.CoordXYZ()
-    boundary_gly: GroupStruct.Game3DLocation = GroupStruct.Game3DLocation()
+    boundary_gly: GroupStruct.Game3DLoc = GroupStruct.Game3DLoc()
     cluster_shape: str = 'ellipsoid'
     shape_pc: GroupStruct.CoordXYZ = GroupStruct.CoordXYZ()
     shape_axes: GroupStruct.AxesABC = GroupStruct.AxesABC()
@@ -129,7 +309,7 @@ class GalacticCluster(object):
         FK: dict = {"univ_uid_fk": ("UNIVERSE", "univ_uid_pk")}
         CK: dict = {"cluster_shape": EntityType.CLUSTER_SHAPE}
         GROUP: dict = {"center_from_univ_center_gly": GroupStruct.CoordXYZ,
-                       "boundary_gly": GroupStruct.Game3DLocation,
+                       "boundary_gly": GroupStruct.Game3DLoc,
                        "shape_pc": GroupStruct.CoordXYZ,
                        "shape_axes": GroupStruct.AxesABC,
                        "shape_rot":  GroupStruct.PitchYawRollAngle,
@@ -169,7 +349,7 @@ class Galaxy(object):
     center_from_univ_center_kpc: GroupStruct.CoordXYZ =\
         GroupStruct.CoordXYZ()
     halo_radius_pc: float = 0.0
-    boundary_pc: GroupStruct.Game3DLocation = GroupStruct.Game3DLocation()
+    boundary_pc: GroupStruct.Game3DLoc = GroupStruct.Game3DLoc()
     volume_gpc3: float = 0.0
     mass_kg: float = 0.0
     bulge_shape: str = 'ellipsoid'
@@ -208,7 +388,7 @@ class Galaxy(object):
                     "bulge_shape": EntityType.ASTRO_SHAPE,
                     "star_field_shape": EntityType.ASTRO_SHAPE}
         GROUP: dict = {"center_from_univ_center_kpc": GroupStruct.CoordXYZ,
-                       "boundary_pc": GroupStruct.Game3DLocation,
+                       "boundary_pc": GroupStruct.Game3DLoc,
                        "bulge_center_from_center_ly": GroupStruct.CoordXYZ,
                        "bulge_dim_axes": GroupStruct.AxesABC,
                        "bulge_dim_rot": GroupStruct.PitchYawRollAngle,
@@ -314,7 +494,7 @@ class StarSystem(object):
     star_system_name: str = ''
     is_black_hole: bool = False
     is_pulsar: bool = False
-    boundary_pc: GroupStruct.Game3DLocation = GroupStruct.Game3DLocation()
+    boundary_pc: GroupStruct.Game3DLoc = GroupStruct.Game3DLoc()
     volume_pc3: float = 0.0
     mass_kg: float = 0.0
     system_shape: str = 'ellipsoid'
@@ -361,7 +541,7 @@ class StarSystem(object):
                     "frequency_of_flares": EntityType.FREQUENCY,
                     "intensity_of_flares": EntityType.INTENSITY,
                     "frequency_of_comets": EntityType.FREQUENCY}
-        GROUP: dict = {"boundary_pc": GroupStruct.Game3DLocation,
+        GROUP: dict = {"boundary_pc": GroupStruct.Game3DLoc,
                        "center_from_galaxy_center_pc": GroupStruct.CoordXYZ,
                        "system_dim_axes": GroupStruct.AxesABC,
                        "system_dim_rot": GroupStruct.PitchYawRollAngle}
@@ -961,157 +1141,6 @@ class WeekTimeXDayTime(object):
 # the front end and middle ware to the new database and data model, including
 # generation of initial set-up data. Maybe do some implementation on the
 # financial app too.
-
-
-# =============================================================
-# Abstract Maps and Grids
-# =============================================================
-class Map(object):
-    """
-    Map is a rectangle or box.
-    A map rectangle is defined as a game-world geo location.
-    A map box is defined as an astronomical, undersea or underground
-    3D location.
-
-    This structure is for defining 'templates' of maps
-        that lay over a grid. For example, there might be
-        a map_name that is associated with provinces and
-        a different one that is associated with regions.
-        There could also be multiple variations of, say,
-        county-level maps, depending on large or small.
-    It will be associated with another table w/ more detailed info
-    relating to things like:
-        - geography (continents, regions, mountains, hills, rivers,
-            lakes, seas, oceans, etc.)
-        - political boundaries (countries, provinces, states, counties, etc.)
-        - roads, paths, trails, waterways, bodies of water, etc.
-        - cities, towns, villages, neighborhoods, etc.
-        - other points of interest (ruins, temples, etc.)
-        - natural resources (mines, quarries, etc.)
-        - demographics (population density, etc.)
-
-    - Maps can also contain other maps, overlap with other maps, border
-      other maps, provide layers of information, or provide geo-layers
-      associatd with other maps. These relationships are handled in
-      the MapXMap table (see below)
-    """
-    _tablename: str = "MAP"
-    map_uid_pk: str = ''
-    map_name: str = ''
-    map_type: str = ''
-    geo_map_loc: GroupStruct.GameGeoLocation = GroupStruct.GameGeoLocation()
-    three_d_map_loc: GroupStruct.Game3DLocation = GroupStruct.Game3DLocation()
-
-    def to_dict(self) -> dict:
-        """Convert object to dict."""
-        return DMT.orm_to_dict(Map)
-
-    def from_dict(self, p_dict: dict, p_row: int) -> dict:
-        """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
-
-    class Constraints(object):
-        PK: dict = {"map_uid_pk": ["map_uid_pk"]}
-        CK: dict = {"map_type": EntityType.MAP_TYPE}
-        GROUP: dict = {"geo_map_loc": GroupStruct.GameGeoLocation,
-                       "three_d_map_loc": GroupStruct.Game3DLocation}
-        ORDER: list = ["map_name ASC"]
-
-
-class MapXMap(object):
-    """
-    Associative keys --
-    - MAPs (n) <--> MAPs (n)
-    The "touch type" should be read in direction 1-->2.
-    For example, 1-contains-2, 1-is_contained_by-2, etc.
-    """
-    _tablename: str = "MAP_X_MAP"
-    map_x_map_uid_pk: str = ''
-    map_uid_1_fk: str = ''
-    map_uid_2_fk: str = ''
-    touch_type: str = ''
-
-    def to_dict(self) -> dict:
-        """Convert object to dict."""
-        return DMT.orm_to_dict(MapXMap)
-
-    def from_dict(self, p_dict: dict, p_row: int) -> dict:
-        """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
-
-    class Constraints(object):
-        PK: dict = {"map_x_map_uid_pk": ["map_x_map_uid_pk"]}
-        FK: dict = {"map_uid_1_fk": ("MAP", "map_uid_pk"),
-                    "map_uid_2_fk": ("MAP", "map_uid_pk")}
-        CK: dict = {"touch_type": EntityType.MAP_TOUCH_TYPE}
-
-
-class Grid(object):
-    """
-    The "Grid" table defines the dimensions of a Map.
-
-    Define the size of a grid (r, c), the dim of the cells (w, h, z)
-    in PyGame px, and the dim of each cell in km (w, h) or m (z).
-    The z layers are provided to track altitude, depth, or elevation
-    for maps that provide z-level data.
-
-    Associations with map(s) are handled in GridXMap table.
-
-    @DEV:
-    - Consider other grid shapes, such as hexagonal, triangular, etc.
-    """
-    _tablename: str = "GRID"
-    grid_uid_pk: str = ''
-    grid_name: str = ''
-    row_cnt: int = 0
-    col_cnt: int = 0
-    z_up_cnt: int = 0
-    z_down_cnt: int = 0
-    width_px: float = 0.0
-    height_px: float = 0.0
-    width_km: float = 0.0
-    height_km: float = 0.0
-    z_up_m: float = 0.0
-    z_down_m: float = 0.0
-
-    def to_dict(self) -> dict:
-        """Convert object to dict."""
-        return DMT.orm_to_dict(Grid)
-
-    def from_dict(self, p_dict: dict, p_row: int) -> dict:
-        """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
-
-    class Constraints(object):
-        PK: dict = {"grid_uid_pk": ["grid_uid_pk"]}
-        ORDER: list = ["grid_name ASC"]
-
-
-class GridXMap(object):
-    """
-    Associative keys --
-    - GRIDs (n) <--> MAPs (n)
-    """
-    _tablename: str = "GRID_X_MAP"
-    grid_x_map_uid_pk: str = ''
-    grid_uid_fk: str = ''
-    map_uid_fk: str = ''
-
-    def to_dict(self) -> dict:
-        """Convert object to dict."""
-        return DMT.orm_to_dict(GridXMap)
-
-    def from_dict(self, p_dict: dict, p_row: int) -> dict:
-        """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
-
-    class Constraints(object):
-        PK: dict = {"grid_x_map_uid_pk": ["grid_x_map_uid_pk"]}
-        FK: dict = {"grid_uid_fk":
-                    ("GRID", "grid_uid_pk"),
-                    "map_uid_fk":
-                    ("MAP", "map_uid_pk")}
-
 
 # =============================================================
 # Semantics and Languages
