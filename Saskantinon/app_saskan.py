@@ -38,13 +38,14 @@ from pprint import pformat as pf    # noqa: F401, format like pp for files
 from pygame.locals import *         # noqa: F401, F403
 
 from data_base import DataBase
-from data_pg_structs import PygColors, AppDisplay
+from data_pg_structs import PygColors, AppDisplay, CompareRect
 from data_get import GetData
 from method_files import FileMethods    # type: ignore
 from method_shell import ShellMethods   # type: ignore
 
 CLR = PygColors()
 DSP = AppDisplay()
+CR = CompareRect()
 GD = GetData()
 DB_CFG = GD.get_db_config()
 DB = DataBase(DB_CFG)
@@ -74,6 +75,11 @@ class GameMenu(object):
     Clicking on a menu bar member opens or closes a Menu.
     Clicking on Menu Item triggers an event or sets a status and
       may also close Menu.
+    @DEV:
+    - Work on relationships between 'Start' and 'Restart'. They
+      should be mutually exclusive. Maybe simplify to one item,
+      like with Pause/Resume. Also consider calling it 'New Game'
+      instead.
     """
     def __init__(self):
         """Initialize the GameMenu object MNU.
@@ -408,74 +414,51 @@ class InfoBar(object):
             DSP.INFO['content'][1], True, CLR.CP_BLUEPOWDER, CLR.CP_BLACK))
         DSP.INFO['if_box'][1] = DSP.INFO['txt'][1].get_rect()
         DSP.INFO['if_box'][1].x = PG.FRM['ibar_x']
-        DSP.INFO['if_box'][1].y = PG.FRM['ibar_y'] + DSP.INFO['if_box'][0].height + 6
+        DSP.INFO['if_box'][1].y =\
+            PG.FRM['ibar_y'] + DSP.INFO['if_box'][0].height + 6
         for i in (0, 1):
             DSP.WIN.blit(DSP.INFO['txt'][i], DSP.INFO['if_box'][i])
 
 
-class SetGameData(object):
+class SaveGameData(object):
     """Methods for inserting and updating values on SASKAN.db.
-    Initially, just use these from the command line. Eventually,
-    intergrate them into the GUI when it is useful.  Try to avoid
-    going down a rat-hole of GUI features and functionality, like
-    a "magical" editor that generates forms based on DB table
-    definitions.  Keep it simple, stupid.  If the command line is
-    too tiresome, then use a CSV file or JSON file to load data.
 
-    Simple version:
-    Basically just a wrapper for calls to the DataBase() class.
-    - pull in a list of values, assume they are in correct order.
-    - pull in a dict object, pickle it, and store it in a blob.
-
-    Hmmm...
-    Problem here is that this is a PyGame module. There is no CLI
-    access as long as the game loop is running. So, I need to
-    either define a separate module for data management (yes), or
-    create a CLI-like interface in the GUI. The former is easier.
-    I have done the latter previously and should be able to find
-    some code to support that. But it makes for a more complex
-    GUI and not one that most users would be familiar with.
-
-    All of this gets moved to install and other modules.
-    Only the GUI code should be in this module and simple, basic
-    calls to pull in needed data and data structures.
+    Replace this with writes/updates to the Database, most likely
+    via calls to data_set.py mondule
     """
     def __init__(self):
-        """Initialize the SetGameData object.
+        """Initialize the SaveGameData object.
         It will be instantiated as SGDT, a global object.
         """
         pass
 
-    @classmethod
-    def insert_record(cls,
-                      p_sql_nm: str,
-                      p_values: list,
-                      p_object: dict):
-        """Insert a record to SASKAN.db.
-        """
-        DB.execute_insert(p_sql_nm, (p_values, pickle.dumps(p_object)))
-
 
 class GameData(object):
-    """Get and set resources displayed in GAMEMAP and DSP.CONSOLE.
-    This class is instantiated as GDAT, a global object.
-    Notes:
-    - "txt" refers to a string of text.
-    - "img" refers to a PyGame image object rendered from txt.
-    - "box" refers to a PyGame rectangle object around img.
+    """Get resources used in the game/story windows.
+    - Break out into at least 3 classes, some or all located
+      possibly in a different module:
+        - GameData: load data from DB and organize it as needed
+           See data_pg_structs.py for data structures.
+        - SetConsole: prep data, incl. widget definitions
+            in DSP.WINDOWS["console"]
+        - SetGameMap: align data to grid for scaling, zooming, etc,
+           for managing, rendering displays in DSP.WINDOWS["gamemap"]
     @DEV:
+    - Selecting different MAP, GRID combinations.
     - Layers of data, zoom-in, zoom-out, other views
     - Ee.g.: a region, a town and environs, a village, a scene, star map
     - GUI controls for scroll, zoom, pan, select-move, etc
     - Event trigger conditions / business rules
-
-    - This class is quite large. Let's think about 3 classes:
-        - GameData: load data for use in GAMEMAP and DSP.CONSOLE
-        - SetConsole: prep data, incl. widget definitions, for DSP.CONSOLE
-        - SetGameMap: align data to grid for scaling, zooming
-    - And refactor as needed to use io_data and DB structures.
-    - Definitely break out into multiple classes.
-
+    - Consider what additional menu items and/or widgets will help
+       with selecting what MAP, GRID and other story-related items, as
+       well as scrolling, zooming, panning, etc.
+       - Selecting a map.
+       - Zooming in/out.
+       - Panning.
+       - For "CONSOLE" start to think more in terms of "story" and "game"
+         events that are triggered by the user and less about info-display.
+         Ideally, most info is visible on the gameamp itself. Console would
+         have buttons to select what info to display/overlay.
     @DEV:
     - Nearly all of this will be replaced. Keeping it here now
       for reference. We have data structures and DB tables
@@ -483,19 +466,74 @@ class GameData(object):
       complex data structures in this module.
     """
     def __init__(self):
-        """Dynamically loaded data for GAMEMAP and DSP.CONSOLE.
-        Values are displayed in DSP.CONSOLE but refer to GAMEMAP.
-        For DSP.GRID, static values are read in from PG, then
-           data is extended here.
+        """Default is to load
+        - MAP: 'Saskan Lands Regions'
+        - GRID: '30r_40c'
         """
-        self.DATASRC = {"actv": False,
-                        "catg": None,
-                        "item": None}
-        self.CONSOLE_REC = {"txt": "",
-                            "img": None,
-                            "box": None}
-        self.CONSOLE_TEXT: list = list()
-        self.MAP_BOX = None
+        pass
+
+    def set_map(self,
+                p_map_name: str = "Saskan Lands Regions"):
+        """
+        - Get requested MAP record(s) from the DB.
+        - Store in DSP.MAPS
+        - Get GRIDxMAP records for the MAP(s).
+        - Get associated GRID records.
+        - Store in DSP.GRIDS
+        @TODO:
+        - Set up rendering for the MAP+GRID items:
+            - For gamemap widgets
+            - For console widgets
+        """
+        if p_map_name not in list(DSP.MAPS.keys()):
+            self.get_2d_map_data(p_map_name)
+            self.get_2d_grid_data(p_map_name)
+            pp((DSP.MAPS))
+            pp((DSP.GRIDS))
+        else:
+            print("MAP and GRID data already loaded for", p_map_name)
+
+    def get_2d_map_data(self,
+                        p_map_name):
+        """Retrieve MAP data from data base for specified name.
+        """
+        map_rec = GD.get_by_id(
+            'MAP', 'map_name', 'Saskan Lands Regions', DB_CFG)
+        grid_x_map_recs = GD.get_by_id(
+            'GRID_X_MAP', 'map_uid_fk',
+            map_rec['map_uid_pk'], DB_CFG, p_first_only=False)
+        DSP.MAPS =\
+            {map_rec['map_name']:
+                {'map_type': map_rec['map_type'],
+                 'map_uid': map_rec['map_uid_pk'],
+                 'units': map_rec['unit_of_measure'],
+                 'dg_lat_top_left': map_rec['origin_2d_lat'],
+                 'dg_lon_top_left': map_rec['origin_2d_lon'],
+                 'width_e_w': map_rec['width_e_w_2d'],
+                 'height_n_s': map_rec['height_n_s_2d'],
+                 'avg_alt_m': map_rec['avg_alt_m'],
+                 'min_alt_m': map_rec['min_alt_m'],
+                 'max_alt_m': map_rec['max_alt_m'],
+                 'grid_uids': [g['grid_uid_fk'] for g in grid_x_map_recs]}}
+
+    def get_2d_grid_data(self,
+                         p_map_name):
+        """Retrieve GRID data from data base for all GRIDs associated
+           with specified MAP.
+        """
+        grid_recs: list = []
+        for grid_uid in DSP.MAPS[p_map_name]['grid_uids']:
+            g_recs = GD.get_by_id(
+                'GRID', 'grid_uid_pk', grid_uid, DB_CFG,
+                p_first_only=False)
+            [grid_recs.append(rec) for rec in g_recs]
+        DSP.GRIDS =\
+            {g['grid_name']:
+                {'grid_uid': g['grid_uid_pk'],
+                 'map_NAME': p_map_name,
+                 'row_cnt': g['row_cnt'],
+                 'col_cnt': g['col_cnt']}
+                for g in grid_recs}
 
     def make_grid_key(self,
                       p_col: int,
@@ -509,14 +547,6 @@ class GameData(object):
         - str, key for specific grid-cell record, in "0n_0n" format
         """
         return f"{str(p_col).zfill(2)}_{str(p_row).zfill(2)}"
-
-    # Data load methods
-    # The current version of these methods assumes a
-    #   specific pattern of name:value pairs in data sources.
-
-    # Modify to read from database and io_data structures instead.
-    # =================
-
 
     def set_label_name(self,
                        p_attr: dict):
@@ -671,7 +701,6 @@ class GameData(object):
             self.CONSOLE_TEXT[ix]["box"].topleft =\
                 (x, y + ((DSP.FONT_TINY_SZ + 2) * (ix + 1)))
 
-
     def set_console_text(self):
         """Format text lines for display in DSP.CONSOLE.
         - "catg" identifies source of config data to format.
@@ -691,7 +720,6 @@ class GameData(object):
 
         if self.DATASRC["catg"] == "geo":
             ci = FM.G[self.DATASRC["catg"]][self.DATASRC["item"]]
-
 
             if "type" in ci.keys():
                 self.set_label_name(ci["type"])
@@ -1083,7 +1111,8 @@ class SaskanGame(object):
         elif mn_k == "help":
             WEB.draw(mi_k)
         elif mn_k == "game":
-            if mi_k == "start":
+            if mi_k in ("start", "restart"):
+                GDAT.set_map()
                 DSP.INFO["frozen"] = False
             if mi_k == "pause_resume":
                 DSP.INFO["frozen"] = not DSP.INFO["frozen"]
@@ -1135,10 +1164,10 @@ class SaskanGame(object):
         if not DSP.INFO["frozen"]:
             DSP.INFO["frame_cnt"] += 1
         DSP.WIN.fill(CLR.CP_BLACK)
+        WINS.draw_windows()
+        IBAR.draw_info_bar()
         MNU.draw_menu_bar()
         MNU.draw_menu_items()
-        IBAR.draw_info_bar()
-        WINS.draw_windows()
 
         """
         # Display info content based on what is currently
@@ -1205,6 +1234,6 @@ if __name__ == '__main__':
     WEB = HtmlDisplay()  # for Help/Link windows
     IBAR = InfoBar()
     WINS = Windows()
-    # GDAT = GameData()
+    GDAT = GameData()
     # GAMEMAP = GameMap()
     SaskanGame()

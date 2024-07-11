@@ -85,6 +85,8 @@ class AppDisplay(object):
     LINKS: dict = {}
     INFO: dict = {}
     WINDOWS: dict = {}
+    MAPS: dict = {}
+    GRIDS: dict = {}
 
 
 #  SIMPLE DATA STRUCTURES
@@ -102,7 +104,11 @@ class Graphic(object):
 
 
 class PygameRect(object):
-    """A simple structure for a pygame Rect object."""
+    """A simple structure for a pygame Rect object.
+
+    @DEV:
+    - Not sure this is necessary.
+    """
     def __init__(self,
                  p_top_left: GroupStruct.CoordXY,
                  p_top_right: GroupStruct.CoordXY,
@@ -159,6 +165,9 @@ class GamePlane(object):
 
     Line and fill attributes may optonally be set.
     A pygame Rect object is derived from the corners.
+
+    @DEV:
+    - Not sure this is necessary?
     """
     def __init__(self,
                  p_top_left: GroupStruct.CoordXY,
@@ -247,6 +256,15 @@ class GameGridData(object):
     rendering, and to store data within each cell. The drawing
     data is 2D oriented, but the data-content supports 3D,
     like a layer cake or slices of a scan.
+
+    The basic idea is to have unified data structure for
+    storing the union of GRID, MAP, and related data. To the
+    extent this can be simplified, and we can use the data
+    structures as passed in from the database, do it.
+
+    Keep an eye on this class, but let's start with a simple
+    collector like we have with MENUS, LINKS, WINDOWS and
+    INFO.
 
     Specs for rendering grid and cells have two inputs:
     - number of rows and columns -- init params

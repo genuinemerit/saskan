@@ -57,7 +57,8 @@ class GetData(object):
         - DB_CFG: database configuration data
         - p_first_only: return only the first row
         :returns:
-        - data: non-ordered dict of data from the table or None
+        - rows: list of non-ordered dicts of data from the table, or [],
+          or just one non-ordered dict if p_first_only is True
         """
         def _match_one_value():
             rows = []
@@ -164,7 +165,8 @@ class GetData(object):
         - DB_CFG : dict of DB config data
         - p_first_only (bool): return only the first row
         :returns:
-        - data: unordered dict of all columns in the table
+        - rows: list of non-ordered dicts of data from the table, or [],
+          or just one non-ordered dict if p_first_only is True
         """
         rows = self._get_by_value(p_tbl_nm,
                                   {p_id_nm: p_id_val},
