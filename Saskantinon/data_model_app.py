@@ -135,8 +135,6 @@ class Frames(object):
     frame_desc: str = ''
     frame_w: float = 0.0
     frame_h: float = 0.0
-    ibar_x: float = 0.0
-    ibar_y: float = 0.0
     pg_hdr_x: float = 0.0
     pg_hdr_y: float = 0.0
     pg_hdr_w: float = 0.0

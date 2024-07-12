@@ -116,9 +116,9 @@
                 "name": "Game",
                 "items": {
                     "start": {
-                        "name": "Start",
+                        "name": "New Game",
                         "key_b": null,
-                        "help_text": "Launch game and info windows.",
+                        "help_text": "Launch a new game.",
                         "enabled": true},
                     "status": {
                         "name": "Status",
@@ -129,11 +129,6 @@
                         "name": "Pause/Resume",
                         "key_b": null,
                         "help_text": "Pause and resume game events",
-                        "enabled": false},
-                    "restart": {
-                        "name": "Restart",
-                        "key_b": null,
-                        "help_text": "Start a new series of game events",
                         "enabled": false},
                     "save": {
                         "name": "Save",

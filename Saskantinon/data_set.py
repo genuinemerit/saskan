@@ -155,8 +155,6 @@ class SetData(object):
             cols['frame_desc'] = v['desc']
             cols['frame_w'] = v['frame_w']
             cols['frame_h'] = v['frame_h']
-            cols['ibar_x'] = v['ibar_x']
-            cols['ibar_y'] = v['ibar_y']
             cols['pg_hdr_x'] = v['pg_hdr_x']
             cols['pg_hdr_y'] = v['pg_hdr_y']
             cols['pg_hdr_w'] = v['pg_hdr_w']
