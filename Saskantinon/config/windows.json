@@ -13,18 +13,10 @@
         "gamemap": {
             "title": "Map",
             "lang_code": "en",
-            "x": 60,
-            "y": 220,
-            "w": 1000,
-            "h": 1000,
             "margin": 6},
         "console": {
             "title": "Console",
             "lang_code": "en",
-            "x": 1100,
-            "y": 220,
-            "w": 600,
-            "h": 1000,
             "margin": 6}
     }
 }

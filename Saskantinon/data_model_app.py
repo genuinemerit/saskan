@@ -267,10 +267,6 @@ class Windows(object):
     version_id: str = ''
     win_id: str = ''
     win_title: str = ''
-    win_x: float = 0.0
-    win_y: float = 0.0
-    win_w: float = 0.0
-    win_h: float = 0.0
     win_margin: float = 0.0
 
     def to_dict(self) -> dict:

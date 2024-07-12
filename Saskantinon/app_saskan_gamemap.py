@@ -80,6 +80,30 @@ class GameMap(object):
         p_grid_name = p_grid_name or list(GRIDS.keys())[0]
         GRIDS[p_grid_name] =\
             self.set_grid_lines(WINDOWS["gamemap"], GRIDS[p_grid_name])
+
+        # find the vertical mid-point between h_lines 0 and 1,
+        # and between h_lines n and n-1.
+        mid_v_0 = round(((GRIDS[p_grid_name]['h_lines'][0][0][1] +
+                          GRIDS[p_grid_name]['h_lines'][1][0][1]) / 2), 2)
+        n = GRIDS[p_grid_name]['row_cnt'] + 2
+        mid_v_n = round(((GRIDS[p_grid_name]['h_lines'][n][0][1] +
+                          GRIDS[p_grid_name]['h_lines'][n - 1][0][1]) / 2), 2)
+        # find the horizontal mid-point between v_lines 0 and n,
+        # and between v_lines 1 and n-1.
+        mid_h_0 = round(((GRIDS[p_grid_name]['v_lines'][0][0][0] +
+                          GRIDS[p_grid_name]['v_lines'][1][0][0]) / 2), 2)
+        n = GRIDS[p_grid_name]['col_cnt'] + 2
+        mid_h_n = round(((GRIDS[p_grid_name]['v_lines'][n][0][0] +
+                          GRIDS[p_grid_name]['v_lines'][n - 1][0][0]) / 2), 2)
+
+        # the midpoints are used to draw the grid reference numbers.
+        # offset by estimated portion of cell size to the left and up.
+        # eventually compute this based on the cell size and font size.
+        GRIDS[p_grid_name]['midpoints'] = {
+            'v_0': mid_v_0 - 6,
+            'v_n': mid_v_n - 6,
+            'h_0': mid_h_0 + 6,
+            'h_n': mid_h_n + 6}
         return GRIDS
 
     def set_grid_lines(self,

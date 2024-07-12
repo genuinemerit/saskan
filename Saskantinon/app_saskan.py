@@ -438,6 +438,76 @@ class InfoBar(object):
             APD.WIN.blit(PG.INFO['txt'][i], PG.INFO['if_box'][i])
 
 
+class Windows(object):
+    """Manage set-up and drawing of windows inside the screen.
+    - Console window
+    - Map window
+    """
+    def __init__(self):
+        """ Initialize Windows."""
+        self.set_window_dims()
+        self.draw_windows()
+
+    def set_window_dims(self):
+        """Get window specs from database.
+        Save in PG.WINDOWS.
+        Next:
+        - Compute location of window content.
+        @DEV:
+        - Consider using config to identify relative
+          size and location of windows
+        """
+        def compute_wbox():
+            """Compute window content ('wbox') size and location"""
+            y = PG.MENUS[list(PG.MENUS.keys())[0]]['mb_box'].bottom + 120
+            h = PG.INFO['if_box'][0].top - y - 60
+            if win_id == 'gamemap':
+                w = (APD.WIN_W * 0.70) + (2 * w_v["win_margin"])
+                x = PG.MENUS[list(PG.MENUS.keys())[0]]['mb_box'].left
+            elif win_id == 'console':
+                w = (APD.WIN_W * 0.25) + (2 * w_v["win_margin"])
+                x = APD.WIN_W - w - (2 * w_v["win_margin"])
+            PG.WINDOWS[win_id]["w_box"] = pg.Rect(x, y, w, h)
+
+        def compute_tbox():
+            """Compute window title box ('tbox') size and location"""
+            PG.WINDOWS[win_id]["txt"] =\
+                APD.F_SANS_SM.render(
+                    PG.WINDOWS[win_id]['title'],
+                    True, CLR.CP_BLUEPOWDER, CLR.CP_GRAY_DARK)
+            tbox = PG.WINDOWS[win_id]["txt"].get_rect()
+            tbox = pg.Rect(tbox)
+            tbox.center = PG.WINDOWS[win_id]["w_box"].center
+            tbox.top = PG.WINDOWS[win_id]["w_box"].top - 60
+            tbox.left = PG.WINDOWS[win_id]["w_box"].left
+            PG.WINDOWS[win_id]["t_box"] = tbox
+
+        win_recs = GD.get_by_id(
+            'WINDOWS', 'frame_uid_fk',
+            PG.FRM['frame_uid_pk'], DB_CFG,
+            p_first_only=False)
+        for w_v in win_recs:
+            win_id = w_v["win_id"]
+            PG.WINDOWS[win_id] =\
+                {"uid": w_v["win_uid_pk"],
+                 "title": w_v["win_title"],
+                 "title_txt": w_v["win_title"],
+                 "margin": w_v["win_margin"],
+                 'w_box': None,
+                 't_box': None}
+            compute_wbox()
+            compute_tbox()
+
+    def draw_windows(self):
+        """Draw the map and console windows.
+        Next: also draw the window title.
+        """
+        for win_id, w_v in PG.WINDOWS.items():
+            pg.draw.rect(APD.WIN, CLR.CP_GRAY_DARK,
+                         w_v["w_box"], 6)
+            APD.WIN.blit(w_v["txt"], w_v["t_box"])
+
+
 class SaveGameData(object):
     """Methods for inserting and updating values on SASKAN.db.
 
@@ -560,57 +630,16 @@ class Stage(object):
             pg.draw.aaline(APD.WIN, CLR.CP_WHITE, p1, p2)
         for (p1, p2) in PG.GRIDS[p_grid_name]['v_lines']:
             pg.draw.aaline(APD.WIN, CLR.CP_WHITE, p1, p2)
-
-
-class Windows(object):
-    """Manage set-up and drawing of windows inside the screen.
-    - Console window
-    - Map window
-    """
-    def __init__(self):
-        """ Initialize Windows."""
-        self.set_window_dims()
-        self.draw_windows()
-
-    def set_window_dims(self):
-        """Get window specs from database.
-        Save in PG.WINDOWS.
-        Next: compute location of window title.
-        """
-        win_recs = GD.get_by_id(
-            'WINDOWS', 'frame_uid_fk',
-            PG.FRM['frame_uid_pk'], DB_CFG,
-            p_first_only=False)
-        for w_v in win_recs:
-            win_id = w_v["win_id"]
-            PG.WINDOWS[win_id] =\
-                {"uid": w_v["win_uid_pk"],
-                 "title": w_v["win_title"],
-                 "title_txt": w_v["win_title"],
-                 "margin": w_v["win_margin"],
-                 'w_box': pg.Rect(
-                    w_v["win_x"], w_v["win_y"],
-                    w_v["win_w"] + (2 * w_v["win_margin"]),
-                    w_v["win_h"] + (2 * w_v["win_margin"]))}
-            PG.WINDOWS[win_id]["txt"] =\
-                APD.F_SANS_SM.render(
-                    PG.WINDOWS[win_id]['title'],
-                    True, CLR.CP_BLUEPOWDER, CLR.CP_GRAY_DARK)
-            tbox = PG.WINDOWS[win_id]["txt"].get_rect()
-            tbox = pg.Rect(tbox)
-            tbox.center = PG.WINDOWS[win_id]["w_box"].center
-            tbox.top = PG.WINDOWS[win_id]["w_box"].top - 60
-            tbox.left = PG.WINDOWS[win_id]["w_box"].left
-            PG.WINDOWS[win_id]["t_box"] = tbox
-
-    def draw_windows(self):
-        """Draw the map and console windows.
-        Next: also draw the window title.
-        """
-        for win_id, w_v in PG.WINDOWS.items():
-            pg.draw.rect(APD.WIN, CLR.CP_GRAY_DARK,
-                         w_v["w_box"], 6)
-            APD.WIN.blit(w_v["txt"], w_v["t_box"])
+        # Draw the reference numbers in the 0th row, the
+        # nth row; in the 0th col and the nth col.
+        # Too much math. Let's try this again. This time,
+        # let's build out the collection of cells, as in the
+        # previous prototype. Each cell will have a complete
+        # set of coordinates, a reference number, and type
+        # code indicating if the cell is on a reference row (0, n)
+        # or column (0, n).
+        # Instead of trying to compute the offsets here, we will
+        # just plonk the 'tbox' in the center of the cell.
 
 
 # ====================================================
@@ -720,10 +749,10 @@ class SaskanGame(object):
         APD.WIN.fill(CLR.CP_BLACK)
         WINS.draw_windows()
         IBAR.draw_info_bar()
-        MNU.draw_menu_bar()
         MNU.draw_menu_items()
         if len(PG.GRIDS.keys()) > 0:
             STG.draw_gamemap()
+        MNU.draw_menu_bar()
 
         """
         # Display info content based on what is currently

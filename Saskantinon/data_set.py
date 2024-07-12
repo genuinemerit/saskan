@@ -296,10 +296,6 @@ class SetData(object):
                 cols['lang_code'] = val['lang_code']
                 cols['win_id'] = win_id
                 cols['win_title'] = val['title']
-                cols['win_x'] = val['x']
-                cols['win_y'] = val['y']
-                cols['win_h'] = val['h']
-                cols['win_w'] = val['w']
                 cols['win_margin'] = val['margin']
                 DB.execute_insert(sql, tuple(cols.values()))
         print(f"* WINDOWS table initialized for {p_frame_id}.")
