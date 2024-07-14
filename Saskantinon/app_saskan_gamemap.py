@@ -78,32 +78,10 @@ class GameMap(object):
         """
         p_map_name = p_map_name or list(MAPS.keys())[0]
         p_grid_name = p_grid_name or list(GRIDS.keys())[0]
-        GRIDS[p_grid_name] =\
-            self.set_grid_lines(WINDOWS["gamemap"], GRIDS[p_grid_name])
-
-        # find the vertical mid-point between h_lines 0 and 1,
-        # and between h_lines n and n-1.
-        mid_v_0 = round(((GRIDS[p_grid_name]['h_lines'][0][0][1] +
-                          GRIDS[p_grid_name]['h_lines'][1][0][1]) / 2), 2)
-        n = GRIDS[p_grid_name]['row_cnt'] + 2
-        mid_v_n = round(((GRIDS[p_grid_name]['h_lines'][n][0][1] +
-                          GRIDS[p_grid_name]['h_lines'][n - 1][0][1]) / 2), 2)
-        # find the horizontal mid-point between v_lines 0 and n,
-        # and between v_lines 1 and n-1.
-        mid_h_0 = round(((GRIDS[p_grid_name]['v_lines'][0][0][0] +
-                          GRIDS[p_grid_name]['v_lines'][1][0][0]) / 2), 2)
-        n = GRIDS[p_grid_name]['col_cnt'] + 2
-        mid_h_n = round(((GRIDS[p_grid_name]['v_lines'][n][0][0] +
-                          GRIDS[p_grid_name]['v_lines'][n - 1][0][0]) / 2), 2)
-
-        # the midpoints are used to draw the grid reference numbers.
-        # offset by estimated portion of cell size to the left and up.
-        # eventually compute this based on the cell size and font size.
-        GRIDS[p_grid_name]['midpoints'] = {
-            'v_0': mid_v_0 - 6,
-            'v_n': mid_v_n - 6,
-            'h_0': mid_h_0 + 6,
-            'h_n': mid_h_n + 6}
+        W = WINDOWS["gamemap"]
+        G = GRIDS[p_grid_name]
+        GRIDS[p_grid_name] = self.set_grid_lines(W, G)
+        GRIDS[p_grid_name]['cells'] = self.set_grid_matrix(W, G)
         return GRIDS
 
     def set_grid_lines(self,
@@ -113,6 +91,11 @@ class GameMap(object):
         Set grid lines for drawing.
         Define dimensions for drawing the grid cells, including
           the 2 extra rows and columns for grid reference numbers.
+        :args:
+        - W (dict) -- PG.WINDOWS
+        - G (dict) -- PG.GRIDS
+        :returns:
+        - G (dict) -- updated GRIDS dict
         """
         G['x'] = int(round(W['w_box'].left + 6))
         G['y'] = int(round(W['w_box'].top + 6))
@@ -134,34 +117,65 @@ class GameMap(object):
             x += G['cell_w']
         return G
 
-    def set_grid_data(self) -> dict:
-        """Define a structure that holds cell data of various types.
-        Then assign a copy of that structure to each cell in the grid,
-        including the z directions, which here are keyed as positive (up)
-        and negative (down).
-        Might be more efficient to initialize to empty dicts or None?
+    def set_grid_matrix(self,
+                        W: dict,
+                        G: dict) -> dict:
+        """Set up:
+        - Matrix of records for each 'cell' in the grid.
+        - Assign static values (dimensions, keys) to each cell.
+        For now, 2D only.
+        :args:
+        - W (dict) -- PG.WINDOWS
+        - G (dict) -- PG.GRIDS
+        :return:
+        - matrix (dict) -- matrix of cell records
+        @DEV:
+        - I am getting the '.' in col n of rows 0 and n,
+          but am not getting the r value displayed in col n
+          on all the other rows. Fix this!
         """
-        grid_matrix = dict()
-        cell_data = {
+        matrix = dict()
+        cell_rec = {
+            'is_ref': False,
             'fill': False,
             'fill_color': PygColors.CP_BLACK,
             'line_color': PygColors.CP_BLACK,
-            'text': '',
+            'x': 0, 'y': 0, 'w': 0, 'h': 0,
+            'c_box': None,
             'img': Graphic,
-            'state_data': {}
+            'map_data': {},
+            'txt': '', 't_box': None
         }
-        for r in range(self.grid_size['rc'].r + 1):
-            grid_matrix[r] = dict()
-            for c in range(self.grid_size['rc'].c + 1):
-                grid_matrix[r][c] = dict()
-                for z in range(self.grid_size['zz'].z_up + 1):
-                    grid_matrix[r][c][z] = dict()
-                    grid_matrix[r][c][z] = cell_data
-                for d in range(self.grid_size['zz'].z_down + 1):
-                    z = d * -1
-                    grid_matrix[r][c][z] = dict()
-                    grid_matrix[r][c][z] = cell_data
-        return grid_matrix
+        row_n = G['row_cnt'] + 2
+        col_n = G['col_cnt'] + 2
+        y = G['y']
+        for r in range(0, row_n):
+            x = G['x']
+            for c in range(0, col_n):
+                key = f"{str(c).zfill(2)}, {str(r).zfill(2)}"
+                matrix[key] = cell_rec.copy()
+                matrix[key]['is_ref'] = True\
+                    if (r == 0 or r == row_n - 1
+                        or c == 0 or r == col_n - 1) else False
+                if matrix[key]['is_ref']:
+                    matrix[key]['fill'] = True
+                    matrix[key]['fill_color'] = PygColors.CP_WHITE
+                    if ((r == 0 and (c in (0, col_n - 1))) or
+                            (c == 0 and (r in (0, row_n - 1))) or
+                            (r == row_n - 1 and c == col_n - 1)):
+                        matrix[key]['txt'] = '.'
+                    elif r == 0 or r == row_n - 1:
+                        matrix[key]['txt'] = str(c)
+                    elif c == 0 or c == col_n - 1:
+                        matrix[key]['txt'] = str(r)
+                matrix[key]['x'] = x
+                matrix[key]['y'] = y
+                matrix[key]['w'] = G['cell_w']
+                matrix[key]['h'] = G['cell_h']
+                matrix[key]['c_box'] = pg.Rect(x, y, G['cell_w'], G['cell_h'])
+                x = round((x + G['cell_w']), 2)
+            y = round((y + G['cell_h']), 2)
+        return matrix
 
     def compute_map_scale(self,
                           p_attr: dict,
@@ -230,61 +244,6 @@ class GameMap(object):
             int(round((DSP.G_LNS_PX_H - map['ln']['px']['h']) / 2) +
                      (DSP.GRID_OFFSET_Y * 4))  # not sure why, but I need this
         DSP.GRID["map"] = map
-
-    def make_grid_key(self,
-                      p_col: int,
-                      p_row: int) -> str:
-        """Convert integer coordinates to string key
-           for use in the .grid["G"] (grid data) matrix.
-        :args:
-        - p_col: int, column number
-        - p_row: int, row number
-        :returns:
-        - str, key for specific grid-cell record, in "0n_0n" format
-        """
-        return f"{str(p_col).zfill(2)}_{str(p_row).zfill(2)}"
-
-    def draw_grid(self):
-        """Draw "grid" and "map" in GAMEMAP using PG, STG objects.
-        """
-        # Draw grid box with thick border
-        pg.draw.rect(APD.WIN, CLR.CP_SILVER, APD.GRID_BOX, 5)
-        # Draw grid lines      # vt and hz are: ((x1, y1), (x2, y2))
-        for vt in APD.G_LNS_VT:
-            pg.draw.aalines(APD.WIN, CLR.CP_WHITE, False, vt)
-        for hz in APD.G_LNS_HZ:
-            pg.draw.aalines(APD.WIN, CLR.CP_WHITE, False, hz)
-        # Highlight grid squares inside or overlapping the map box
-        for _, grec in PG.GRIDS.items():
-            if "is_inside" in grec.keys() and grec["is_inside"]:
-                pg.draw.rect(APD.WIN, CLR.CP_WHITE, grec["box"], 0)
-            elif "overlaps" in grec.keys() and grec["overlaps"]:
-                pg.draw.rect(APD.WIN, CLR.CP_SILVER, grec["box"], 0)
-        # Draw map box with thick border
-        if STG.MAP_BOX is not None:
-            pg.draw.rect(APD.WIN, CLR.CP_PALEPINK, STG.MAP_BOX, 5)
-
-    def draw_hover_cell(self,
-                        p_grid_loc: str):
-        """
-        Highlight/colorize grid-cell indicating grid that cursor is
-        presently hovering over. When this method is called from
-        refesh_screen(), it passes in a APD.GRID key in p_grid_loc.
-        :args:
-        - p_grid_loc: (str) Column/Row key of grid to highlight,
-            in "0n_0n" (col, row) format, using leading zeros.
-
-        @DEV:
-        - Provide options for highlighting in different ways.
-        - Pygame colors can use an alpha channel for transparency, but..
-            - See: https://stackoverflow.com/questions/6339057/
-                    draw-a-transparent-rectangles-and-polygons-in-pygame
-            - Transparency is not supported directly by draw()
-            - Achieved using Surface alpha argument with blit()
-        """
-        if p_grid_loc != "":
-            pg.draw.rect(APD.WIN, CLR.CP_PALEPINK,
-                         STG.GRIDS[p_grid_loc]["box"], 0)
 
 
 #  GAME-RELATED BASIC DATA ALGORTIHMS

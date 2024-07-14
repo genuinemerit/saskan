@@ -570,7 +570,7 @@ class Stage(object):
             self.get_2d_grid_data(p_map_name)
             PG.GRIDS = GAMEMAP.create_gamemap(
                 PG.WINDOWS, PG.MAPS, PG.GRIDS)
-            pp((PG.WINDOWS, PG.GRIDS))
+            # pp((PG.WINDOWS, PG.GRIDS))
         else:
             print("MAP and GRID data already loaded for", p_map_name)
 
@@ -630,16 +630,59 @@ class Stage(object):
             pg.draw.aaline(APD.WIN, CLR.CP_WHITE, p1, p2)
         for (p1, p2) in PG.GRIDS[p_grid_name]['v_lines']:
             pg.draw.aaline(APD.WIN, CLR.CP_WHITE, p1, p2)
-        # Draw the reference numbers in the 0th row, the
-        # nth row; in the 0th col and the nth col.
-        # Too much math. Let's try this again. This time,
-        # let's build out the collection of cells, as in the
-        # previous prototype. Each cell will have a complete
-        # set of coordinates, a reference number, and type
-        # code indicating if the cell is on a reference row (0, n)
-        # or column (0, n).
-        # Instead of trying to compute the offsets here, we will
-        # just plonk the 'tbox' in the center of the cell.
+        # Draw the reference numbers
+        for ck, cv in {c: v for c, v in PG.GRIDS[p_grid_name]['cells'].items()
+                       if v['is_ref']}.items():
+            txt = APD.F_SANS_SM.render(cv['txt'], True,
+                                       CLR.CP_BLACK, CLR.CP_WHITE)
+            txt_box = txt.get_rect()
+            txt_box.center = cv['c_box'].center
+            if cv['fill']:
+                pg.draw.rect(APD.WIN, cv['fill_color'], cv['c_box'])
+            APD.WIN.blit(txt, txt_box)
+
+    def draw_grid(self):
+        """Draw "grid" and "map" in GAMEMAP using PG, STG objects.
+        Move drawing methods to app_saskan.py
+        """
+        # Draw grid box with thick border
+        pg.draw.rect(APD.WIN, CLR.CP_SILVER, APD.GRID_BOX, 5)
+        # Draw grid lines      # vt and hz are: ((x1, y1), (x2, y2))
+        for vt in APD.G_LNS_VT:
+            pg.draw.aalines(APD.WIN, CLR.CP_WHITE, False, vt)
+        for hz in APD.G_LNS_HZ:
+            pg.draw.aalines(APD.WIN, CLR.CP_WHITE, False, hz)
+        # Highlight grid squares inside or overlapping the map box
+        for _, grec in PG.GRIDS.items():
+            if "is_inside" in grec.keys() and grec["is_inside"]:
+                pg.draw.rect(APD.WIN, CLR.CP_WHITE, grec["box"], 0)
+            elif "overlaps" in grec.keys() and grec["overlaps"]:
+                pg.draw.rect(APD.WIN, CLR.CP_SILVER, grec["box"], 0)
+        # Draw map box with thick border
+        if STG.MAP_BOX is not None:
+            pg.draw.rect(APD.WIN, CLR.CP_PALEPINK, STG.MAP_BOX, 5)
+
+    def draw_hover_cell(self,
+                        p_grid_loc: str):
+        """
+        Highlight/colorize grid-cell indicating grid that cursor is
+        presently hovering over. When this method is called from
+        refesh_screen(), it passes in a APD.GRID key in p_grid_loc.
+        :args:
+        - p_grid_loc: (str) Column/Row key of grid to highlight,
+            in "0n_0n" (col, row) format, using leading zeros.
+
+        @DEV:
+        - Provide options for highlighting in different ways.
+        - Pygame colors can use an alpha channel for transparency, but..
+            - See: https://stackoverflow.com/questions/6339057/
+                    draw-a-transparent-rectangles-and-polygons-in-pygame
+            - Transparency is not supported directly by draw()
+            - Achieved using Surface alpha argument with blit()
+        """
+        if p_grid_loc != "":
+            pg.draw.rect(APD.WIN, CLR.CP_PALEPINK,
+                         STG.GRIDS[p_grid_loc]["box"], 0)
 
 
 # ====================================================
