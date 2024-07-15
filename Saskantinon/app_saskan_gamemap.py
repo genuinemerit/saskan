@@ -120,61 +120,77 @@ class GameMap(object):
     def set_grid_matrix(self,
                         W: dict,
                         G: dict) -> dict:
-        """Set up:
-        - Matrix of records for each 'cell' in the grid.
-        - Assign static values (dimensions, keys) to each cell.
+        """Set up matrix of records for each cell in  grid.
         For now, 2D only.
         :args:
         - W (dict) -- PG.WINDOWS
         - G (dict) -- PG.GRIDS
         :return:
         - matrix (dict) -- matrix of cell records
-        @DEV:
-        - I am getting the '.' in col n of rows 0 and n,
-          but am not getting the r value displayed in col n
-          on all the other rows. Fix this!
         """
-        matrix = dict()
-        cell_rec = {
-            'is_ref': False,
-            'fill': False,
-            'fill_color': PygColors.CP_BLACK,
-            'line_color': PygColors.CP_BLACK,
-            'x': 0, 'y': 0, 'w': 0, 'h': 0,
-            'c_box': None,
-            'img': Graphic,
-            'map_data': {},
-            'txt': '', 't_box': None
-        }
-        row_n = G['row_cnt'] + 2
-        col_n = G['col_cnt'] + 2
-        y = G['y']
-        for r in range(0, row_n):
+        def create_matrix():
+            """
+            - assign key and data rec to all cells in matrix
+            """
+            cell_rec = {
+                'is_ref': False,
+                'fill': False,
+                'fill_color': PygColors.CP_BLACK,
+                'line_color': PygColors.CP_BLACK,
+                'x': 0, 'y': 0, 'w': 0, 'h': 0,
+                'c_box': None,
+                'img': Graphic,
+                'map_data': {},
+                'txt': '', 't_box': None
+            }
+            r_n = G['row_cnt'] + 1
+            c_n = G['col_cnt'] + 1
+            matrix: dict = {}
+            for r in range(0, r_n + 1):
+                for c in range(0, c_n + 1):
+                    key = f"{str(r).zfill(2)}, {str(c).zfill(2)}"
+                    matrix[key] = cell_rec.copy()
+                    matrix[key]['is_ref'] = True\
+                        if (r in (0, r_n) or c in (0, c_n)) else False
+            return (matrix, r_n, c_n)
+
+        def set_matrix_data(matrix_data: tuple) -> dict:
+            """
+            - as col increases, increment x
+            - as row increases, increment y
+            - the "edge" cells show the row and column numbers
+            - top and bottom rows display column numbers
+            - left and right columns display row numbers
+            """
+            matrix, r_n, c_n = matrix_data
             x = G['x']
-            for c in range(0, col_n):
-                key = f"{str(c).zfill(2)}, {str(r).zfill(2)}"
-                matrix[key] = cell_rec.copy()
-                matrix[key]['is_ref'] = True\
-                    if (r == 0 or r == row_n - 1
-                        or c == 0 or r == col_n - 1) else False
-                if matrix[key]['is_ref']:
-                    matrix[key]['fill'] = True
-                    matrix[key]['fill_color'] = PygColors.CP_WHITE
-                    if ((r == 0 and (c in (0, col_n - 1))) or
-                            (c == 0 and (r in (0, row_n - 1))) or
-                            (r == row_n - 1 and c == col_n - 1)):
-                        matrix[key]['txt'] = '.'
-                    elif r == 0 or r == row_n - 1:
-                        matrix[key]['txt'] = str(c)
-                    elif c == 0 or c == col_n - 1:
-                        matrix[key]['txt'] = str(r)
-                matrix[key]['x'] = x
-                matrix[key]['y'] = y
+            y = G['y']
+            for key, m_v in matrix.items():
+                r, c = [int(k) for k in key.split(', ')]
+                matrix[key]['x'] = round((x + (c * G['cell_w'])), 2)
+                matrix[key]['y'] = round((y + (r * G['cell_h'])), 2)
                 matrix[key]['w'] = G['cell_w']
                 matrix[key]['h'] = G['cell_h']
-                matrix[key]['c_box'] = pg.Rect(x, y, G['cell_w'], G['cell_h'])
-                x = round((x + G['cell_w']), 2)
-            y = round((y + G['cell_h']), 2)
+                matrix[key]['c_box'] =\
+                    pg.Rect(matrix[key]['x'], matrix[key]['y'],
+                            G['cell_w'], G['cell_h'])
+                if m_v['is_ref']:
+                    matrix[key]['fill'] = True
+                    matrix[key]['fill_color'] = PygColors.CP_WHITE
+                    if ((r == 0 and (c in (0, c_n))) or
+                            (c == 0 and (r in (0, r_n))) or
+                            (r == r_n and c == c_n)):
+                        matrix[key]['txt'] = '.'
+                    elif r in (0, r_n):
+                        matrix[key]['txt'] = str(c)
+                    elif c in (0, c_n):
+                        matrix[key]['txt'] = str(r)
+            return matrix
+
+        # set_grid_matrix()  main
+        # ==================================
+        matrix = set_matrix_data(create_matrix())
+
         return matrix
 
     def compute_map_scale(self,

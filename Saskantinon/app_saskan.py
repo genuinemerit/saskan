@@ -195,7 +195,7 @@ class GameMenu(object):
                 for mi_id, m_item in menu['mitems'].items():
                     item_k = PG.MENUS[mn_id]['mitems'][mi_id]
                     item_k['txt_enabled'] = APD.F_SANS_SM.render(
-                        m_item['name'], True, CLR.CP_BLUEPOWDER,
+                        m_item['name'], True, CLR.CP_GREEN,
                         CLR.CP_GRAY_DARK)
                     item_k['txt_disabled'] = APD.F_SANS_SM.render(
                         m_item['name'], True, CLR.CP_BLUEPOWDER,
@@ -254,8 +254,7 @@ class GameMenu(object):
         """
         for mb_i, mb_v in PG.MENUS.items():
             if mb_v['selected'] is True:
-                pg.draw.rect(APD.WIN, CLR.CP_GRAY_DARK,
-                             PG.MENUS[mb_i]["ib_box"], 0)
+                APD.WIN.fill(CLR.CP_GRAY_DARK, PG.MENUS[mb_i]["ib_box"])
                 for mi_k, mi_v in PG.MENUS[mb_i]["mitems"].items():
                     if mi_v["enabled"]:
                         APD.WIN.blit(mi_v["txt_enabled"], mi_v["mi_box"])
@@ -726,9 +725,19 @@ class SaskanGame(object):
     def handle_menu_item_click(self,
                                menu_k: tuple):
         """Trigger an event based on menu item selection.
-
         :args:
         - menu_k: (tuple) menu bar and menu item keys
+        @DEV:
+        - Lower priority for now..
+        - add dependencies between menu items. For example,
+          when "start" is selected, then most of the disabled
+          items in the "game" menu should be enabled.
+        - eventually we will want a "Load Game" in addition
+          to "New Game".
+        - there may be dependencies between menu items and
+          menus/menu bars eventually. For example, when/if
+          menus are added to handle various in-game actions.
+        - same could go for widgets.
         """
         mn_k = menu_k[0]
         mi_k = menu_k[1]
@@ -792,10 +801,10 @@ class SaskanGame(object):
         APD.WIN.fill(CLR.CP_BLACK)
         WINS.draw_windows()
         IBAR.draw_info_bar()
-        MNU.draw_menu_items()
         if len(PG.GRIDS.keys()) > 0:
             STG.draw_gamemap()
         MNU.draw_menu_bar()
+        MNU.draw_menu_items()
 
         """
         # Display info content based on what is currently
