@@ -521,7 +521,8 @@ class SaveGameData(object):
 
 
 class Stage(object):
-    """Get resources used in the game/story windows to
+    """The objects formerly known as 'gamemap' and 'console'.
+       Get resources used in the game/story windows to
        set the stage: maps, grids, related 'story' items describing
        places and settings. Define GUI structures for gamemap and console
        windows. The console window may eventually be replaced with some
@@ -661,17 +662,15 @@ class Stage(object):
         if STG.MAP_BOX is not None:
             pg.draw.rect(APD.WIN, CLR.CP_PALEPINK, STG.MAP_BOX, 5)
 
-    def draw_hover_cell(self,
-                        p_grid_loc: str):
+    def track_grid_loc(self):
         """
-        Highlight/colorize grid-cell indicating grid that cursor is
-        presently hovering over. When this method is called from
-        refesh_screen(), it passes in a APD.GRID key in p_grid_loc.
-        :args:
-        - p_grid_loc: (str) Column/Row key of grid to highlight,
-            in "0n_0n" (col, row) format, using leading zeros.
-
+        Keep track of what grid-cell the mouse is hovering over.
+        Store that value as a grid key in PG.INFO["grid_loc"].
         @DEV:
+        - Highlight the grid-cell by changing its color.
+        - What is the current map and grid is a little obscure.
+          Work on clarifying that in this module.
+          Should not have to hard-code it here!
         - Provide options for highlighting in different ways.
         - Pygame colors can use an alpha channel for transparency, but..
             - See: https://stackoverflow.com/questions/6339057/
@@ -679,9 +678,13 @@ class Stage(object):
             - Transparency is not supported directly by draw()
             - Achieved using Surface alpha argument with blit()
         """
-        if p_grid_loc != "":
-            pg.draw.rect(APD.WIN, CLR.CP_PALEPINK,
-                         STG.GRIDS[p_grid_loc]["box"], 0)
+        PG.INFO["grid_loc"] = None
+        mouse_loc = PG.INFO["mouse_loc"]
+        for g_k, g_rec in PG.GRIDS['30r_40c']["cells"].items():
+            if g_rec["c_box"].collidepoint(mouse_loc):
+                PG.INFO["grid_loc"] = g_k
+                pg.draw.rect(APD.WIN, CLR.CP_PALEPINK, g_rec["c_box"], 0)
+                break
 
 
 # ====================================================
@@ -760,34 +763,6 @@ class SaskanGame(object):
 
     # Loop Events
     # ==============================================================
-    def track_grid(self):
-        """Keep track of what grid mouse is over using APD.G_LNS_VT,
-           APD.G_LNS_HZ to ID grid loc. May be a little faster than
-           parsing thru each element of .grid["G"] matrix.
-        Note:
-        Since "L" defines lines, it has a count one greater than # of
-          grids in each row or column.
-        """
-        mouse_loc = IBAR.info_status["mouse_loc"]
-        IBAR.info_status["grid_loc"] = ""
-        grid_col = -1
-        # vt ande hz are: (x1, y1), (x2, y2)
-        for i in range(0, APD.GRID_COLS):
-            vt = APD.G_LNS_VT[i]
-            if mouse_loc[0] >= vt[0][0] and\
-               mouse_loc[0] <= vt[0][0] + APD.GRID_CELL_PX_W:
-                grid_col = i
-                break
-        grid_row = -1
-        for i in range(0, APD.GRID_ROWS):
-            hz = APD.G_LNS_HZ[i]
-            if mouse_loc[1] >= hz[0][1] and\
-               mouse_loc[1] <= hz[0][1] + APD.GRID_CELL_PX_H:
-                grid_row = i
-                break
-        if grid_row > -1 and grid_col > -1:
-            IBAR.info_status["grid_loc"] =\
-                STG.make_grid_key(grid_col, grid_row)
 
     def refresh_screen(self):
         """Refresh the screen with the current state of the app.
@@ -801,8 +776,10 @@ class SaskanGame(object):
         APD.WIN.fill(CLR.CP_BLACK)
         WINS.draw_windows()
         IBAR.draw_info_bar()
+        # If a gamemap has been created:
         if len(PG.GRIDS.keys()) > 0:
             STG.draw_gamemap()
+            STG.track_grid_loc()
         MNU.draw_menu_bar()
         MNU.draw_menu_items()
 
