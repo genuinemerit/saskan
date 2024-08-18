@@ -1,4 +1,4 @@
-# saskan
+# Saskantinon
 
 Code to support a game and its admin tools.
 

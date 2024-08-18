@@ -10,6 +10,10 @@ Saskan App GUI.  pygame version.
 - Work on (better) ways of displaying graphs.
 - Work on (better) ways of displaying reports.
 - Add a saskan_game pygame module to display maps, protoype game action.
+
+I think the should probably be defined as a separate package within the project.
+In other words, in folder parallel to "Saskantinon".
+
 """
 
 import platform

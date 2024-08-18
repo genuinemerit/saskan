@@ -1,3 +1,33 @@
+# Use Mamba to construct development virtual environment for saskan project.
+# Mamba is a fast, scalable package manager for Python that is built on top of conda.
+# Use make commands to configure, build, install, distribute the project.
+# (That is still under develompent, not yet tested)
+
+# MAMBA COMMANDS
+# ============================
+# mamba env list
+# mamba env remove -n saskan
+# mamba env create -f ./saskan.yml
+# mamba activate saskan
+# mamba deactivate
+# mamba update -n base -c defaults mamba
+# mamba update --all
+
+# OTHER REQUIRED INSTALLS
+# ====================================================
+# Libraries not available in the conda-forge channel or not recommended to use:
+# mamba activate saskan, then... pip install --upgrade pygame
+# (If latest pygame is in conda-forge then use mamba to install pygame)
+
+# Required at OS level to use netstat to monitor services traffic:
+# sudo apt-get -y install --upgrade net-tools
+# (Not sure of Windows alternative... best to find python-only solution)
+
+# sqlite3 is part of the standard package both in Ubutu and python3.
+# No need for install unless not available in the system.
+# For sqlite command line commands, see:
+#   https://www.sqlitetutorial.net/sqlite-commands/
+
 name: saskan
 channels:
   - conda-forge
@@ -7,6 +37,9 @@ dependencies:
   - mypy
   - flake8
   - isort
+  - coverage
+  - black
+  - pycodestyle
   - pathlib
   - requests
   - tzlocal
@@ -17,7 +50,6 @@ dependencies:
   - tornado
   - music21
   - pendulum
-  #  - pydantic
   - pytest
   - numbers-parser
   - beautifulsoup4
@@ -30,38 +62,6 @@ dependencies:
   - numbers-parser
   - beautifulsoup4
   - sqlalchemy
-  #  - jupyter-core
   - ipykernel
-  # - selenium
-  # - odfpy
-  # - scrapy
-  # - PyPDF2
-
-# mamba env list
-# mamba env remove -n saskan
-# mamba env create -f ./saskan.yml
-# mamba activate saskan
-# mamba deactivate
-# mamba update -n base -c defaults mamba
-# mamba update --all
-
-# Libraries not available in the conda-forge channel or not recommended to use
-# from conda-forge: conda activate saskan, then... pip install --upgrade pygame
-# Really, pygame is the only one I need from the list below.
-
-# pip install --upgrade tabula-py (the project owners recommend not using conda
-# forge for this package) pip install --upgrade pdfquery
-
-# Required at OS level: sudo apt-get -y install --upgrade net-tools (e.g. to use
-# netstat from this toolset to monitor services)
-
-# Note that sqlite3 is part of the standard package both in Ubutu and in
-# python3. No need for install.
-# For sqlite command line commands, see: 
-#   https://www.sqlitetutorial.net/sqlite-commands/
-
-#  this stuff doesn't seem needed with mamba..
-# mamba config --set channel_priority flexible
-# mamba config --remove channels conda-forge
-# mamba config --add channels conda-forge
-
+  - sphinx
+# - pygame

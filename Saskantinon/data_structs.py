@@ -461,6 +461,7 @@ class EntityType(object):
     ASTRO_SHAPE = ['ellipsoid', 'spherical']
     BACKUP_TYPE = ["archive", "backup", "compressed",
                    "export", "encrypted"]
+    BUTTON_TYPE = ['toggle', 'check', 'radio', 'event']
     CHAR_SET_TYPE = ['alphabet', 'abjad', 'abugida',
                      'syllabary', 'ideogram']
     CLUSTER_SHAPE = ['ellipsoid', 'spherical']

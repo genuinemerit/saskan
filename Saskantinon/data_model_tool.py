@@ -135,7 +135,9 @@ class InitGameDB(object):
         """
         for model in [DMA.Backup, DMA.AppConfig, DMA.Texts,
                       DMA.Frames, DMA.MenuBars, DMA.Menus,
-                      DMA.MenuItems, DMA.Windows, DMA.Links]:
+                      DMA.MenuItems, DMA.Windows, DMA.Links,
+                      DMA.ButtonSingle, DMA.ButtonMulti,
+                      DMA.ButtonItem]:
             DB.generate_sql(model)
         for model in [DMW.Universe, DMW.ExternalUniv,
                       DMW.GalacticCluster, DMW.Galaxy,
@@ -192,7 +194,9 @@ class InitGameDB(object):
             for model in [
                       DMA.Backup, DMA.AppConfig, DMA.Texts,
                       DMA.Frames, DMA.MenuBars, DMA.Menus,
-                      DMA.MenuItems, DMA.Windows, DMA.Links]:
+                      DMA.MenuItems, DMA.Windows, DMA.Links,
+                      DMA.ButtonSingle, DMA.ButtonMulti,
+                      DMA.ButtonItem]:
                 sql, values = TD.make_algo_test_data(model)
                 for v in values:
                     DB.execute_insert(sql, v)

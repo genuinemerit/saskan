@@ -1,6 +1,6 @@
 """
 
-:module:    app_saskantinon.py
+:module:    app_saskan.py
 :author:    GM (genuinemerit @ pm.me)
 
 Saskan App GUI.  pygame version.
@@ -601,6 +601,11 @@ class Stage(object):
                          p_map_name):
         """Retrieve GRID data from data base for all GRIDs associated
            with specified MAP.
+           @DEV:
+           - Establish what grid is default or active
+           - Set up either recipes (defaults) or configs or options
+           - Let's try creating some prototype widgets that provide
+             choice of map and grid and eventually other overlays.
         """
         grid_recs: list = []
         for grid_uid in PG.MAPS[p_map_name]['grid_uids']:

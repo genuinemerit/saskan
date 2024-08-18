@@ -317,3 +317,107 @@ class Links(object):
                     "mime_type": EntityType.MIME_TYPE}
         ORDER: list = ["frame_id ASC", "link_id ASC",
                        "lang_code ASC"]
+
+
+class ButtonSingle(object):
+    """Define the values for binary buttons used in the app.
+    - button_name: displayed name for the button
+    - button_icon: name of a file in app images directory
+      or empty string for no icon
+    - button_key: key to press to activate button
+    - x, y: position of top-left relative to window
+    - enabled: True to enable, False to disable
+    - help_text: text to display when mouse hovers over button
+    - action: name of function to call when button is clicked
+    """
+    _tablename: str = "BUTTON_SINGLE"
+    button_single_uid_pk: str = ''
+    version_id: str = ''
+    button_type: str = ''
+    button_name: str = ''
+    button_icon: str = ''
+    button_key: str = ''
+    frame_uid_fk: str = ''
+    window_uid_fk: str = ''
+    x: float = 0.0
+    y: float = 0.0
+    enabled: bool = True
+    help_text: str = ''
+    action: str = ''
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return DMT.orm_to_dict(ButtonSingle)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return DMT.orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: dict = {"button_single_uid_pk": ["button_single_uid_pk"]}
+        FK: dict = {"frame_uid_fk": ("FRAMES", "frame_uid_pk"),
+                    "window_uid_fk": ("WINDOWS", "window_uid_pk")}
+        CK: dict = {"button_type": EntityType.BUTTON_TYPE}
+        ORDER: list = ["button_name ASC"]
+
+
+class ButtonMulti(object):
+    """Define values for multi-choice button group
+    """
+    _tablename: str = "BUTTON_MULTI"
+    button_multi_uid_pk: str = ''
+    version_id: str = ''
+    button_type: str = ''
+    button_name: str = ''
+    button_icon: str = ''
+    frame_uid_fk: str = ''
+    window_uid_fk: str = ''
+    x: float = 0.0
+    y: float = 0.0
+    enabled: bool = True
+    help_text: str = ''
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return DMT.orm_to_dict(ButtonMulti)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return DMT.orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: dict = {"button_multi_uid_pk": ["button_multi_uid_pk"]}
+        FK: dict = {"frame_uid_fk": ("FRAMES", "frame_uid_pk"),
+                    "window_uid_fk": ("WINDOWS", "window_uid_pk")}
+        CK: dict = {"button_type": EntityType.BUTTON_TYPE}
+        ORDER: list = ["button_name ASC"]
+
+
+class ButtonItem(object):
+    """Define values for button item within a check or
+       radio button group.
+    """
+    _tablename: str = "BUTTON_ITEM"
+    button_item_uid_pk: str = ''
+    version_id: str = ''
+    button_multi_uid_pk: str = ''
+    button_name: str = ''
+    button_icon: str = ''
+    order: int = 0
+    enabled: bool = True
+    help_text: str = ''
+    action: str = ''
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return DMT.orm_to_dict(ButtonItem)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return DMT.orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: dict = {"button_item_uid_pk": ["button_item_uid_pk"]}
+        FK: dict = {"button_multi_uid_fk":
+                    ("BUTTON_MULTI", "button_multi_uid_pk")}
+        ORDER: list = ["button_name ASC"]
