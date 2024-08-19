@@ -20,16 +20,15 @@ N.B.:
 - Simplify the proliferation of ports. I shouldn't need so many.
 """
 import json
-
 from os import path
 from pprint import pprint as pp  # noqa: F401
 
-from saskan_methods.shell import Shell
-from saskan_methods.files import Files
+from saskan_io.analysis import Analysis
 from saskan_io.get_data import GetData
 from saskan_io.set_data import SetData
 from saskan_io.wiretap import WireTap
-from saskan_io.analysis import Analysis
+from saskan_methods.files import Files
+from saskan_methods.shell import Shell
 
 SH = Shell()
 FI = Files()
@@ -123,20 +122,18 @@ class ServicesInstall(object):
         """
         all_ports: list = list()
         next_port = FI.S["resource"]["port_low"]
-        for svct, svci in (("channels", "channel"),
-                           ("peers", "client"),
-                           ("peers", "router")):
+        for svct, svci in (
+            ("channels", "channel"),
+            ("peers", "client"),
+            ("peers", "router"),
+        ):
             for svcn in (FI.S[svct][svci]).keys():
                 if "port" in (FI.S[svct][svci][svcn]).keys():
                     for portn in FI.S[svct][svci][svcn]["port"].keys():
-                        if ("count" in
-                                FI.S[svct][svci][svcn]["port"][portn].keys()):
-                            portc =\
-                                FI.S[svct][svci][svcn]["port"][portn]["count"]
-                            ports, next_port =\
-                                self.get_free_ports(next_port, portc)
-                            FI.S[svct][svci][svcn]["port"][portn]["num"] =\
-                                ports
+                        if "count" in FI.S[svct][svci][svcn]["port"][portn].keys():
+                            portc = FI.S[svct][svci][svcn]["port"][portn]["count"]
+                            ports, next_port = self.get_free_ports(next_port, portc)
+                            FI.S[svct][svci][svcn]["port"][portn]["num"] = ports
                             all_ports += ports
         self.set_firewall(all_ports)
 
@@ -159,9 +156,11 @@ class ServicesInstall(object):
         """
         host = FI.S["resource"]["host"]
         lb_confs: list = list()
-        for svct, svci in (("channels", "channel"),
-                           ("peers", "client"),
-                           ("peers", "router")):
+        for svct, svci in (
+            ("channels", "channel"),
+            ("peers", "client"),
+            ("peers", "router"),
+        ):
             for svcn in (FI.S[svct][svci]).keys():
                 if "port" in (FI.S[svct][svci][svcn]).keys():
                     lbx = 0
@@ -169,118 +168,127 @@ class ServicesInstall(object):
                     conf = "stream {\n"
                     for porttyp in ("send", "recv", "duplex", "polling"):
                         if porttyp in ports.keys():
-                            conf += "\n\tupstream " +\
-                                    f"{svcn}_{porttyp} {{\n" +\
-                                    "\t\tleast_conn;\n"
+                            conf += (
+                                "\n\tupstream "
+                                + f"{svcn}_{porttyp} {{\n"
+                                + "\t\tleast_conn;\n"
+                            )
                             for p in ports[porttyp]["num"]:
                                 conf += f"\t\tserver {host}:{p} weight=10;\n"
                             conf += "\t}\n"
-                            conf += "\n\tserver {\n" +\
-                                    "\t\tlisten " +\
-                                    f"{ports['load_bal']['num'][lbx]};\n" +\
-                                    f"\t\tproxy_pass {svcn}_{porttyp};\n" +\
-                                    "\t}\n"
+                            conf += (
+                                "\n\tserver {\n"
+                                + "\t\tlisten "
+                                + f"{ports['load_bal']['num'][lbx]};\n"
+                                + f"\t\tproxy_pass {svcn}_{porttyp};\n"
+                                + "\t}\n"
+                            )
                             lbx += 1
                     conf += "}\n"
-                    lb_confs.append(path.join(self.APP, FI.D["ADIRS"]["CFG"],
-                                              f"saskan_lb_{svcn}.conf"))
+                    lb_confs.append(
+                        path.join(
+                            self.APP, FI.D["ADIRS"]["CFG"], f"saskan_lb_{svcn}.conf"
+                        )
+                    )
                     FI.write_file(lb_confs[-1:][0], conf)
 
     def install_load_bals(self):
         """
-        Back up old nginx.conf file, then copy new one to /etc/nginx.
-        Make sure /etc/nginx/streams.conf.d exists.
-        Deploy saskan stream config files to /etc/nginx/streams.conf.d.
-        Reboot nginx.
+                Back up old nginx.conf file, then copy new one to /etc/nginx.
+                Make sure /etc/nginx/streams.conf.d exists.
+                Deploy saskan stream config files to /etc/nginx/streams.conf.d.
+                Reboot nginx.
 
-        Commands to use:
-        - sudo service nginx status
-        - sudo systemctl enable nginx  <-- may only need once
-        - nginx -s reload
-        - service nginx restart
+                Commands to use:
+                - sudo service nginx status
+                - sudo systemctl enable nginx  <-- may only need once
+                - nginx -s reload
+                - service nginx restart
 
-        - the basic nginx.conf file has no tcp or stream sections.
-        - tried goofing around with it to no avail
-        - time to go read a book I guess. argh.
-        - pretty much just emptied out the nginx.conf file and it liked that!
-        - nginx -t    <-- to test config
+                - the basic nginx.conf file has no tcp or stream sections.
+                - tried goofing around with it to no avail
+                - time to go read a book I guess. argh.
+                - pretty much just emptied out the nginx.conf file and it liked that!
+                - nginx -t    <-- to test config
 
-        - maybe i need to open port 80?
+                - maybe i need to open port 80?
 
-        - trying to do this under a virtual ubuntu set-up on my mac.
-        - maybe look around at some older code, see how it is set up
-          on digital ocean, etc. Maybe start a fresh nginx install.
-        - also might want to try twisted instead.
-        - or look for new/other python libraries for this.
+                - trying to do this under a virtual ubuntu set-up on my mac.
+                - maybe look around at some older code, see how it is set up
+                  on digital ocean, etc. Maybe start a fresh nginx install.
+                - also might want to try twisted instead.
+                - or look for new/other python libraries for this.
 
-        - Seems better after reinstalling nginx using instructions from
-        "NGINX Cookbok", 2nd edition, by Derek DeJonghe.
+                - Seems better after reinstalling nginx using instructions from
+                "NGINX Cookbok", 2nd edition, by Derek DeJonghe.
 
-        Stop all saskan NGINX servers.
-        Start the saskan NGINIX load balanceers.
+                Stop all saskan NGINX servers.
+                Start the saskan NGINIX load balanceers.
 
-        (base) bow@mahaka:~$ sudo nginx -v
-nginx version: nginx/1.18.0 (Ubuntu)
-(base) bow@mahaka:~$ ps -ef | grep nginx
-root        1508       1  0 18:40 ?        00:00:00 nginx: master process
-    /usr/sbin/nginx -g daemon on; master_process on;
-www-data    1517    1508  0 18:40 ?        00:00:00 nginx: worker process
-www-data    1518    1508  0 18:40 ?        00:00:00 nginx: worker process
-root        5106    2500  0 18:45 ?        00:00:00 nginx: master process nginx
-www-data    5107    5106  0 18:45 ?        00:00:00 nginx: worker process
-www-data    5108    5106  0 18:45 ?        00:00:00 nginx: worker process
+                (base) bow@mahaka:~$ sudo nginx -v
+        nginx version: nginx/1.18.0 (Ubuntu)
+        (base) bow@mahaka:~$ ps -ef | grep nginx
+        root        1508       1  0 18:40 ?        00:00:00 nginx: master process
+            /usr/sbin/nginx -g daemon on; master_process on;
+        www-data    1517    1508  0 18:40 ?        00:00:00 nginx: worker process
+        www-data    1518    1508  0 18:40 ?        00:00:00 nginx: worker process
+        root        5106    2500  0 18:45 ?        00:00:00 nginx: master process nginx
+        www-data    5107    5106  0 18:45 ?        00:00:00 nginx: worker process
+        www-data    5108    5106  0 18:45 ?        00:00:00 nginx: worker process
 
-        @DEV:
-        - Oher clean up tasks:
-            - remove old load balancer links
-            - remove old load balancer config files
-            - probably want a bespoke nginx.conf file for saskan
-            - it is recommended to use /etc/nginx/conf.d/ not
-              sites-enabled/sites-available so try that
-            - will eventually want to use letsencrypt for SSL,
-              possibly other security things
-            - don't think it's including my config files now
-            - try enabling the default config file, see if my
-              tcp stuff works then
-        - Ah-ha! See chapter 2.2 of the book
-            - create a stream.conf.d directory
-            - in nginx.conf:
-            stream {
-                include /etc/nginx/stream.conf.d/*.conf;
-            }
-            - put my stream config files in there;
-              they don't need to have the "stream {" and "}" containers
-            'NGINX Plus' provides more TCP load balancing features.
-        - That is the book I've been looking for. It covers TCP and UDP
-          as well as HTTP.
+                @DEV:
+                - Oher clean up tasks:
+                    - remove old load balancer links
+                    - remove old load balancer config files
+                    - probably want a bespoke nginx.conf file for saskan
+                    - it is recommended to use /etc/nginx/conf.d/ not
+                      sites-enabled/sites-available so try that
+                    - will eventually want to use letsencrypt for SSL,
+                      possibly other security things
+                    - don't think it's including my config files now
+                    - try enabling the default config file, see if my
+                      tcp stuff works then
+                - Ah-ha! See chapter 2.2 of the book
+                    - create a stream.conf.d directory
+                    - in nginx.conf:
+                    stream {
+                        include /etc/nginx/stream.conf.d/*.conf;
+                    }
+                    - put my stream config files in there;
+                      they don't need to have the "stream {" and "}" containers
+                    'NGINX Plus' provides more TCP load balancing features.
+                - That is the book I've been looking for. It covers TCP and UDP
+                  as well as HTTP.
 
-        - Read in the config files from app confitg dir.
+                - Read in the config files from app confitg dir.
 
 
-        After following the directions in the book, I am still not
-        having success with TCP load balancing using NGINX. It may
-        just be my local environment that is funky. Maybe try it again
-        on Digital Ocean just to confirm if it works there are not.
+                After following the directions in the book, I am still not
+                having success with TCP load balancing using NGINX. It may
+                just be my local environment that is funky. Maybe try it again
+                on Digital Ocean just to confirm if it works there are not.
 
-        In the meantime, I think I will try using HAProxy instead.
+                In the meantime, I think I will try using HAProxy instead.
 
-        There is a Load Balancer service on Digital Ocean that
-        works with balancing "Droplets", which would refer to entire
-        Linux (or other) OS-level nodes. I think it can create
-        forwarding rules at the port level too? Might want to look
-        into it, for learning purposes if nothing else. It is a paid/
-        monthly subscription service, though.
+                There is a Load Balancer service on Digital Ocean that
+                works with balancing "Droplets", which would refer to entire
+                Linux (or other) OS-level nodes. I think it can create
+                forwarding rules at the port level too? Might want to look
+                into it, for learning purposes if nothing else. It is a paid/
+                monthly subscription service, though.
         """
         ng_d = "/etc/nginx"
-        FI.copy_file(path.join(ng_d, "nginx.conf"),
-                     path.join(ng_d,
-                               f"nginx_conf.bkup.{WT.get_iso_timestamp()}"))
-        FI.copy_file(path.join(self.APP, FI.D["ADIRS"]["CFG"], "nginx.conf"),
-                     ng_d)
+        FI.copy_file(
+            path.join(ng_d, "nginx.conf"),
+            path.join(ng_d, f"nginx_conf.bkup.{WT.get_iso_timestamp()}"),
+        )
+        FI.copy_file(path.join(self.APP, FI.D["ADIRS"]["CFG"], "nginx.conf"), ng_d)
         FI.make_dir(path.join(ng_d, "stream.conf.d"))
-        for cfg_p in [f for f in
-                      FI.scan_dir(path.join(self.APP, FI.D["ADIRS"]["CFG"]))
-                      if "saskan_lb_" in str(f) and ".conf" in str(f)]:
+        for cfg_p in [
+            f
+            for f in FI.scan_dir(path.join(self.APP, FI.D["ADIRS"]["CFG"]))
+            if "saskan_lb_" in str(f) and ".conf" in str(f)
+        ]:
             FI.copy_file(cfg_p, path.join(ng_d, "stream.conf.d"))
         # available = path.join("/etc/nginx/sites-available")
         # enabled = path.join("/etc/nginx/sites-enabled")
@@ -356,12 +364,10 @@ www-data    5108    5106  0 18:45 ?        00:00:00 nginx: worker process
         # Launch new sv_server instances
         pypath = path.join(self.APP, FI.D["ADIRS"]["PY"], f"{pgm_nm}.py")
         logpath = path.join(
-            FI.D["MEM"], FI.D["APP"],
-            FI.D["ADIRS"]["SAV"], FI.D["NSDIRS"]["LOG"]
+            FI.D["MEM"], FI.D["APP"], FI.D["ADIRS"]["SAV"], FI.D["NSDIRS"]["LOG"]
         )
         for c_nm, c_meta in svc.items():
-            for p_typ in [pt for pt in c_meta.keys()
-                          if pt not in ("host", "desc")]:
+            for p_typ in [pt for pt in c_meta.keys() if pt not in ("host", "desc")]:
                 for port in c_meta[p_typ]["port"]:
                     SH.run_nohup_py(
                         pypath,

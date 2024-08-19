@@ -1,8 +1,7 @@
-import os
+# import os
 import sys
-import app_saskan
 
-#!/usr/bin/env python
+import app_saskan
 
 
 def main():

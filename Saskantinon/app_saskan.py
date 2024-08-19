@@ -27,21 +27,20 @@ Saskan App GUI.  pygame version.
 """
 
 import platform
-import pygame as pg
 import sys
 import webbrowser
-
 from dataclasses import dataclass
-from pprint import pprint as pp     # noqa: F401, format like pp for files
-from pprint import pformat as pf    # noqa: F401, format like pp for files
-from pygame.locals import *         # noqa: F401, F403
+from pprint import pformat as pf  # noqa: F401, format like pp for files
+from pprint import pprint as pp  # noqa: F401, format like pp for files
 
-from app_saskan_gamemap import GameMap, CompareRect
+import pygame as pg
+from app_saskan_gamemap import CompareRect, GameMap
 from data_base import DataBase
-from data_structs_pg import PygColors, AppDisplay
 from data_get import GetData
-from method_files import FileMethods    # type: ignore
-from method_shell import ShellMethods   # type: ignore
+from data_structs_pg import AppDisplay, PygColors
+from method_files import FileMethods  # type: ignore
+from method_shell import ShellMethods  # type: ignore
+from pygame.locals import *  # noqa: F401, F403
 
 CLR = PygColors()
 APD = AppDisplay()
@@ -61,10 +60,10 @@ pg.init()
 @dataclass(frozen=True)
 class PG:
 
-    FRM = GD.get_by_id('FRAMES', 'frame_id', 'saskan', DB_CFG)
-    pg.display.set_caption(FRM['frame_title'])
-    APD.WIN_W = float(FRM['frame_w'])
-    APD.WIN_H = float(FRM['frame_h'])
+    FRM = GD.get_by_id("FRAMES", "frame_id", "saskan", DB_CFG)
+    pg.display.set_caption(FRM["frame_title"])
+    APD.WIN_W = float(FRM["frame_w"])
+    APD.WIN_H = float(FRM["frame_h"])
     APD.WIN_MID = (APD.WIN_W / 2, APD.WIN_H / 2)
     flags = pg.RESIZABLE
     APD.WIN = pg.display.set_mode((APD.WIN_W, APD.WIN_H), flags)
@@ -94,6 +93,7 @@ class GameMenu(object):
       like with Pause/Resume. Also consider calling it 'New Game'
       instead.
     """
+
     def __init__(self):
         """Initialize the GameMenu object MNU.
         Store menu data and rendering info in PG.MENUS.
@@ -115,24 +115,32 @@ class GameMenu(object):
         - mb_box = pg rect around text + margin
         - ib_box = bounding box of menu's items
         """
+
         def get_menu_bar_data():
-            """Retrieve menu bar and menu data from data base.
-            """
+            """Retrieve menu bar and menu data from data base."""
             mbar_rec = GD.get_by_id(
-                'MENU_BARS', 'frame_uid_fk',
-                PG.FRM['frame_uid_pk'], DB_CFG)
+                "MENU_BARS", "frame_uid_fk", PG.FRM["frame_uid_pk"], DB_CFG
+            )
             menu_rec = GD.get_by_id(
-                'MENUS', 'menu_bar_uid_fk',
-                mbar_rec['menu_bar_uid_pk'], DB_CFG,
-                p_first_only=False)
-            PG.MENUS =\
-                {m['menu_id']:
-                    {'name': m['menu_name'],
-                     'uid': m['menu_uid_pk'],
-                     'selected': False, 'txt': '',
-                     'tbox': None, 'mb_box': None,
-                     'ib_box': None, 'mitems': {}}
-                    for m in menu_rec}
+                "MENUS",
+                "menu_bar_uid_fk",
+                mbar_rec["menu_bar_uid_pk"],
+                DB_CFG,
+                p_first_only=False,
+            )
+            PG.MENUS = {
+                m["menu_id"]: {
+                    "name": m["menu_name"],
+                    "uid": m["menu_uid_pk"],
+                    "selected": False,
+                    "txt": "",
+                    "tbox": None,
+                    "mb_box": None,
+                    "ib_box": None,
+                    "mitems": {},
+                }
+                for m in menu_rec
+            }
             return mbar_rec
 
         def set_menu_bar_rendering(mbar_rec: dict):
@@ -142,20 +150,20 @@ class GameMenu(object):
               to be defined to be centered inside the mb_box.
             The txt is the surface for the blit() command.
             """
-            x = mbar_rec['mbar_x']
+            x = mbar_rec["mbar_x"]
             for m_ix, m_id in enumerate(list(PG.MENUS.keys())):
-                PG.MENUS[m_id]['txt'] = APD.F_SANS_SM.render(
-                    PG.MENUS[m_id]['name'],
-                    True, CLR.CP_BLUEPOWDER, CLR.CP_GRAY_DARK)
-                tbox = PG.MENUS[m_id]['txt'].get_rect()
+                PG.MENUS[m_id]["txt"] = APD.F_SANS_SM.render(
+                    PG.MENUS[m_id]["name"], True, CLR.CP_BLUEPOWDER, CLR.CP_GRAY_DARK
+                )
+                tbox = PG.MENUS[m_id]["txt"].get_rect()
                 mb_box = pg.Rect(tbox)
                 mb_box.x = x
-                mb_box.y = mbar_rec['mbar_y']
-                mb_box.h = mbar_rec['mbar_h'] * 1.5
+                mb_box.y = mbar_rec["mbar_y"]
+                mb_box.h = mbar_rec["mbar_h"] * 1.5
                 mb_box.w *= 1.5
-                PG.MENUS[m_id]['mb_box'] = mb_box
+                PG.MENUS[m_id]["mb_box"] = mb_box
                 tbox.center = mb_box.center
-                PG.MENUS[m_id]['tbox'] = tbox
+                PG.MENUS[m_id]["tbox"] = tbox
                 x += mb_box.width
 
         # ====== set_menu_bars method ======
@@ -168,48 +176,53 @@ class GameMenu(object):
         - Compute rendering info for menu items.
         - mi_box: pg rect around tbox + margin for each item
         """
+
         def get_menu_item_data():
             """Retrieve menu iitem data from data base."""
             for menu_id, mnu in PG.MENUS.items():
-                mitm_recs =\
-                    GD.get_by_id('MENU_ITEMS', 'menu_uid_fk',
-                                 mnu['uid'], DB_CFG, p_first_only=False)
+                mitm_recs = GD.get_by_id(
+                    "MENU_ITEMS", "menu_uid_fk", mnu["uid"], DB_CFG, p_first_only=False
+                )
                 for mi in mitm_recs:
-                    id = mi['item_id']
-                    PG.MENUS[menu_id]['mitems'][id]: dict = {
-                        "order": mi['item_order'],
-                        "name": mi['item_name'],
-                        "key_binding": mi['key_binding'],
-                        "enabled": mi['enabled_default'],
-                        'txt_enabled': None,
-                        'txt_disabled': None,
-                        'mi_box': None,
-                        'uid': mi['item_uid_pk']}
-                PG.MENUS[menu_id]['mitems'] =\
-                    SM.convert_dict_to_ordered_dict(
-                        PG.MENUS[menu_id]['mitems'])
+                    id = mi["item_id"]
+                    PG.MENUS[menu_id]["mitems"][id]: dict = {
+                        "order": mi["item_order"],
+                        "name": mi["item_name"],
+                        "key_binding": mi["key_binding"],
+                        "enabled": mi["enabled_default"],
+                        "txt_enabled": None,
+                        "txt_disabled": None,
+                        "mi_box": None,
+                        "uid": mi["item_uid_pk"],
+                    }
+                PG.MENUS[menu_id]["mitems"] = SM.convert_dict_to_ordered_dict(
+                    PG.MENUS[menu_id]["mitems"]
+                )
 
         def set_menu_item_rendering():
             """Compute rendering boxes for menu items."""
             for mn_id, menu in PG.MENUS.items():
-                for mi_id, m_item in menu['mitems'].items():
-                    item_k = PG.MENUS[mn_id]['mitems'][mi_id]
-                    item_k['txt_enabled'] = APD.F_SANS_SM.render(
-                        m_item['name'], True, CLR.CP_GREEN,
-                        CLR.CP_GRAY_DARK)
-                    item_k['txt_disabled'] = APD.F_SANS_SM.render(
-                        m_item['name'], True, CLR.CP_BLUEPOWDER,
-                        CLR.CP_GRAY_DARK)
-                    tbox = item_k['txt_enabled'].get_rect()
+                for mi_id, m_item in menu["mitems"].items():
+                    item_k = PG.MENUS[mn_id]["mitems"][mi_id]
+                    item_k["txt_enabled"] = APD.F_SANS_SM.render(
+                        m_item["name"], True, CLR.CP_GREEN, CLR.CP_GRAY_DARK
+                    )
+                    item_k["txt_disabled"] = APD.F_SANS_SM.render(
+                        m_item["name"], True, CLR.CP_BLUEPOWDER, CLR.CP_GRAY_DARK
+                    )
+                    tbox = item_k["txt_enabled"].get_rect()
                     mi_box = pg.Rect(tbox)
-                    mi_box.x = PG.MENUS[mn_id]['mb_box'].left
+                    mi_box.x = PG.MENUS[mn_id]["mb_box"].left
                     mi_box.h = tbox.h * 1.5
                     mi_box.w = tbox.w * 1.5
-                    mi_box.y = PG.MENUS[mn_id]['mb_box'].bottom + 12 +\
-                        (mi_box.h * m_item['order'])
-                    item_k['mi_box'] = mi_box
+                    mi_box.y = (
+                        PG.MENUS[mn_id]["mb_box"].bottom
+                        + 12
+                        + (mi_box.h * m_item["order"])
+                    )
+                    item_k["mi_box"] = mi_box
                     tbox.x += 12
-                    item_k['tbox'] = tbox
+                    item_k["tbox"] = tbox
 
         def set_menu_items_bounding_box():
             """Compute bounding box for menu items.
@@ -219,13 +232,12 @@ class GameMenu(object):
             for mn_id, menu in PG.MENUS.items():
                 widest_w = 0.0
                 total_h = 0.0
-                for mi_id, m_item in menu['mitems'].items():
-                    widest_w = max(widest_w, m_item['mi_box'].width)
-                    total_h += m_item['mi_box'].height
-                PG.MENUS[mn_id]['ib_box'] = pg.Rect(
-                    menu['mb_box'].left,
-                    menu['mb_box'].bottom,
-                    widest_w, total_h)
+                for mi_id, m_item in menu["mitems"].items():
+                    widest_w = max(widest_w, m_item["mi_box"].width)
+                    total_h += m_item["mi_box"].height
+                PG.MENUS[mn_id]["ib_box"] = pg.Rect(
+                    menu["mb_box"].left, menu["mb_box"].bottom, widest_w, total_h
+                )
 
         # ========= set_menu_items() method ====
         get_menu_item_data()
@@ -233,19 +245,18 @@ class GameMenu(object):
         set_menu_items_bounding_box()
 
     def draw_menu_bar(self):
-        """ Draw each each of the Menus on the Menu Bar.
+        """Draw each each of the Menus on the Menu Bar.
         Redraw on every refresh. First everything in unselected mode.
         Then selected, draw box using green box).
         Only one (or none) menus can be selected.
         """
         for mb_i, mb_v in PG.MENUS.items():
-            box_color = CLR.CP_BLUEPOWDER if mb_v['selected'] is False\
-                else CLR.CP_GREEN
-            pg.draw.rect(APD.WIN, box_color, mb_v['mb_box'], width=2)
+            box_color = CLR.CP_BLUEPOWDER if mb_v["selected"] is False else CLR.CP_GREEN
+            pg.draw.rect(APD.WIN, box_color, mb_v["mb_box"], width=2)
             APD.WIN.blit(mb_v["txt"], mb_v["tbox"])
 
     def draw_menu_items(self):
-        """ Draw menu items for the selected menu bar, if there is
+        """Draw menu items for the selected menu bar, if there is
           one selected.
         Draw the bounding box, then blit each menu item using
           the text surface that matches its current status.
@@ -253,7 +264,7 @@ class GameMenu(object):
         - mn_id: id of the clicked menu
         """
         for mb_i, mb_v in PG.MENUS.items():
-            if mb_v['selected'] is True:
+            if mb_v["selected"] is True:
                 APD.WIN.fill(CLR.CP_GRAY_DARK, PG.MENUS[mb_i]["ib_box"])
                 for mi_k, mi_v in PG.MENUS[mb_i]["mitems"].items():
                     if mi_v["enabled"]:
@@ -261,30 +272,28 @@ class GameMenu(object):
                     else:
                         APD.WIN.blit(mi_v["txt_disabled"], mi_v["mi_box"])
 
-    def click_mbar(self,
-                   p_mouse_loc: tuple) -> str:
+    def click_mbar(self, p_mouse_loc: tuple) -> str:
         """
         If clicked, toggle 'selected' attribute of menu.
         And make sure all others are set to 'False'.
         :attr:
         - p_mouse_loc: tuple (number: x, number: y)
         """
-        mb_i_clicked = ''
+        mb_i_clicked = ""
         for mb_i, mb_v in PG.MENUS.items():
             if mb_v["mb_box"].collidepoint(p_mouse_loc):
                 mb_i_clicked = mb_i
-                if PG.MENUS[mb_i]['selected'] is True:
-                    PG.MENUS[mb_i]['selected'] = False
+                if PG.MENUS[mb_i]["selected"] is True:
+                    PG.MENUS[mb_i]["selected"] = False
                 else:
-                    PG.MENUS[mb_i]['selected'] = True
+                    PG.MENUS[mb_i]["selected"] = True
                 for mb_i, mb_v in PG.MENUS.items():
                     if mb_i != mb_i_clicked:
-                        PG.MENUS[mb_i]['selected'] = False
+                        PG.MENUS[mb_i]["selected"] = False
                 break
 
-    def click_mitem(self,
-                    p_mouse_loc: tuple) -> tuple:
-        """ For currently selected menu:
+    def click_mitem(self, p_mouse_loc: tuple) -> tuple:
+        """For currently selected menu:
         - Set all menu items in the list to unselected.
         - See which, if any, menu item was clicked.
         - If an item is now selected, set other items on the list to not
@@ -297,25 +306,21 @@ class GameMenu(object):
         """
         mb_mi_clicked = ("", "")
         for mn_k, mb_v in PG.MENUS.items():
-            if mb_v['selected'] is True:
+            if mb_v["selected"] is True:
                 for mi_k, mi_v in mb_v["mitems"].items():
                     PG.MENUS[mn_k]["mitems"][mi_k]["selected"] = False
-                    if mi_v['mi_box'].collidepoint(p_mouse_loc):
+                    if mi_v["mi_box"].collidepoint(p_mouse_loc):
                         mb_mi_clicked = (mn_k, mi_k)
                         if PG.MENUS[mn_k]["mitems"][mi_k]["enabled"]:
                             PG.MENUS[mn_k]["mitems"][mi_k]["selected"] = True
                         PG.MENUS[mn_k]["selected"] = False
                         for mi_k, mi_v in mb_v["mitems"].items():
                             if mi_k != mb_mi_clicked[1]:
-                                PG.MENUS[mn_k]["mitems"][mi_k]["selected"] =\
-                                    False
+                                PG.MENUS[mn_k]["mitems"][mi_k]["selected"] = False
                         break
         return mb_mi_clicked
 
-    def set_menus_state(self,
-                        mb_k: str,
-                        mi_ky: str,
-                        p_use_default: bool = False):
+    def set_menus_state(self, mb_k: str, mi_ky: str, p_use_default: bool = False):
         """Set the enabled state of identified menu item and/or
            set the enabled status of dependent menu items.
         Dependent menu items are always in the same menu list as the
@@ -332,36 +337,44 @@ class GameMenu(object):
         txt_color = CLR.CP_GRAY
         # Set enabled status of identified item
         if p_use_default:
-            if ("default" in list(self.mitems[mb_k][mi_ky].keys()) and
-                self.mitems[mb_k][mi_ky]["default"] == "enabled") or\
-               "default" not in list(self.mitems[mb_k][mi_ky].keys()):
+            if (
+                "default" in list(self.mitems[mb_k][mi_ky].keys())
+                and self.mitems[mb_k][mi_ky]["default"] == "enabled"
+            ) or "default" not in list(self.mitems[mb_k][mi_ky].keys()):
                 self.mitems[mb_k][mi_ky]["enabled"] = True
                 txt_color = CLR.CP_BLUEPOWDER
             # Set text color and content of identified item
-            self.mitems[mb_k][mi_ky]["mi_text"] =\
-                APD.F_SANS_SM.render(self.mitems[mb_k][mi_ky]["name"],
-                                     True, txt_color, CLR.CP_GRAY_DARK)
+            self.mitems[mb_k][mi_ky]["mi_text"] = APD.F_SANS_SM.render(
+                self.mitems[mb_k][mi_ky]["name"], True, txt_color, CLR.CP_GRAY_DARK
+            )
         else:
             # Default selected item to enabled status
             self.mitems[mb_k][mi_ky]["enabled"] = True
-            self.mitems[mb_k][mi_ky]["mi_text"] =\
-                APD.F_SANS_SM.render(self.mitems[mb_k][mi_ky]["name"],
-                                     True, CLR.CP_BLUEPOWDER, CLR.CP_GRAY_DARK)
+            self.mitems[mb_k][mi_ky]["mi_text"] = APD.F_SANS_SM.render(
+                self.mitems[mb_k][mi_ky]["name"],
+                True,
+                CLR.CP_BLUEPOWDER,
+                CLR.CP_GRAY_DARK,
+            )
             # Identify dependent menu items and modify their enabled status
             if "disable" in list(self.mitems[mb_k][mi_ky].keys()):
                 for dep_ky in self.mitems[mb_k][mi_ky]["disable"]:
                     self.mitems[mb_k][dep_ky]["enabled"] = False
-                    self.mitems[mb_k][dep_ky]["mi_text"] =\
-                        APD.F_SANS_SM.render(self.mitems[mb_k][dep_ky]["name"],
-                                             True, CLR.CP_GRAY,
-                                             CLR.CP_GRAY_DARK)
+                    self.mitems[mb_k][dep_ky]["mi_text"] = APD.F_SANS_SM.render(
+                        self.mitems[mb_k][dep_ky]["name"],
+                        True,
+                        CLR.CP_GRAY,
+                        CLR.CP_GRAY_DARK,
+                    )
             if "enable" in list(self.mitems[mb_k][mi_ky].keys()):
                 for dep_ky in self.mitems[mb_k][mi_ky]["enable"]:
                     self.mitems[mb_k][dep_ky]["enabled"] = True
-                    self.mitems[mb_k][dep_ky]["mi_text"] =\
-                        APD.F_SANS_SM.render(self.mitems[mb_k][dep_ky]["name"],
-                                             True, CLR.CP_BLUEPOWDER,
-                                             CLR.CP_GRAY_DARK)
+                    self.mitems[mb_k][dep_ky]["mi_text"] = APD.F_SANS_SM.render(
+                        self.mitems[mb_k][dep_ky]["name"],
+                        True,
+                        CLR.CP_BLUEPOWDER,
+                        CLR.CP_GRAY_DARK,
+                    )
 
 
 class HtmlDisplay(object):
@@ -371,33 +384,34 @@ class HtmlDisplay(object):
     """
 
     def __init__(self):
-        """ Initialize Html Display.
-        """
-        link_recs = DB.execute_select_all('LINKS')
-        for l_ix, link_id in enumerate(link_recs['link_id']):
-            PG.LINKS[link_id] =\
-                {'name': link_recs['link_name'][l_ix],
-                 'url': link_recs['link_protocol'][l_ix] +
-                 '://' + link_recs['link_value'][l_ix]}
+        """Initialize Html Display."""
+        link_recs = DB.execute_select_all("LINKS")
+        for l_ix, link_id in enumerate(link_recs["link_id"]):
+            PG.LINKS[link_id] = {
+                "name": link_recs["link_name"][l_ix],
+                "url": link_recs["link_protocol"][l_ix]
+                + "://"
+                + link_recs["link_value"][l_ix],
+            }
 
-    def draw(self,
-             p_link_id: str):
-        """ Open web browser to display HTML resource.
+    def draw(self, p_link_id: str):
+        """Open web browser to display HTML resource.
         It opens subsequent items in the same browser window,
         in new tabs on my setup (Linux Ubuntu, Firefox browser)
         May behave differently on other systems.
 
         Args: (str) ID for link to display
         """
-        webbrowser.open(PG.LINKS[p_link_id]['url'])
+        webbrowser.open(PG.LINKS[p_link_id]["url"])
 
 
 class InfoBar(object):
     """Info Bar object.  Deafault text is system info.
     Show status text if it is turned on.
     """
+
     def __init__(self):
-        """ Initialize Info Bar.
+        """Initialize Info Bar.
         @DEV
         - Instead of hardcoding ibar_x and ibar_y, compute them
           based on FRM dimeensions.
@@ -408,33 +422,39 @@ class InfoBar(object):
             "frame_cnt": 0,
             "mouse_loc": (0, 0),
             "grid_loc": "",
-            "content": ['', ''],
+            "content": ["", ""],
             "txt": [None, None],
-            "if_box": [None, None]}
-        line = (f"Platform: {platform.platform()}" +
-                f"  |  Python: {platform.python_version()}" +
-                f"  |  Pygame: {pg.version.ver}")
-        PG.INFO['content'][0] = line
-        PG.INFO['txt'][0] = (APD.F_SANS_SM.render(
-            PG.INFO['content'][0], True, CLR.CP_BLUEPOWDER, CLR.CP_BLACK))
-        PG.INFO['if_box'][0] = PG.INFO['txt'][0].get_rect()
-        PG.INFO['if_box'][0].x = 60
-        PG.INFO['if_box'][0].y = PG.FRM['frame_h'] - 120
+            "if_box": [None, None],
+        }
+        line = (
+            f"Platform: {platform.platform()}"
+            + f"  |  Python: {platform.python_version()}"
+            + f"  |  Pygame: {pg.version.ver}"
+        )
+        PG.INFO["content"][0] = line
+        PG.INFO["txt"][0] = APD.F_SANS_SM.render(
+            PG.INFO["content"][0], True, CLR.CP_BLUEPOWDER, CLR.CP_BLACK
+        )
+        PG.INFO["if_box"][0] = PG.INFO["txt"][0].get_rect()
+        PG.INFO["if_box"][0].x = 60
+        PG.INFO["if_box"][0].y = PG.FRM["frame_h"] - 120
 
     def draw_info_bar(self):
-        """ Set Info Bar rendering and draw it.
-        """
-        line = (f"Frame: {PG.INFO['frame_cnt']}" +
-                f"  |  Mouse: {PG.INFO['mouse_loc']}" +
-                f"  |  Grid: {PG.INFO['grid_loc']}")
-        PG.INFO['content'][1] = line
-        PG.INFO['txt'][1] = (APD.F_SANS_SM.render(
-            PG.INFO['content'][1], True, CLR.CP_BLUEPOWDER, CLR.CP_BLACK))
-        PG.INFO['if_box'][1] = PG.INFO['txt'][1].get_rect()
-        PG.INFO['if_box'][1].x = 60
-        PG.INFO['if_box'][1].y = PG.INFO['if_box'][0].bottom + 6
+        """Set Info Bar rendering and draw it."""
+        line = (
+            f"Frame: {PG.INFO['frame_cnt']}"
+            + f"  |  Mouse: {PG.INFO['mouse_loc']}"
+            + f"  |  Grid: {PG.INFO['grid_loc']}"
+        )
+        PG.INFO["content"][1] = line
+        PG.INFO["txt"][1] = APD.F_SANS_SM.render(
+            PG.INFO["content"][1], True, CLR.CP_BLUEPOWDER, CLR.CP_BLACK
+        )
+        PG.INFO["if_box"][1] = PG.INFO["txt"][1].get_rect()
+        PG.INFO["if_box"][1].x = 60
+        PG.INFO["if_box"][1].y = PG.INFO["if_box"][0].bottom + 6
         for i in (0, 1):
-            APD.WIN.blit(PG.INFO['txt'][i], PG.INFO['if_box'][i])
+            APD.WIN.blit(PG.INFO["txt"][i], PG.INFO["if_box"][i])
 
 
 class Windows(object):
@@ -442,8 +462,9 @@ class Windows(object):
     - Console window
     - Map window
     """
+
     def __init__(self):
-        """ Initialize Windows."""
+        """Initialize Windows."""
         self.set_window_dims()
         self.draw_windows()
 
@@ -456,24 +477,24 @@ class Windows(object):
         - Consider using config to identify relative
           size and location of windows
         """
+
         def compute_wbox():
             """Compute window content ('wbox') size and location"""
-            y = PG.MENUS[list(PG.MENUS.keys())[0]]['mb_box'].bottom + 120
-            h = PG.INFO['if_box'][0].top - y - 60
-            if win_id == 'gamemap':
+            y = PG.MENUS[list(PG.MENUS.keys())[0]]["mb_box"].bottom + 120
+            h = PG.INFO["if_box"][0].top - y - 60
+            if win_id == "gamemap":
                 w = (APD.WIN_W * 0.70) + (2 * w_v["win_margin"])
-                x = PG.MENUS[list(PG.MENUS.keys())[0]]['mb_box'].left
-            elif win_id == 'console':
+                x = PG.MENUS[list(PG.MENUS.keys())[0]]["mb_box"].left
+            elif win_id == "console":
                 w = (APD.WIN_W * 0.25) + (2 * w_v["win_margin"])
                 x = APD.WIN_W - w - (2 * w_v["win_margin"])
             PG.WINDOWS[win_id]["w_box"] = pg.Rect(x, y, w, h)
 
         def compute_tbox():
             """Compute window title box ('tbox') size and location"""
-            PG.WINDOWS[win_id]["txt"] =\
-                APD.F_SANS_SM.render(
-                    PG.WINDOWS[win_id]['title'],
-                    True, CLR.CP_BLUEPOWDER, CLR.CP_GRAY_DARK)
+            PG.WINDOWS[win_id]["txt"] = APD.F_SANS_SM.render(
+                PG.WINDOWS[win_id]["title"], True, CLR.CP_BLUEPOWDER, CLR.CP_GRAY_DARK
+            )
             tbox = PG.WINDOWS[win_id]["txt"].get_rect()
             tbox = pg.Rect(tbox)
             tbox.center = PG.WINDOWS[win_id]["w_box"].center
@@ -482,18 +503,22 @@ class Windows(object):
             PG.WINDOWS[win_id]["t_box"] = tbox
 
         win_recs = GD.get_by_id(
-            'WINDOWS', 'frame_uid_fk',
-            PG.FRM['frame_uid_pk'], DB_CFG,
-            p_first_only=False)
+            "WINDOWS",
+            "frame_uid_fk",
+            PG.FRM["frame_uid_pk"],
+            DB_CFG,
+            p_first_only=False,
+        )
         for w_v in win_recs:
             win_id = w_v["win_id"]
-            PG.WINDOWS[win_id] =\
-                {"uid": w_v["win_uid_pk"],
-                 "title": w_v["win_title"],
-                 "title_txt": w_v["win_title"],
-                 "margin": w_v["win_margin"],
-                 'w_box': None,
-                 't_box': None}
+            PG.WINDOWS[win_id] = {
+                "uid": w_v["win_uid_pk"],
+                "title": w_v["win_title"],
+                "title_txt": w_v["win_title"],
+                "margin": w_v["win_margin"],
+                "w_box": None,
+                "t_box": None,
+            }
             compute_wbox()
             compute_tbox()
 
@@ -502,8 +527,7 @@ class Windows(object):
         Next: also draw the window title.
         """
         for win_id, w_v in PG.WINDOWS.items():
-            pg.draw.rect(APD.WIN, CLR.CP_GRAY_DARK,
-                         w_v["w_box"], 6)
+            pg.draw.rect(APD.WIN, CLR.CP_GRAY_DARK, w_v["w_box"], 6)
             APD.WIN.blit(w_v["txt"], w_v["t_box"])
 
 
@@ -513,6 +537,7 @@ class SaveGameData(object):
     Replace this with writes/updates to the Database, most likely
     via calls to data_set.py mondule
     """
+
     def __init__(self):
         """Initialize the SaveGameData object.
         It will be instantiated as SGDT, a global object.
@@ -545,12 +570,12 @@ class Stage(object):
          have buttons to select what info to display/overlay.
     - Eventually layer on classes for ACTOR, SCENE and PROP.
     """
+
     def __init__(self):
         """Create STG object."""
         pass
 
-    def set_map(self,
-                p_map_name: str = "Saskan Lands Regions"):
+    def set_map(self, p_map_name: str = "Saskan Lands Regions"):
         """
         - Get requested MAP record(s) from the DB.
         - Store in MAPS
@@ -568,61 +593,63 @@ class Stage(object):
         if p_map_name not in list(PG.MAPS.keys()):
             self.get_2d_map_data(p_map_name)
             self.get_2d_grid_data(p_map_name)
-            PG.GRIDS = GAMEMAP.create_gamemap(
-                PG.WINDOWS, PG.MAPS, PG.GRIDS)
+            PG.GRIDS = GAMEMAP.create_gamemap(PG.WINDOWS, PG.MAPS, PG.GRIDS)
             # pp((PG.WINDOWS, PG.GRIDS))
         else:
             print("MAP and GRID data already loaded for", p_map_name)
 
-    def get_2d_map_data(self,
-                        p_map_name):
-        """Retrieve MAP data from data base for specified name.
-        """
-        map_rec = GD.get_by_id(
-            'MAP', 'map_name', 'Saskan Lands Regions', DB_CFG)
+    def get_2d_map_data(self, p_map_name):
+        """Retrieve MAP data from data base for specified name."""
+        map_rec = GD.get_by_id("MAP", "map_name", "Saskan Lands Regions", DB_CFG)
         grid_x_map_recs = GD.get_by_id(
-            'GRID_X_MAP', 'map_uid_fk',
-            map_rec['map_uid_pk'], DB_CFG, p_first_only=False)
-        PG.MAPS =\
-            {map_rec['map_name']:
-                {'map_type': map_rec['map_type'],
-                 'map_uid': map_rec['map_uid_pk'],
-                 'units': map_rec['unit_of_measure'],
-                 'dg_lat_top_left': map_rec['origin_2d_lat'],
-                 'dg_lon_top_left': map_rec['origin_2d_lon'],
-                 'width_e_w': map_rec['width_e_w_2d'],
-                 'height_n_s': map_rec['height_n_s_2d'],
-                 'avg_alt_m': map_rec['avg_alt_m'],
-                 'min_alt_m': map_rec['min_alt_m'],
-                 'max_alt_m': map_rec['max_alt_m'],
-                 'grid_uids': [g['grid_uid_fk'] for g in grid_x_map_recs]}}
+            "GRID_X_MAP",
+            "map_uid_fk",
+            map_rec["map_uid_pk"],
+            DB_CFG,
+            p_first_only=False,
+        )
+        PG.MAPS = {
+            map_rec["map_name"]: {
+                "map_type": map_rec["map_type"],
+                "map_uid": map_rec["map_uid_pk"],
+                "units": map_rec["unit_of_measure"],
+                "dg_lat_top_left": map_rec["origin_2d_lat"],
+                "dg_lon_top_left": map_rec["origin_2d_lon"],
+                "width_e_w": map_rec["width_e_w_2d"],
+                "height_n_s": map_rec["height_n_s_2d"],
+                "avg_alt_m": map_rec["avg_alt_m"],
+                "min_alt_m": map_rec["min_alt_m"],
+                "max_alt_m": map_rec["max_alt_m"],
+                "grid_uids": [g["grid_uid_fk"] for g in grid_x_map_recs],
+            }
+        }
 
-    def get_2d_grid_data(self,
-                         p_map_name):
+    def get_2d_grid_data(self, p_map_name):
         """Retrieve GRID data from data base for all GRIDs associated
-           with specified MAP.
-           @DEV:
-           - Establish what grid is default or active
-           - Set up either recipes (defaults) or configs or options
-           - Let's try creating some prototype widgets that provide
-             choice of map and grid and eventually other overlays.
+        with specified MAP.
+        @DEV:
+        - Establish what grid is default or active
+        - Set up either recipes (defaults) or configs or options
+        - Let's try creating some prototype widgets that provide
+          choice of map and grid and eventually other overlays.
         """
         grid_recs: list = []
-        for grid_uid in PG.MAPS[p_map_name]['grid_uids']:
+        for grid_uid in PG.MAPS[p_map_name]["grid_uids"]:
             g_recs = GD.get_by_id(
-                'GRID', 'grid_uid_pk', grid_uid, DB_CFG,
-                p_first_only=False)
+                "GRID", "grid_uid_pk", grid_uid, DB_CFG, p_first_only=False
+            )
             [grid_recs.append(rec) for rec in g_recs]
-        PG.GRIDS =\
-            {g['grid_name']:
-                {'grid_uid': g['grid_uid_pk'],
-                 'map_NAME': p_map_name,
-                 'row_cnt': g['row_cnt'],
-                 'col_cnt': g['col_cnt']}
-                for g in grid_recs}
+        PG.GRIDS = {
+            g["grid_name"]: {
+                "grid_uid": g["grid_uid_pk"],
+                "map_NAME": p_map_name,
+                "row_cnt": g["row_cnt"],
+                "col_cnt": g["col_cnt"],
+            }
+            for g in grid_recs
+        }
 
-    def draw_gamemap(self,
-                     p_grid_name: str = None):
+    def draw_gamemap(self, p_grid_name: str = None):
         """Use modified PG.GRIDS data to draw the gamemap grid.
         Use PG.MAPS to layer information over the grid.
         Use whatever "story" related data to populate widgets and
@@ -631,19 +658,19 @@ class Stage(object):
         """
         p_grid_name = p_grid_name or list(PG.GRIDS.keys())[0]
         # Draw the grid.
-        for (p1, p2) in PG.GRIDS[p_grid_name]['h_lines']:
+        for p1, p2 in PG.GRIDS[p_grid_name]["h_lines"]:
             pg.draw.aaline(APD.WIN, CLR.CP_WHITE, p1, p2)
-        for (p1, p2) in PG.GRIDS[p_grid_name]['v_lines']:
+        for p1, p2 in PG.GRIDS[p_grid_name]["v_lines"]:
             pg.draw.aaline(APD.WIN, CLR.CP_WHITE, p1, p2)
         # Draw the reference numbers
-        for ck, cv in {c: v for c, v in PG.GRIDS[p_grid_name]['cells'].items()
-                       if v['is_ref']}.items():
-            txt = APD.F_SANS_SM.render(cv['txt'], True,
-                                       CLR.CP_BLACK, CLR.CP_WHITE)
+        for ck, cv in {
+            c: v for c, v in PG.GRIDS[p_grid_name]["cells"].items() if v["is_ref"]
+        }.items():
+            txt = APD.F_SANS_SM.render(cv["txt"], True, CLR.CP_BLACK, CLR.CP_WHITE)
             txt_box = txt.get_rect()
-            txt_box.center = cv['c_box'].center
-            if cv['fill']:
-                pg.draw.rect(APD.WIN, cv['fill_color'], cv['c_box'])
+            txt_box.center = cv["c_box"].center
+            if cv["fill"]:
+                pg.draw.rect(APD.WIN, cv["fill_color"], cv["c_box"])
             APD.WIN.blit(txt, txt_box)
 
     def draw_grid(self):
@@ -685,7 +712,7 @@ class Stage(object):
         """
         PG.INFO["grid_loc"] = None
         mouse_loc = PG.INFO["mouse_loc"]
-        for g_k, g_rec in PG.GRIDS['30r_40c']["cells"].items():
+        for g_k, g_rec in PG.GRIDS["30r_40c"]["cells"].items():
             if g_rec["c_box"].collidepoint(mouse_loc):
                 PG.INFO["grid_loc"] = g_k
                 pg.draw.rect(APD.WIN, CLR.CP_PALEPINK, g_rec["c_box"], 0)
@@ -699,6 +726,7 @@ class SaskanGame(object):
     """PyGame GUI for controlling Saskantinon game functions.
     Initiated and executed by __main__.
     """
+
     def __init__(self, *args, **kwargs):
         """
         All major classes are instantiated in the main module
@@ -713,25 +741,22 @@ class SaskanGame(object):
     # Core Events
     # ==============================================================
     def exit_appl(self):
-        """Exit the app cleanly.
-        """
+        """Exit the app cleanly."""
         pg.quit()
         sys.exit()
 
-    def check_exit_appl(self,
-                        event: pg.event.Event):
+    def check_exit_appl(self, event: pg.event.Event):
         """Handle exit via keyboard or screen-level exit modes:
         - Q key, ESC key, `X`ing the app screen.
         :args:
         - event: (pg.event.Event) event to handle
         """
-        if (event.type == pg.QUIT or
-                (event.type == pg.KEYUP and
-                    event.key in APD.KY_QUIT)):
+        if event.type == pg.QUIT or (
+            event.type == pg.KEYUP and event.key in APD.KY_QUIT
+        ):
             self.exit_appl()
 
-    def handle_menu_item_click(self,
-                               menu_k: tuple):
+    def handle_menu_item_click(self, menu_k: tuple):
         """Trigger an event based on menu item selection.
         :args:
         - menu_k: (tuple) menu bar and menu item keys
@@ -833,7 +858,7 @@ class SaskanGame(object):
 
                     MNU.click_mbar(pg.mouse.get_pos())
                     item_clicked = MNU.click_mitem(pg.mouse.get_pos())
-                    if item_clicked[1] != '':
+                    if item_clicked[1] != "":
                         self.handle_menu_item_click(item_clicked)
 
                     # Handle console/widget events
@@ -847,7 +872,7 @@ class SaskanGame(object):
             self.refresh_screen()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     """Cache data and resources in memory and launch the app."""
 
     # Classes used to manage the game

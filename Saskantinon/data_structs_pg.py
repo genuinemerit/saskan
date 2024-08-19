@@ -7,13 +7,13 @@ Define static constants and non-DB data structures
  which use pygame for rendering.
 """
 
-from pprint import pformat as pf    # noqa: F401
-from pprint import pprint as pp     # noqa: F401
-
-from data_structs import ImageType
+from pprint import pformat as pf  # noqa: F401
+from pprint import pprint as pp  # noqa: F401
 
 import pygame as pg
-pg.init()          # Init PyGame for use in this module
+from data_structs import ImageType
+
+pg.init()  # Init PyGame for use in this module
 
 
 #  UNIQUE CONSTANTS / "TRUE" ENUMS
@@ -23,6 +23,7 @@ class PygColors(object):
     Reference class attributes directly.
     No need to instantiate this class.
     """
+
     # PyGame Colors
     CP_BLACK = pg.Color(0, 0, 0)
     CP_BLUE = pg.Color(0, 0, 255)
@@ -41,12 +42,13 @@ class AppDisplay(object):
     Object place-holdrss used for rendering.
     As long as pg.display is not called, nothing will be rendered.
     """
+
     # Typesetting
     # -------------------
     DASH16: str = "-" * 16
-    FONT_FXD = 'Courier 10 Pitch'
+    FONT_FXD = "Courier 10 Pitch"
     FONT_MED_SZ = 30
-    FONT_SANS = 'DejaVu Sans'
+    FONT_SANS = "DejaVu Sans"
     FONT_SM_SZ = 24
     FONT_TINY_SZ = 12
     LG_FONT_SZ = 36
@@ -71,7 +73,7 @@ class AppDisplay(object):
     KY_DATA = (pg.K_a, pg.K_l)
     KY_RPT_TYPE = (pg.K_KP1, pg.K_KP2, pg.K_KP3)
     KY_RPT_MODE = (pg.K_UP, pg.K_RIGHT, pg.K_LEFT)
-    KEYMOD_NONE = 4096   # No modifier key pressed
+    KEYMOD_NONE = 4096  # No modifier key pressed
     # Window and Clock objects
     # ---------------------------
     WIN_W = 0.0
@@ -84,10 +86,12 @@ class AppDisplay(object):
 #  SIMPLE DATA STRUCTURES
 # ============================
 
+
 class Graphic(object):
     """An object for referencing an image file."""
+
     pg_surface: pg.Surface
     pg_rect: pg.Rect
     img_type: ImageType
-    img_url: str = ''
-    img_desc: str = ''
+    img_url: str = ""
+    img_desc: str = ""

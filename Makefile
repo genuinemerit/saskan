@@ -49,26 +49,27 @@ BROWSER := python -c "$$BROWSER_PYSCRIPT"
 ## TARGETS
 ## ========================
 help:
-    @echo "Available targets:"
-    @echo "  help           Get help on make targets"
-    @echo "  lint           Run linting tools on all"
-    @echo "  lint-saskantinon	Run linting tools"
-    @echo "  lint-saskantinize	Run linting tools"
-    @echo "  coverage       Run test coverage tool"
-    @echo "  test           Run all tests"
-    @echo "  test_saskantinon	Run unit tests"
-    @echo "  test_saskantinize  Run unit tests"
-    @echo "  build         	Build the project"
-    @echo "  install       	Install the project"
-    @echo "  dist       	Package and upload a release"
-    @echo "  docs          	Generate documentation"
-    @echo "  clean    	    Clean all"
-    @echo "  clean-build   	Clean up build artifacts"
-    @echo "  clean-pyc    	Clean up pyc files"
-    @echo "  clean-test  	Clean up test artifacts"
-    @echo ""
-    @echo "Usage: make <target>"
-    @echo ""
+	@echo "Available targets:"
+	@echo "  help           		Get help on make targets"
+	@echo "  lint           		Run linting tools on all"
+	@echo "  lint-saskantinon		Run app linting tools"
+	@echo "  lint-saskantinize		Run app linting tools"
+	@echo "  coverage       		Run test coverage tool"
+	@echo "  test           		Run all tests"
+	@echo "  test_saskantinon		Run app unit tests"
+	@echo "  test_saskantinize  		Run app unit tests"
+	@echo "  docs          		Generate documentation"
+	@echo "  install        	Install all"
+	@echo "  install_saskantinon    	Install the app"
+	@echo "  install_saskantinize		Install the app"
+	@echo "  dist       			Package and upload a release to PyPI"
+	@echo "  clean    	    		Clean all"
+	@echo "  clean-build   		Clean up build artifacts"
+	@echo "  clean-pyc    			Clean up pyc files"
+	@echo "  clean-test  			Clean up test artifacts"
+	@echo ""
+	@echo "Usage: make <target>"
+	@echo ""
 
 # Run tests quickly with the default Python.
 # May need to tweak this to run the tests for each
@@ -80,17 +81,6 @@ test_saskantinon:
 test_saskantinize:
 	python -m pytest
 
-build:
-    @echo "Building Saskantinon and Saskantinize..."
-	python setup.py sdist bdist_wheel
-
-install:
-    @echo "Installing Saskantinon and Saskantinize..."
-    python3 -m venv venv
-    . venv/bin/activate; \
-    pip install --upgrade pip setuptools wheel; \
-    pip install .
-
 # Run all of the clean-ups
 # cleans remove temporary files created by the other processes.
 # For example, the __pycache__ directory and the .pyc files or
@@ -99,8 +89,8 @@ install:
 clean: clean-build clean-test clean-install
 
 clean-build:
-    @echo "Cleaning up temp files from build..."
-    rm -rf venv
+	@echo "Cleaning up temp files from build..."
+	rm -rf venv
 	rm -fr build/
 	rm -fr dist/
 	rm -fr .eggs/
@@ -108,7 +98,7 @@ clean-build:
 	find . -name '*.egg' -exec rm -f {} +
 
 clean-pyc:
-    @echo "Cleaning up pyc files from build..."
+	@echo "Cleaning up pyc files from build..."
 	find . -name '*.pyc' -exec rm -f {} +
 	find . -name '*.pyo' -exec rm -f {} +
 	find . -name '*~' -exec rm -f {} +
@@ -117,7 +107,7 @@ clean-pyc:
 	rm -rf log/
 
 clean-test:
-    @echo "Cleaning up temp files from test..."
+	@echo "Cleaning up temp files from test..."
 	rm -f .coverage
 	rm -fr htmlcov/
 	rm -fr .pytest_cache
@@ -141,27 +131,39 @@ servedocs: docs ## compile the docs watching for changes
 ## Standard non-file action tools/targets
 ## ========================================
 
-# check style, etc.
-# It may be useful to break out separate tests and
-# examples for the two apps. Or figure out a way
-# to separate them within the tests and examples
-# directories.
-# The `examples` is a place to provide examples of
+# Linters, etc.
+# The `- method <params> || true` syntax continuing even if
+#  the linter returns an error.
+# N.B. isort and black modify the source code.\
+#  use --check on black to just see list of candidates
+#  use --diff on black to see what would be changed
+# - black -t py312 --check Saskantinon || true
+# black -t py312 --diff Saskantinon
+# N.B. flake8 does everything pycodestyle does and more,
+#  no need to run both of them
+# - flake8 Saskantinon || true
+# N.B. mypy throws tons of errors if strict typing is
+#  not adhered too. I find this to be too much of good
+#  thing so am not using it.
+# N.B. `examples` is a place to provide examples of
 # how things are to be done, going beyond the scope
 # of unit and integration tests. These can be on the
 # order of tutorials or just examples to developers
 # or admins.
 lint: lint-saskantinon lint-saskantinize
 
+# This is set up to check only, not fix (other than isort)
+# May want to provide a "fix it" version also
 lint-saskantinon:
-	isort Saskantinon examples tests
-	black Saskantinon examples tests
-	flake8 Saskantinon examples tests
+	isort Saskantinon examples_saskantinon tests_saskantinon
+	black -t py312 Saskantinon
+	flake8 Saskantinon
 
 lint-saskantinize:
-	isort Saskantinize examples tests
-	black Saskantinize examples tests
-	flake8 Saskantinize examples tests
+	isort Saskantinize examples_saskantinize tests_saskantinize
+	black Saskantinize examples_saskantinize tests_saskantinize
+	flake8 Saskantinize examples_saskantinize tests_saskantinize
+	black Saskantinize examples_saskantinize tests_saskantinize
 
 # check code coverage
 # Probably need to play around with this to make
@@ -174,3 +176,50 @@ coverage: lint
 	coverage html
 	$(BROWSER) htmlcov/index.html
 
+
+## builds source and wheel package
+# does this do anything with github? I think not.
+# This is literally the build of the ptyhon package
+# Prior to this, maybe we want the makefile to also
+# do something with github actions? For example,
+# make sure we have done a build from develop --> main,
+# that tests have passed, that history has been updated
+# and so on?
+dist: clean
+	python setup.py sdist
+	python setup.py bdist_wheel
+	ls -l dist
+
+## package and upload a release
+# Need to look into what twine does
+# twine is a utility for publishing to PyPI
+release: dist
+	twine upload dist/*
+
+## install the package to the active Python's site-packages
+# I think the idea here is that we are now pulling the
+# package from PyPi and installing it just like any user.
+# Not entirely sure that this is the right way to do this.
+# May need to always install both apps.
+# Not sure about use of a venv here.
+# Need to consider best way to handle construction
+#  of database and storage of other files for the app,
+#  such as images, sound files, html files, etc.
+install: install-saskantinon install-saskantinize
+
+install-saskantinon: clean
+	@echo "Installing Saskantinon..."
+	python3 -m venv venv
+	. venv/bin/activate; \
+	pip install --upgrade pip setuptools wheel; \
+	pip install .
+	python Saskantinon/install_saskantinon.py
+	python Saskantinize/install_saskantinize.py
+
+install-saskantinize: clean
+	@echo "Installing Saskantinize..."
+	python3 -m venv venv
+	. venv/bin/activate; \
+	pip install --upgrade pip setuptools wheel; \
+	pip install .
+	python Saskantinize/install_saskantinize.py

@@ -7,37 +7,33 @@ class:     FileMethods/0
 author:    GM <genuinemerit @ pm.me>
 """
 import json
-import pandas as pd
+
 # trunk-ignore(bandit/B403)
 import pickle
 import shutil
-
-from numbers_parser import Document as NumbersDoc
 from os import remove, symlink, system
 from pathlib import Path
 from pprint import pprint as pp  # noqa: F401
 
+import pandas as pd
 from method_shell import ShellMethods
+from numbers_parser import Document as NumbersDoc
 
 SM = ShellMethods()
 
 
 class FileMethods(object):
-    """File IO utilities.
-    """
+    """File IO utilities."""
 
     def __init__(self):
-        """Initialize FileIO object.
-        """
+        """Initialize FileIO object."""
         pass
 
     # Read methods
     # ==============================================================
 
     @classmethod
-    def scan_dir(cls,
-                 p_dir_path: str,
-                 p_file_pattern: str = '') -> list:
+    def scan_dir(cls, p_dir_path: str, p_file_pattern: str = "") -> list:
         """Scan a directory for files matching a specific pattern.
 
         Args:
@@ -49,21 +45,19 @@ class FileMethods(object):
         Returns:
             list: List of file paths matching the pattern.
         """
-        srch = p_file_pattern.split('*')
+        srch = p_file_pattern.split("*")
         files: list = []
         try:
             if Path(p_dir_path).exists() and Path(p_dir_path).is_dir():
                 files = [f for f in Path(p_dir_path).iterdir()]
-                if p_file_pattern != '':
-                    files = [f for f in files
-                             if all(s in f.name for s in srch)]
+                if p_file_pattern != "":
+                    files = [f for f in files if all(s in f.name for s in srch)]
         except Exception as err:
             raise (err)
         return files
 
     @classmethod
-    def get_file(cls,
-                 p_path: str) -> str:
+    def get_file(cls, p_path: str) -> str:
         """Read in an entire file and return its contents.
         We assume that this file type is text (string or bytes).
 
@@ -72,7 +66,7 @@ class FileMethods(object):
         Return
             File content (Text))
         """
-        content: str = ''
+        content: str = ""
         try:
             if Path(p_path).exists():
                 with open(p_path, "r") as f:
@@ -83,9 +77,7 @@ class FileMethods(object):
             raise (err)
 
     @classmethod
-    def get_numbers_data(cls,
-                         p_file_path: str,
-                         p_sheet_x: int = 0) -> pd.DataFrame:
+    def get_numbers_data(cls, p_file_path: str, p_sheet_x: int = 0) -> pd.DataFrame:
         """Read data from Numbers (MacOS) spreadsheet tab
         and return as a DataFrame.
 
@@ -105,9 +97,7 @@ class FileMethods(object):
         dataf = pd.DataFrame(data[1:], columns=data[0])
         return dataf
 
-    def get_spreadsheet_data(self,
-                             p_file_path: str,
-                             p_sheet: str = '') -> pd.DataFrame:
+    def get_spreadsheet_data(self, p_file_path: str, p_sheet: str = "") -> pd.DataFrame:
         """Get data from Excel, ODF, CSV (tab), or MacOS Numbers spreadsheet.
         Preference is for CSV files.
 
@@ -119,17 +109,15 @@ class FileMethods(object):
         - (DataFrame): DataFrame of the sheet.
         """
         dataf = pd.DataFrame()
-        ss_type = p_file_path.split('.')[-1].lower()
-        sheet_nm = None if p_sheet == '' else p_sheet
-        if ss_type.lower() in ('xlsx', 'xls'):
-            data = pd.read_excel(p_file_path,
-                                 sheet_name=sheet_nm)
-        elif ss_type.lower() in ('ods'):
-            data = pd.read_excel(p_file_path, engine='odf',
-                                 sheet_name=sheet_nm)
-        elif ss_type.lower() in ('csv'):
+        ss_type = p_file_path.split(".")[-1].lower()
+        sheet_nm = None if p_sheet == "" else p_sheet
+        if ss_type.lower() in ("xlsx", "xls"):
+            data = pd.read_excel(p_file_path, sheet_name=sheet_nm)
+        elif ss_type.lower() in ("ods"):
+            data = pd.read_excel(p_file_path, engine="odf", sheet_name=sheet_nm)
+        elif ss_type.lower() in ("csv"):
             data = pd.read_csv(p_file_path)
-        elif ss_type.lower() in ('numbers'):
+        elif ss_type.lower() in ("numbers"):
             data = self.get_numbers_data(p_file_path, int(p_sheet))
         else:
             raise ValueError(f"{self.A['M']['file']}: {p_file_path}")
@@ -138,8 +126,7 @@ class FileMethods(object):
         return dataf
 
     @classmethod
-    def is_file_or_dir(cls,
-                       p_path: str) -> bool:
+    def is_file_or_dir(cls, p_path: str) -> bool:
         """Check if file or directory exists.
         Args:
             p_path (str): Legit path to file or dir location.
@@ -152,8 +139,7 @@ class FileMethods(object):
             return False
 
     @classmethod
-    def get_json_file(cls,
-                      p_path: str):
+    def get_json_file(cls, p_path: str):
         """Read in an entire JSON file and return its contents as dict.
 
         Args:
@@ -169,8 +155,7 @@ class FileMethods(object):
             raise (err)
 
     @classmethod
-    def unpickle_object(cls,
-                        p_path: str):
+    def unpickle_object(cls, p_path: str):
         """Unpickle an object.
         Args:
             p_path: Legit path to pickled object location.
@@ -219,9 +204,7 @@ class FileMethods(object):
             raise (err)
 
     @classmethod
-    def copy_one_file(cls,
-                      p_path_from: str,
-                      p_path_to: str):
+    def copy_one_file(cls, p_path_from: str, p_path_to: str):
         """Copy one file from source to target.
 
         Args:
@@ -234,9 +217,7 @@ class FileMethods(object):
             raise (err)
 
     @classmethod
-    def copy_all_files(cls,
-                       p_path_from: str,
-                       p_path_to: str):
+    def copy_all_files(cls, p_path_from: str, p_path_to: str):
         """Copy all files in dir from source to target.
 
         Args:
@@ -252,9 +233,7 @@ class FileMethods(object):
             raise (err)
 
     @classmethod
-    def make_link(cls,
-                  p_link_from: str,
-                  p_link_to: str):
+    def make_link(cls, p_link_from: str, p_link_to: str):
         """Make a symbolic link from the designated file
            at the requested destination.
 
@@ -268,9 +247,7 @@ class FileMethods(object):
             raise (err)
 
     @classmethod
-    def append_file(cls,
-                    p_path: str,
-                    p_text: str):
+    def append_file(cls, p_path: str, p_text: str):
         """Append text to specified text file.
 
         Create file if it does not already exist.
@@ -288,10 +265,7 @@ class FileMethods(object):
             raise (err)
 
     @classmethod
-    def write_file(cls,
-                   p_path: str,
-                   p_data,
-                   p_file_type: str = "w+"):
+    def write_file(cls, p_path: str, p_data, p_file_type: str = "w+"):
         """Write or overwrite data to specified file.
         Create file if it does not already exist.
 
@@ -308,9 +282,7 @@ class FileMethods(object):
             raise (err)
 
     @classmethod
-    def write_df_to_csv(cls,
-                        p_df: pd.DataFrame,
-                        p_csv_path: str):
+    def write_df_to_csv(cls, p_df: pd.DataFrame, p_csv_path: str):
         """Save dataframe as CSV.
 
         :args:
@@ -320,9 +292,7 @@ class FileMethods(object):
         p_df.to_csv(p_csv_path, index=False)
 
     @classmethod
-    def pickle_object(cls,
-                      p_path: str,
-                      p_obj):
+    def pickle_object(cls, p_path: str, p_obj):
         """Pickle an object.
 
         Args:
@@ -385,8 +355,7 @@ class FileMethods(object):
     # ==============================================================
 
     @classmethod
-    def get_df_col_names(cls,
-                         p_df: pd.DataFrame) -> list:
+    def get_df_col_names(cls, p_df: pd.DataFrame) -> list:
         """Get list of column names from a dataframe.
         :args:
         - p_df (DataFrame): pandas dataframe to analyze
@@ -394,9 +363,7 @@ class FileMethods(object):
         return list(p_df.columns.values)
 
     @classmethod
-    def get_df_col_unique_vals(cls,
-                               p_col: str,
-                               p_df: pd.DataFrame) -> list:
+    def get_df_col_unique_vals(cls, p_col: str, p_df: pd.DataFrame) -> list:
         """For a dataframe column, return list of unique values.
         :args:
         - col_nm (str): Column name to get unique values for
@@ -406,7 +373,7 @@ class FileMethods(object):
         """
         u_vals = pd.DataFrame()
         u_vals = p_df.dropna(subset=[p_col])
-        u_vals = u_vals.drop_duplicates(subset=[p_col], keep='first')
+        u_vals = u_vals.drop_duplicates(subset=[p_col], keep="first")
         vals: list = []
         if len(u_vals) > 1:
             vals = u_vals[p_col].values.tolist()
@@ -414,8 +381,7 @@ class FileMethods(object):
         return vals
 
     @classmethod
-    def get_df_metadata(cls,
-                        p_df: pd.DataFrame) -> dict:
+    def get_df_metadata(cls, p_df: pd.DataFrame) -> dict:
         """Get metadata from a dataframe:
         - Count of rows in dataframe.
         - Column names.
@@ -427,18 +393,15 @@ class FileMethods(object):
         - (list): Unique values in column(s) or None
         """
         df = p_df.copy()
-        df_meta = {'row_cnt': 0,
-                   'columns': {}}
-        df_meta['row_count'] = len(df.index)
+        df_meta = {"row_cnt": 0, "columns": {}}
+        df_meta["row_count"] = len(df.index)
         cols = cls.get_df_col_names(df)
         for col_nm in cols:
-            df_meta['columns'][col_nm] = cls.get_df_col_unique_vals(col_nm, df)
+            df_meta["columns"][col_nm] = cls.get_df_col_unique_vals(col_nm, df)
         return df_meta
 
     @classmethod
-    def diff_files(cls,
-                   p_file_a: str,
-                   p_file_b: str) -> str:
+    def diff_files(cls, p_file_a: str, p_file_b: str) -> str:
         """Diff two files and return the result.
         :args:
         - p_file_a (str): full path to file A

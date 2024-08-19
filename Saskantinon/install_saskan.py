@@ -11,7 +11,7 @@ From local git repo, Saskantinon directory:
 
 @DEV:
 - Refactor to install only 'saskan' components
-- Install 'admin'/'saskan_eyes' separately, but like
+- Install 'saskantinize' separately, but like
   it is a plug-in, sort of, for saskan. In other words,
   they can use the same directories and database, but
   have different configs, data records, GUI components,
@@ -19,20 +19,21 @@ From local git repo, Saskantinon directory:
 - If/when I get back to the service architecture...
 - Prototype/test using haproxy to load balance servers.
 - Simplify the proliferation of ports. I shouldn't need so many.
+- Execute this is as part of install in Makefile:
+  `make install_saskantinon`
 """
 import json
-
 from os import path
 from pprint import pprint as pp  # noqa: F401
 
-from method_configs import ConfigMethods
-from method_shell import ShellMethods
-from method_files import FileMethods
-from data_get import GetData
-from data_set import SetData
 from data_base import DataBase
+from data_get import GetData
 from data_model_app import AppConfig
 from data_model_tool import InitGameDB
+from data_set import SetData
+from method_configs import ConfigMethods
+from method_files import FileMethods
+from method_shell import ShellMethods
 
 AC = AppConfig()
 CM = ConfigMethods()
@@ -85,7 +86,7 @@ class SaskanInstall(object):
 
         # Database Set-up
         # Apps GUI data
-        frame_id = 'saskan'
+        frame_id = "saskan"
         SD.set_frames(frame_id, self.BOOT, self.DB_CFG)
         SD.set_menu_bars(frame_id, self.BOOT, self.DB_CFG)
         SD.set_menus(frame_id, self.BOOT, self.DB_CFG)
@@ -108,7 +109,8 @@ class SaskanInstall(object):
             "git_source": "/home/dave/Dropbox/GitHub/saskan-app/Saskantinon",
             "language": "en",
             "main_db": "SASKAN.db",
-            "bkup_db": "SASKAN.bak"}
+            "bkup_db": "SASKAN.bak",
+        }
         boot_j = json.dumps(boot_data)
         app_d = path.join(SM.get_cwd_home(), boot_data["app_dir"])
         config_d = path.join(app_d, "config")
@@ -146,6 +148,7 @@ class SaskanInstall(object):
         """Create remaining app directories.
         In case they already exist, clean them out.
         """
+
         def _wipe_and_remove():
             a_files = FM.scan_dir(app_dir)
             if a_files is not None:
@@ -159,10 +162,13 @@ class SaskanInstall(object):
                 if not ok:
                     raise Exception(f"{txt} {result}")
 
-        a_dirs = [d for d in list(AC.to_dict()['APP_CONFIG'].keys())
-                  if '_dir' in d and d not in ['mem_dir', 'root_dir']]
+        a_dirs = [
+            d
+            for d in list(AC.to_dict()["APP_CONFIG"].keys())
+            if "_dir" in d and d not in ["mem_dir", "root_dir"]
+        ]
         for d in a_dirs:
-            app_dir = path.join(self.DIR['root_dir'], self.DIR[d])
+            app_dir = path.join(self.DIR["root_dir"], self.DIR[d])
             _wipe_and_remove()
             FM.make_dir(app_dir)
             FM.make_executable(app_dir)
@@ -174,6 +180,7 @@ class SaskanInstall(object):
         """Copy app files to app directory.
         For python files, don't copy the install modules.
         """
+
         def _copy_files():
             files = FM.scan_dir(git_dir)
             if files is not None:
@@ -183,33 +190,28 @@ class SaskanInstall(object):
         def _copy_python_files():
             files = FM.scan_dir(git_dir)
             py_files = [
-                f for f in files if str(f).endswith(".py") and
-                "install" not in str(f)
+                f for f in files if str(f).endswith(".py") and "install" not in str(f)
             ]
             if py_files is not None:
                 for f in py_files:
                     FM.copy_one_file(f, app_dir)
 
-        git_dir = path.join(self.BOOT['git_source'], "html")
-        app_dir = path.join(self.DIR['root_dir'], self.DIR['html_dir'])
+        git_dir = path.join(self.BOOT["git_source"], "html")
+        app_dir = path.join(self.DIR["root_dir"], self.DIR["html_dir"])
         _copy_files()
-        git_dir = path.join(self.BOOT['git_source'], "images")
-        app_dir = path.join(self.DIR['root_dir'], self.DIR['img_dir'])
+        git_dir = path.join(self.BOOT["git_source"], "images")
+        app_dir = path.join(self.DIR["root_dir"], self.DIR["img_dir"])
         _copy_files()
-        git_dir = self.BOOT['git_source']
-        app_dir = path.join(self.DIR['root_dir'], self.DIR['py_dir'])
+        git_dir = self.BOOT["git_source"]
+        app_dir = path.join(self.DIR["root_dir"], self.DIR["py_dir"])
         _copy_python_files()
         print("* App files installed.")
 
-    def save_db_config(self,
-                       BOOT: dict,
-                       DB_CFG: dict):
+    def save_db_config(self, BOOT: dict, DB_CFG: dict):
         """Save database configuration to app config file."""
         db_cfg_j = json.dumps(DB_CFG)
-        cfg_d = path.join(
-            SM.get_cwd_home(), BOOT["app_dir"], "config")
-        FM.write_file(
-            path.join(cfg_d, "db_config.json"), db_cfg_j)
+        cfg_d = path.join(SM.get_cwd_home(), BOOT["app_dir"], "config")
+        FM.write_file(path.join(cfg_d, "db_config.json"), db_cfg_j)
         print("* DB config file created.")
 
 

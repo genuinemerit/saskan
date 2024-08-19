@@ -9,9 +9,8 @@ Saskan Data Management middleware.
 import json
 import random
 import string
-
-from pprint import pformat as pf    # noqa: F401
-from pprint import pprint as pp     # noqa: F401
+from pprint import pformat as pf  # noqa: F401
+from pprint import pprint as pp  # noqa: F401
 
 from data_structs import EntityType
 from method_files import FileMethods

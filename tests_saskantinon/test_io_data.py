@@ -1,6 +1,7 @@
-import unittest
-import pygame as pg
 import random
+import unittest
+
+import pygame as pg
 from data_model_world import Astro
 from data_structs_pg import CompareRect
 

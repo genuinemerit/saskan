@@ -7,12 +7,12 @@ Saskan Data Management middleware.
 """
 
 from os import path
-from pprint import pformat as pf    # noqa: F401
-from pprint import pprint as pp     # noqa: F401
+from pprint import pformat as pf  # noqa: F401
+from pprint import pprint as pp  # noqa: F401
 
 from data_base import DataBase
-from method_files import FileMethods    # type: ignore
-from method_shell import ShellMethods   # type: ignore
+from method_files import FileMethods  # type: ignore
+from method_shell import ShellMethods  # type: ignore
 
 FM = FileMethods()
 SM = ShellMethods()
@@ -27,6 +27,7 @@ class GetData(object):
     useful to either define views in SQLlite or to use
     this class to effectively create views.
     """
+
     def __init__(self):
         """
         Initialize a new instance of the GetData class.
@@ -39,16 +40,14 @@ class GetData(object):
         :returns:
         - DB_CFG: dict of database configuration data
         """
-        DB_CFG = FM.get_json_file(path.join(
-            SM.get_cwd_home(),
-            "saskan/config/db_config.json"))
+        DB_CFG = FM.get_json_file(
+            path.join(SM.get_cwd_home(), "saskan/config/db_config.json")
+        )
         return DB_CFG
 
-    def _get_by_value(self,
-                      p_table_nm: str,
-                      p_match: dict,
-                      DB_CFG: dict,
-                      p_first_only: bool = True):
+    def _get_by_value(
+        self, p_table_nm: str, p_match: dict, DB_CFG: dict, p_first_only: bool = True
+    ):
         """
         Get data from the DB table by one or two specific values.
         :args:
@@ -60,14 +59,14 @@ class GetData(object):
         - rows: list of non-ordered dicts of data from the table, or [],
           or just one non-ordered dict if p_first_only is True
         """
+
         def _match_one_value():
             rows = []
             data: dict = {}
             m_col = list(p_match.keys())[0]
             m_val = list(p_match.values())[0]
             if m_col in list(data_rows.keys()):
-                for row_num, col_val in\
-                  enumerate(data_rows[m_col]):
+                for row_num, col_val in enumerate(data_rows[m_col]):
                     if col_val == m_val:
                         for c_nm, c_val in data_rows.items():
                             data[c_nm] = c_val[row_num]
@@ -84,8 +83,10 @@ class GetData(object):
             data_k = list(data_rows.keys())
             if m_col[0] in data_k and m_col[1] in data_k:
                 for row_num in range(data_row_cnt):
-                    if data_rows[m_col[0]][row_num] == m_val[0] \
-                            and data_rows[m_col[1]][row_num] == m_val[1]:
+                    if (
+                        data_rows[m_col[0]][row_num] == m_val[0]
+                        and data_rows[m_col[1]][row_num] == m_val[1]
+                    ):
                         for c_nm, c_val in data_rows.items():
                             data[c_nm] = c_val[row_num]
                         rows.append(data)
@@ -93,8 +94,9 @@ class GetData(object):
             return rows
 
         from method_files import FileMethods
+
         FM = FileMethods()
-        if FM.is_file_or_dir(DB_CFG['main_db']):
+        if FM.is_file_or_dir(DB_CFG["main_db"]):
             DB = DataBase(DB_CFG)
             data_rows = DB.execute_select_all(p_table_nm)
             if len(p_match) == 1:
@@ -108,8 +110,7 @@ class GetData(object):
             rows = rows[0]
         return rows
 
-    def get_app_config(self,
-                       DB_CFG: dict):
+    def get_app_config(self, DB_CFG: dict):
         """
         Get data from the AppConfig table, filtering for
           record that contains desired version id. If DB
@@ -123,14 +124,11 @@ class GetData(object):
         - Eventually mod this into a generic 'get_by_version' method.
         """
         row = self._get_by_value(
-            'APP_CONFIG', {'version_id': DB_CFG['version']},
-            DB_CFG)
+            "APP_CONFIG", {"version_id": DB_CFG["version"]}, DB_CFG
+        )
         return row
 
-    def get_text(self,
-                 p_lang_code: str,
-                 p_text_name: str,
-                 DB_CFG: dict):
+    def get_text(self, p_lang_code: str, p_text_name: str, DB_CFG: dict):
         """
         Get data from the Texts table, filtering for
           text name and language code.
@@ -141,18 +139,19 @@ class GetData(object):
         :returns:
         - data: value of the 'text_value' column
         """
-        row = self._get_by_value('TEXTS',
-                                 {'lang_code': p_lang_code,
-                                  'text_name': p_text_name},
-                                 DB_CFG)
-        return row['text_value']
+        row = self._get_by_value(
+            "TEXTS", {"lang_code": p_lang_code, "text_name": p_text_name}, DB_CFG
+        )
+        return row["text_value"]
 
-    def get_by_id(self,
-                  p_tbl_nm: str,
-                  p_id_nm: str,
-                  p_id_val: str,
-                  DB_CFG: dict,
-                  p_first_only: bool = True) -> dict:
+    def get_by_id(
+        self,
+        p_tbl_nm: str,
+        p_id_nm: str,
+        p_id_val: str,
+        DB_CFG: dict,
+        p_first_only: bool = True,
+    ) -> dict:
         """
         Use this to retrieve all columns, rows from any table
         by matching on its `id` (as opposed to its `uid_pk`).
@@ -168,7 +167,5 @@ class GetData(object):
         - rows: list of non-ordered dicts of data from the table, or [],
           or just one non-ordered dict if p_first_only is True
         """
-        rows = self._get_by_value(p_tbl_nm,
-                                  {p_id_nm: p_id_val},
-                                  DB_CFG, p_first_only)
+        rows = self._get_by_value(p_tbl_nm, {p_id_nm: p_id_val}, DB_CFG, p_first_only)
         return rows

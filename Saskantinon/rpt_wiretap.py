@@ -10,12 +10,11 @@ import json
 import secrets
 import uuid
 import zlib
-
 from datetime import datetime, timedelta, timezone
 from os import path
-from pprint import pprint as pp   # noqa: F401
+from pprint import pprint as pp  # noqa: F401
 
-from method_files import FileMethods    # type: ignore
+from method_files import FileMethods  # type: ignore
 
 FM = FileMethods()
 
@@ -65,7 +64,8 @@ class WireTap(object):
             "WARN": 30,
             "INFO": 20,
             "DEBUG": 10,
-            "NOTSET": 0}
+            "NOTSET": 0,
+        }
         self.CRITICAL: int = 50
         self.ERROR: int = 40
         self.WARNING: int = 30
@@ -87,7 +87,7 @@ class WireTap(object):
         self.log_dir_nm = "/dev/shm/saskan/cache/log"
         self.log_level = self.llvl["DEBUG"]
         # self.log_level = self.llvl["NOTSET"]
-        self.mon_dir_nm = "/dev/shm/saskan/cache/mon"   # not used yet
+        self.mon_dir_nm = "/dev/shm/saskan/cache/mon"  # not used yet
 
     # Helper functions
     # =========================================================================
@@ -108,52 +108,45 @@ class WireTap(object):
         return r_str
 
     @classmethod
-    def convert_dict_to_bytes(self,
-                              p_msg: dict) -> object:
+    def convert_dict_to_bytes(self, p_msg: dict) -> object:
         """Convert Python dict to compressed JSON bytes."""
         msg_json: str = json.dumps(p_msg)
-        return zlib.compress(bytes(msg_json, 'utf-8'))
+        return zlib.compress(bytes(msg_json, "utf-8"))
 
     @classmethod
-    def convert_bytes_to_dict(self,
-                              p_msg: bytes) -> dict:
+    def convert_bytes_to_dict(self, p_msg: bytes) -> dict:
         """Convert compressed JSON bytes to Python dict."""
         msg_dict = zlib.decompress(p_msg)
         return json.loads(msg_dict)
 
     @classmethod
-    def get_hash(cls,
-                 p_data_in: str) -> str:
+    def get_hash(cls, p_data_in: str) -> str:
         """Create hash of input string, returning UTF-8 hex-string.
-           Use SHA-512 by default.
+        Use SHA-512 by default.
         """
         v_hash = hashlib.sha512()
         v_hash.update(p_data_in.encode("utf-8"))
         return v_hash.hexdigest()
 
     @classmethod
-    def get_iso_timestamp(cls,
-                          p_dt: datetime = None) -> str:
+    def get_iso_timestamp(cls, p_dt: datetime = None) -> str:
         """Return current timestamp w/ microseconds in ISO format as string"""
         p_dt = datetime.now() if p_dt is None else p_dt
         ts = p_dt.replace(tzinfo=timezone.utc).isoformat()
         return ts
 
     @classmethod
-    def get_token(cls,
-                  p_len=32) -> str:
-        """Generate a cryptographically strong unique ID.
-        """
-        token = (str(uuid.UUID(bytes=secrets.token_bytes(16)).hex) +
-                 str(uuid.UUID(bytes=secrets.token_bytes(16)).hex))
+    def get_token(cls, p_len=32) -> str:
+        """Generate a cryptographically strong unique ID."""
+        token = str(uuid.UUID(bytes=secrets.token_bytes(16)).hex) + str(
+            uuid.UUID(bytes=secrets.token_bytes(16)).hex
+        )
         if p_len > 10 and p_len < 32:
             token = token[:p_len]
         return token
 
     @classmethod
-    def set_version(cls,
-                    p_ver: str,
-                    p_bump: str) -> str:
+    def set_version(cls, p_ver: str, p_bump: str) -> str:
         """Return version string with specified counter bumped.
 
         :Args:
@@ -178,8 +171,7 @@ class WireTap(object):
         return m_ver
 
     @classmethod
-    def set_expire_dt(cls,
-                      p_expire: int = 0) -> str:
+    def set_expire_dt(cls, p_expire: int = 0) -> str:
         """Compute expiration date-time.
         Default is 60 days from now.
 
@@ -195,13 +187,15 @@ class WireTap(object):
 
     # Logger function
     # ==============================================================
-    def log(self,
-            p_lvl: str,
-            p_msg: str,
-            p_file=None,
-            p_name=None,
-            p_self=None,
-            p_frame=None):
+    def log(
+        self,
+        p_lvl: str,
+        p_msg: str,
+        p_file=None,
+        p_name=None,
+        p_self=None,
+        p_frame=None,
+    ):
         """Write a log message to log namespace.
         If file, name, self and frame objects provided, then trace the call.
 
@@ -213,14 +207,21 @@ class WireTap(object):
         - p_self: self object of calling function
         - p_frame: sys._getframe() from calling function
         """
+
         def trace_msg(p_msg):
-            if (p_file is not None and p_name is not None and
-                    p_self is not None and p_frame is not None):
-                p_msg += (f"{p_file} : {p_name}\n" +
-                          f"{p_self.__class__.__name__} : " +
-                          f"{p_frame.f_back.f_code.co_name} : " +
-                          f"{p_frame.f_code.co_name} : " +
-                          f"line {p_frame.f_lineno}\n")
+            if (
+                p_file is not None
+                and p_name is not None
+                and p_self is not None
+                and p_frame is not None
+            ):
+                p_msg += (
+                    f"{p_file} : {p_name}\n"
+                    + f"{p_self.__class__.__name__} : "
+                    + f"{p_frame.f_back.f_code.co_name} : "
+                    + f"{p_frame.f_code.co_name} : "
+                    + f"line {p_frame.f_lineno}\n"
+                )
             return p_msg
 
         def write_log(p_lvl, p_msg):
@@ -236,7 +237,7 @@ class WireTap(object):
             log_dt = WireTap.get_iso_timestamp(datetime.utcnow())
             expire_dt = WireTap.set_expire_dt()
             uuid = WireTap.get_token(16)
-            rec_nm = (f"log~{p_lvl}~{log_dt}~{expire_dt}~{uuid}")
+            rec_nm = f"log~{p_lvl}~{log_dt}~{expire_dt}~{uuid}"
             msg = p_lvl + "~" + p_msg
             FM.write_file(path.join(self.log_dir_nm, rec_nm), msg)
             # FM.pickle_object(path.join(self.log_dir_nm, rec_nm), msg)
@@ -250,49 +251,45 @@ class WireTap(object):
             print(msg)
             # pp((p_lvl, msg_lvl))
 
-            if (msg_lvl == self.llvl["CRITICAL"] or
-                    p_lvl.upper() in ("FATAL", "CRITICAL")):
-                write_log('FATAL', msg)
-            elif ((msg_lvl == self.llvl["ERROR"] or
-                    p_lvl.upper() == "ERROR") and
-                    self.log_level <= self.llvl["ERROR"]):
-                write_log('ERROR', msg)
-            elif ((msg_lvl == self.llvl["WARNING"] or
-                    p_lvl.upper() == 'WARNING') and
-                    self.log_level <= self.llvl["WARNING"]):
-                write_log('WARNING', msg)
-            elif ((msg_lvl == self.llvl["INFO"] or
-                    p_lvl.upper() == 'INFO') and
-                    self.log_level <= self.llvl["INFO"]):
-                write_log('INFO', msg)
-            elif ((msg_lvl == self.llvl["DEBUG"] or
-                    p_lvl.upper() == 'DEBUG') and
-                    self.log_level <= self.llvl["DEBUG"]):
-                write_log('DEBUG', msg)
+            if msg_lvl == self.llvl["CRITICAL"] or p_lvl.upper() in (
+                "FATAL",
+                "CRITICAL",
+            ):
+                write_log("FATAL", msg)
+            elif (
+                msg_lvl == self.llvl["ERROR"] or p_lvl.upper() == "ERROR"
+            ) and self.log_level <= self.llvl["ERROR"]:
+                write_log("ERROR", msg)
+            elif (
+                msg_lvl == self.llvl["WARNING"] or p_lvl.upper() == "WARNING"
+            ) and self.log_level <= self.llvl["WARNING"]:
+                write_log("WARNING", msg)
+            elif (
+                msg_lvl == self.llvl["INFO"] or p_lvl.upper() == "INFO"
+            ) and self.log_level <= self.llvl["INFO"]:
+                write_log("INFO", msg)
+            elif (
+                msg_lvl == self.llvl["DEBUG"] or p_lvl.upper() == "DEBUG"
+            ) and self.log_level <= self.llvl["DEBUG"]:
+                write_log("DEBUG", msg)
 
     # Generic DDL functions
     # =========================================================================
     @classmethod
-    def find_keys(cls,
-                  p_ns: str,
-                  p_key_pattern: str):
+    def find_keys(cls, p_ns: str, p_key_pattern: str):
         """Return keys of records that match search pattern."""
         keys = FM.get_dir(p_ns)
         keys = [f for f in keys if p_key_pattern in str(f)]
         return sorted(keys)
 
     @classmethod
-    def count_keys(cls,
-                   p_ns: str,
-                   p_key_pattern: str):
+    def count_keys(cls, p_ns: str, p_key_pattern: str):
         """Return number of keys that match search pattern."""
         keys = WireTap.find_keys(p_ns, p_key_pattern)
         return len(keys)
 
     @classmethod
-    def get_records(cls,
-                    p_ns: str,
-                    p_key_pattern: str):
+    def get_records(cls, p_ns: str, p_key_pattern: str):
         """Return existing record if one exists for a specified key.
 
         :Args:
@@ -320,5 +317,5 @@ class WireTap(object):
             print(rec)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     WT = WireTap()

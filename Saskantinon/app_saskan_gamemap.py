@@ -5,12 +5,12 @@
 Saskan Game module for managing game map.
 """
 
-from pprint import pformat as pf    # noqa: F401
-from pprint import pprint as pp     # noqa: F401
-
-from data_structs_pg import PygColors, Graphic
+from pprint import pformat as pf  # noqa: F401
+from pprint import pprint as pp  # noqa: F401
 
 import pygame as pg
+from data_structs_pg import Graphic, PygColors
+
 pg.init()
 
 
@@ -50,16 +50,19 @@ class GameMap(object):
     - To use as a 2D grid, set p_z values to zero.
     ==============
     """
+
     def __init__(self):
         """Create GAMEMAP object."""
         pass
 
-    def create_gamemap(self,
-                       WINDOWS: object,
-                       MAPS: object,
-                       GRIDS: object,
-                       p_map_name: str = None,
-                       p_grid_name: str = None):
+    def create_gamemap(
+        self,
+        WINDOWS: object,
+        MAPS: object,
+        GRIDS: object,
+        p_map_name: str = None,
+        p_grid_name: str = None,
+    ):
         """
         :args:
         - WINDOWS (dict) -- PG.WINDOWS
@@ -81,12 +84,10 @@ class GameMap(object):
         W = WINDOWS["gamemap"]
         G = GRIDS[p_grid_name]
         GRIDS[p_grid_name] = self.set_grid_lines(W, G)
-        GRIDS[p_grid_name]['cells'] = self.set_grid_matrix(W, G)
+        GRIDS[p_grid_name]["cells"] = self.set_grid_matrix(W, G)
         return GRIDS
 
-    def set_grid_lines(self,
-                       W: dict,
-                       G: dict) -> dict:
+    def set_grid_lines(self, W: dict, G: dict) -> dict:
         """
         Set grid lines for drawing.
         Define dimensions for drawing the grid cells, including
@@ -97,29 +98,25 @@ class GameMap(object):
         :returns:
         - G (dict) -- updated GRIDS dict
         """
-        G['x'] = int(round(W['w_box'].left + 6))
-        G['y'] = int(round(W['w_box'].top + 6))
-        G['w'] = int(round(W['w_box'].width - 12))
-        G['h'] = int(round(W['w_box'].height - 12))
-        G['cell_w'] = round((G['w'] / (G['col_cnt'] + 2)), 2)
-        G['cell_h'] = round((G['h'] / (G['row_cnt'] + 2)), 2)
-        G['h_lines'] = []
-        G['v_lines'] = []
-        y = G['y']
-        for r in range(0, G['row_cnt'] + 3):
-            G['h_lines'].append(((G['x'], round(y, 2)),
-                                 (G['x'] + G['w'], round(y, 2))))
-            y += G['cell_h']
-        x = G['x']
-        for c in range(0, G['col_cnt'] + 3):
-            G['v_lines'].append(((round(x, 2), G['y']),
-                                 (round(x, 2), G['y'] + G['h'])))
-            x += G['cell_w']
+        G["x"] = int(round(W["w_box"].left + 6))
+        G["y"] = int(round(W["w_box"].top + 6))
+        G["w"] = int(round(W["w_box"].width - 12))
+        G["h"] = int(round(W["w_box"].height - 12))
+        G["cell_w"] = round((G["w"] / (G["col_cnt"] + 2)), 2)
+        G["cell_h"] = round((G["h"] / (G["row_cnt"] + 2)), 2)
+        G["h_lines"] = []
+        G["v_lines"] = []
+        y = G["y"]
+        for r in range(0, G["row_cnt"] + 3):
+            G["h_lines"].append(((G["x"], round(y, 2)), (G["x"] + G["w"], round(y, 2))))
+            y += G["cell_h"]
+        x = G["x"]
+        for c in range(0, G["col_cnt"] + 3):
+            G["v_lines"].append(((round(x, 2), G["y"]), (round(x, 2), G["y"] + G["h"])))
+            x += G["cell_w"]
         return G
 
-    def set_grid_matrix(self,
-                        W: dict,
-                        G: dict) -> dict:
+    def set_grid_matrix(self, W: dict, G: dict) -> dict:
         """Set up matrix of records for each cell in  grid.
         For now, 2D only.
         :args:
@@ -128,30 +125,36 @@ class GameMap(object):
         :return:
         - matrix (dict) -- matrix of cell records
         """
+
         def create_matrix():
             """
             - assign key and data rec to all cells in matrix
             """
             cell_rec = {
-                'is_ref': False,
-                'fill': False,
-                'fill_color': PygColors.CP_BLACK,
-                'line_color': PygColors.CP_BLACK,
-                'x': 0, 'y': 0, 'w': 0, 'h': 0,
-                'c_box': None,
-                'img': Graphic,
-                'map_data': {},
-                'txt': '', 't_box': None
+                "is_ref": False,
+                "fill": False,
+                "fill_color": PygColors.CP_BLACK,
+                "line_color": PygColors.CP_BLACK,
+                "x": 0,
+                "y": 0,
+                "w": 0,
+                "h": 0,
+                "c_box": None,
+                "img": Graphic,
+                "map_data": {},
+                "txt": "",
+                "t_box": None,
             }
-            r_n = G['row_cnt'] + 1
-            c_n = G['col_cnt'] + 1
+            r_n = G["row_cnt"] + 1
+            c_n = G["col_cnt"] + 1
             matrix: dict = {}
             for r in range(0, r_n + 1):
                 for c in range(0, c_n + 1):
                     key = f"{str(r).zfill(2)}, {str(c).zfill(2)}"
                     matrix[key] = cell_rec.copy()
-                    matrix[key]['is_ref'] = True\
-                        if (r in (0, r_n) or c in (0, c_n)) else False
+                    matrix[key]["is_ref"] = (
+                        True if (r in (0, r_n) or c in (0, c_n)) else False
+                    )
             return (matrix, r_n, c_n)
 
         def set_matrix_data(matrix_data: tuple) -> dict:
@@ -163,28 +166,30 @@ class GameMap(object):
             - left and right columns display row numbers
             """
             matrix, r_n, c_n = matrix_data
-            x = G['x']
-            y = G['y']
+            x = G["x"]
+            y = G["y"]
             for key, m_v in matrix.items():
-                r, c = [int(k) for k in key.split(', ')]
-                matrix[key]['x'] = round((x + (c * G['cell_w'])), 2)
-                matrix[key]['y'] = round((y + (r * G['cell_h'])), 2)
-                matrix[key]['w'] = G['cell_w']
-                matrix[key]['h'] = G['cell_h']
-                matrix[key]['c_box'] =\
-                    pg.Rect(matrix[key]['x'], matrix[key]['y'],
-                            G['cell_w'], G['cell_h'])
-                if m_v['is_ref']:
-                    matrix[key]['fill'] = True
-                    matrix[key]['fill_color'] = PygColors.CP_WHITE
-                    if ((r == 0 and (c in (0, c_n))) or
-                            (c == 0 and (r in (0, r_n))) or
-                            (r == r_n and c == c_n)):
-                        matrix[key]['txt'] = '.'
+                r, c = [int(k) for k in key.split(", ")]
+                matrix[key]["x"] = round((x + (c * G["cell_w"])), 2)
+                matrix[key]["y"] = round((y + (r * G["cell_h"])), 2)
+                matrix[key]["w"] = G["cell_w"]
+                matrix[key]["h"] = G["cell_h"]
+                matrix[key]["c_box"] = pg.Rect(
+                    matrix[key]["x"], matrix[key]["y"], G["cell_w"], G["cell_h"]
+                )
+                if m_v["is_ref"]:
+                    matrix[key]["fill"] = True
+                    matrix[key]["fill_color"] = PygColors.CP_WHITE
+                    if (
+                        (r == 0 and (c in (0, c_n)))
+                        or (c == 0 and (r in (0, r_n)))
+                        or (r == r_n and c == c_n)
+                    ):
+                        matrix[key]["txt"] = "."
                     elif r in (0, r_n):
-                        matrix[key]['txt'] = str(c)
+                        matrix[key]["txt"] = str(c)
                     elif c in (0, c_n):
-                        matrix[key]['txt'] = str(r)
+                        matrix[key]["txt"] = str(r)
             return matrix
 
         # set_grid_matrix()  main
@@ -193,9 +198,7 @@ class GameMap(object):
 
         return matrix
 
-    def compute_map_scale(self,
-                          p_attr: dict,
-                          DSP: object):
+    def compute_map_scale(self, p_attr: dict, DSP: object):
         """Compute scaling, position for the map and grid.
         :attr:
         - p_attr (dict): 'map' data for the "Saskan Lands" region from
@@ -222,29 +225,31 @@ class GameMap(object):
         - Take some time here to get it working.
         """
         err = ""
-        map = {'ln': dict(),
-               'cl': dict()}
+        map = {"ln": dict(), "cl": dict()}
         # Evaluate map line lengths in kilometers
-        map['ln']['km'] =\
-            {'w': round(int(p_attr["distance"]["width"]["amt"])),
-             'h': round(int(p_attr["distance"]["height"]["amt"]))}
-        if map['ln']['km']['w'] > DSP.G_LNS_KM_W:
+        map["ln"]["km"] = {
+            "w": round(int(p_attr["distance"]["width"]["amt"])),
+            "h": round(int(p_attr["distance"]["height"]["amt"])),
+        }
+        if map["ln"]["km"]["w"] > DSP.G_LNS_KM_W:
             err = f"Map km w {map['w']} > grid km w {DSP.G_LNS_KM_W}"
-        if map['ln']['km']['h'] > DSP.G_LNS_KM_H:
+        if map["ln"]["km"]["h"] > DSP.G_LNS_KM_H:
             err = f"Map km h {map['h']} > grid km h {DSP.G_LNS_KM_H}"
         if err != "":
             raise ValueError(err)
         # Verified that the map rect is smaller than the grid rect.
         # Compute a ratio of map to grid.
         # Divide map km w, h by grid km w, h
-        map['ln']['ratio'] =\
-            {'w': round((map['ln']['km']['w'] / DSP.G_LNS_KM_W), 4),
-             'h': round((map['ln']['km']['h'] / DSP.G_LNS_KM_H), 4)}
+        map["ln"]["ratio"] = {
+            "w": round((map["ln"]["km"]["w"] / DSP.G_LNS_KM_W), 4),
+            "h": round((map["ln"]["km"]["h"] / DSP.G_LNS_KM_H), 4),
+        }
         # Compute map line dimensions in px
         # Multiply grid line px w, h by map ratio w, h
-        map['ln']['px'] =\
-            {'w': int(round(DSP.G_LNS_PX_W * map['ln']['ratio']['w'])),
-             'h': int(round(DSP.G_LNS_PX_H * map['ln']['ratio']['h']))}
+        map["ln"]["px"] = {
+            "w": int(round(DSP.G_LNS_PX_W * map["ln"]["ratio"]["w"])),
+            "h": int(round(DSP.G_LNS_PX_H * map["ln"]["ratio"]["h"])),
+        }
         # The map rect needs to be centered in the grid rect.
         #  Compute the offset of the map rect from the grid rect.
         #  Compute topleft of the map in relation to topleft of the grid.
@@ -253,12 +258,12 @@ class GameMap(object):
         #  The map left is offset from grid left by half the px difference
         #  between grid width and map width.
         # Then adjusted once more for offset of the grid from the window.
-        map['ln']['px']['left'] =\
-            int(round((DSP.G_LNS_PX_W - map['ln']['px']['w']) / 2) +
-                DSP.GRID_OFFSET_X)
-        map['ln']['px']['top'] =\
-            int(round((DSP.G_LNS_PX_H - map['ln']['px']['h']) / 2) +
-                     (DSP.GRID_OFFSET_Y * 4))  # not sure why, but I need this
+        map["ln"]["px"]["left"] = int(
+            round((DSP.G_LNS_PX_W - map["ln"]["px"]["w"]) / 2) + DSP.GRID_OFFSET_X
+        )
+        map["ln"]["px"]["top"] = int(
+            round((DSP.G_LNS_PX_H - map["ln"]["px"]["h"]) / 2) + (DSP.GRID_OFFSET_Y * 4)
+        )  # not sure why, but I need this
         DSP.GRID["map"] = map
 
 
@@ -276,9 +281,7 @@ class CompareRect(object):
     def __init__(self):
         pass
 
-    def rect_contains(self,
-                      p_box_a: pg.Rect,
-                      p_box_b: pg.Rect) -> bool:
+    def rect_contains(self, p_box_a: pg.Rect, p_box_b: pg.Rect) -> bool:
         """Determine if rectangle A contains rectangle B.
         use pygame contains
         :args:
@@ -290,9 +293,7 @@ class CompareRect(object):
         else:
             return False
 
-    def rect_overlaps(self,
-                      p_box_a: pg.Rect,
-                      p_box_b: pg.Rect) -> bool:
+    def rect_overlaps(self, p_box_a: pg.Rect, p_box_b: pg.Rect) -> bool:
         """Determine if rectangle A and rectangle B overlap.
         xxx use pygame colliderect xxx
         use pygame union
@@ -306,9 +307,7 @@ class CompareRect(object):
         else:
             return False
 
-    def rect_borders(self,
-                     p_rect_a: pg.Rect,
-                     p_rect_b: pg.Rect) -> bool:
+    def rect_borders(self, p_rect_a: pg.Rect, p_rect_b: pg.Rect) -> bool:
         """Determine if rectangle A and rectangle B share a border.
         use pygame clipline
         :args:
@@ -320,17 +319,17 @@ class CompareRect(object):
         else:
             return False
 
-    def rect_same(self,
-                  p_rect_a: pg.Rect,
-                  p_rect_b: pg.Rect) -> bool:
+    def rect_same(self, p_rect_a: pg.Rect, p_rect_b: pg.Rect) -> bool:
         """Determine if rectangle A and rectangle B occupy exactly
         the same space.
         :args:
         - p_box_a: (pygame.Rect) rectangle A
         - p_box_b: (pygame.Rect) rectangle B
         """
-        if p_rect_a.topright == p_rect_b.topright and \
-           p_rect_a.bottomleft == p_rect_b.bottomleft:
+        if (
+            p_rect_a.topright == p_rect_b.topright
+            and p_rect_a.bottomleft == p_rect_b.bottomleft
+        ):
             return True
         else:
             return False

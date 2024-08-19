@@ -127,7 +127,6 @@ snips/
 legacy/
 log/
 debug/
-tests/
 *.db
 *.conf
 *.sqbpro

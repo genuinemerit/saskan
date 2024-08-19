@@ -9,15 +9,15 @@ Saskan Admin Report Generator
   reporting functions to this module.
 """
 
-import matplotlib.pyplot as plt         # type: ignore
-import networkx as nx                   # type: ignore
+from pprint import pprint as pp  # noqa: F401
 
-from pprint import pprint as pp     # noqa: F401
+import matplotlib.pyplot as plt  # type: ignore
+import networkx as nx  # type: ignore
 
 
 class Analysis(object):
-    """Provide report and monitoring methods.
-    """
+    """Provide report and monitoring methods."""
+
     def __init__(self, *args, **kwargs):
         """
         Initialize the object.
@@ -26,16 +26,13 @@ class Analysis(object):
 
     # System monitoring reports
     def rpt_ufw_status(self):
-        """Get UFW status.
-        """
+        """Get UFW status."""
         ok, result = self.run_cmd("ufw status numbered")
         if ok:
             return result
 
     # Graph data functions
-    def get_ntype(self,
-                  p_N: dict,
-                  p_node_nm: str):
+    def get_ntype(self, p_N: dict, p_node_nm: str):
         """Return node type for a given node name.
 
         :args:
@@ -50,9 +47,7 @@ class Analysis(object):
                 break
         return node_type
 
-    def set_graph(self,
-                  p_E: dict,
-                  p_incl_nodes: list = []):
+    def set_graph(self, p_E: dict, p_incl_nodes: list = []):
         """Populate networkx graph dataset using edges dataset.
         - Defining the edges automatically also defines the nodes.
         - Limiting the graph to a subset of nodes here affects what
@@ -66,7 +61,7 @@ class Analysis(object):
         G = nx.MultiDiGraph()
         for e_list in p_E["name"].values():
             edges = list()
-            for (n1, n2) in e_list:
+            for n1, n2 in e_list:
                 if p_incl_nodes == []:
                     edges.append(tuple((n1, n2)))
                 elif n1 in p_incl_nodes or n2 in p_incl_nodes:
@@ -74,9 +69,7 @@ class Analysis(object):
             G.add_edges_from(edges)
         return G
 
-    def get_nodes_in_type(self,
-                          p_N: dict,
-                          p_type_nm: str):
+    def get_nodes_in_type(self, p_N: dict, p_type_nm: str):
         """Return list of nodes in a given node type.
 
         :args:
@@ -89,10 +82,7 @@ class Analysis(object):
             nodes = p_N["name"][p_type_nm]
         return {p_type_nm: nodes}
 
-    def get_edges_for_nodes(self,
-                            p_E: dict,
-                            p_edge_nm: tuple,
-                            p_node_vals: list):
+    def get_edges_for_nodes(self, p_E: dict, p_edge_nm: tuple, p_node_vals: list):
         """List all nodes in a given edge for the set of
         rqeuested node values. It is assumed that the node value list
         is associated with node name 1.
@@ -111,8 +101,9 @@ class Analysis(object):
             p_edge_nm = tuple(reversed(p_edge_nm))
         if p_edge_nm in p_E["types"]:
             if reverse_edge:
-                nodes = sorted([tuple(reversed(edge))
-                                for edge in p_E["name"][p_edge_nm]])
+                nodes = sorted(
+                    [tuple(reversed(edge)) for edge in p_E["name"][p_edge_nm]]
+                )
             else:
                 nodes = p_E["name"][p_edge_nm]
             nodes = [n for n in nodes if n[0] in p_node_vals]
@@ -122,10 +113,7 @@ class Analysis(object):
                 nodes_d[n[0]].append(n[1])
         return nodes_d
 
-    def get_degrees(self,
-                    p_set_nm: str,
-                    p_G,
-                    p_N: dict):
+    def get_degrees(self, p_set_nm: str, p_G, p_N: dict):
         """Show report of degrees for graphed nodes.
 
         :args:
@@ -144,15 +132,13 @@ class Analysis(object):
             just use a fucking editor. :-)
         - Parameterize report options
         """
-        rpt_data = sorted([(p_G.degree(n), n, self.get_ntype(p_N, n))
-                           for n in p_G.nodes()], reverse=True)
-        return ({f"degrees for {p_set_nm}": rpt_data})
+        rpt_data = sorted(
+            [(p_G.degree(n), n, self.get_ntype(p_N, n)) for n in p_G.nodes()],
+            reverse=True,
+        )
+        return {f"degrees for {p_set_nm}": rpt_data}
 
-    def draw_graph(self,
-                   p_title: str,
-                   p_G,
-                   p_N: dict,
-                   p_E: dict):
+    def draw_graph(self, p_title: str, p_G, p_N: dict, p_E: dict):
         """Draw graph based on G data.
 
         :args:
@@ -162,13 +148,14 @@ class Analysis(object):
         - p_E (dict): additional edge metadata for graph object
         """
         node_sizes = [p_G.degree(n) * 23 for n in p_G.nodes()]
-        node_labels = {n: f"\n{self.get_ntype(p_N, n)}\n{n}"
-                       for n in p_G.nodes()}
+        node_labels = {n: f"\n{self.get_ntype(p_N, n)}\n{n}" for n in p_G.nodes()}
         node_colors = [p_N["color"][n] for n in p_G.nodes()]
-        edge_colors = [p_E["color"][
-                        (self.get_ntype(p_N, e[0]),
-                         self.get_ntype(p_N, e[1]))].replace("0", "5")
-                       for e in p_G.edges()]
+        edge_colors = [
+            p_E["color"][
+                (self.get_ntype(p_N, e[0]), self.get_ntype(p_N, e[1]))
+            ].replace("0", "5")
+            for e in p_G.edges()
+        ]
         # Folks online tend to recommend graphviz for drawing graphs, but
         # I could not get graphviz to work with my environment, networkx.
 
@@ -178,7 +165,7 @@ class Analysis(object):
         #  but I am not clear yet on how to set them usefully.
 
         # Ones I prefer so far are marked with a "# *" comment.
-        pos = nx.spiral_layout(p_G)                   # *
+        pos = nx.spiral_layout(p_G)  # *
         # pos = nx.spring_layout(G, seed=13648)     # *
         # pos = nx.circular_layout(G)               # *
         # pos = nx.shell_layout(G)                  # *
@@ -189,19 +176,19 @@ class Analysis(object):
         cmap = plt.cm.plasma
         ax = plt.gca()
         ax.set_axis_off()
-        nx.draw_networkx_nodes(p_G, pos,
-                               linewidths=1,
-                               node_color=node_colors,
-                               node_size=node_sizes)
-        nx.draw_networkx_edges(p_G, pos,
-                               arrows=False,
-                               edge_color=edge_colors,
-                               edge_cmap=cmap,
-                               width=1)
+        nx.draw_networkx_nodes(
+            p_G, pos, linewidths=1, node_color=node_colors, node_size=node_sizes
+        )
+        nx.draw_networkx_edges(
+            p_G, pos, arrows=False, edge_color=edge_colors, edge_cmap=cmap, width=1
+        )
         # Node labels
-        nx.draw_networkx_labels(p_G, pos,
-                                font_size=9,
-                                font_color='indigo',
-                                labels=node_labels,
-                                verticalalignment="top")
+        nx.draw_networkx_labels(
+            p_G,
+            pos,
+            font_size=9,
+            font_color="indigo",
+            labels=node_labels,
+            verticalalignment="top",
+        )
         plt.show()

@@ -18,37 +18,35 @@ from collections import defaultdict, deque
 from typing import DefaultDict, Deque
 
 from sv_sequencer import MsgSequencer
+
 MS = MsgSequencer()
 
 SUBSCRIBERS: DefaultDict[bytes, Deque] = defaultdict(deque)
 
 
 async def server(reader: StreamReader, writer: StreamWriter):
-    """Handle traffic for a single channel = unique combo of host:port.
-    """
-    peername = writer.get_extra_info('peername')
+    """Handle traffic for a single channel = unique combo of host:port."""
+    peername = writer.get_extra_info("peername")
     subscribe_chan = await MS.read_msg(reader)
     SUBSCRIBERS[subscribe_chan].append(writer)
-    print(f'Remote {peername!r} subscribed to {subscribe_chan!r}')
+    print(f"Remote {peername!r} subscribed to {subscribe_chan!r}")
     try:
         while channel_name := await MS.read_msg(reader):
             data = await MS.read_msg(reader)
-            print(f'Sending to {channel_name!r}: {data[:19]!r}...')
+            print(f"Sending to {channel_name!r}: {data[:19]!r}...")
             conns = SUBSCRIBERS[channel_name]
-            if (conns and
-                    ("/b_cast" in channel_name or
-                     "/pub_sub" in channel_name)):
+            if conns and ("/b_cast" in channel_name or "/pub_sub" in channel_name):
                 conns.rotate()
                 conns = deque([conns[0]])
             await gather(*[MS.send_msg(c, data) for c in conns])
     except asyncio.CancelledError:
-        print(f'Remote {peername} closing connection.')
+        print(f"Remote {peername} closing connection.")
         writer.close()
         await writer.wait_closed()
     except asyncio.IncompleteReadError:
-        print(f'Remote {peername} disconnected')
+        print(f"Remote {peername} disconnected")
     finally:
-        print(f'Remote {peername} closed')
+        print(f"Remote {peername} closed")
         SUBSCRIBERS[subscribe_chan].remove(writer)
 
 
@@ -66,6 +64,7 @@ async def main(*args, **kwargs):
     async with server:
         await server.serve_forever()
 
+
 try:
     """Run the server in asynchronous/non-blocking mode
     main = name of main routine to run
@@ -79,4 +78,4 @@ try:
     print(f"Starting {sys.argv[1]} server on {sys.argv[2]}:{sys.argv[3]}")
     asyncio.run(main(server, host=sys.argv[2], port=sys.argv[3]))
 except KeyboardInterrupt:
-    print('Bye!')
+    print("Bye!")

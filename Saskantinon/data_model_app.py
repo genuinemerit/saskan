@@ -13,8 +13,8 @@ Saskan Data Management middleware.
 # =============================================================
 """
 
-from pprint import pformat as pf    # noqa: F401
-from pprint import pprint as pp     # noqa: F401
+from pprint import pformat as pf  # noqa: F401
+from pprint import pprint as pp  # noqa: F401
 
 import data_model_tool as DMT
 from data_structs import EntityType
@@ -29,23 +29,21 @@ SM = ShellMethods()
 # System Maintenance
 # =============================================================
 class Backup(object):
-    """Store metadata about DB backup, restore, archive, export.
-    """
+    """Store metadata about DB backup, restore, archive, export."""
+
     _tablename: str = "BACKUP"
-    bkup_uid_pk: str = ''       # Primary key
-    bkup_name: str = ''
-    bkup_dttm: str = ''
-    bkup_type: str = ''
-    file_from: str = ''
-    file_to: str = ''
+    bkup_uid_pk: str = ""  # Primary key
+    bkup_name: str = ""
+    bkup_dttm: str = ""
+    bkup_type: str = ""
+    file_from: str = ""
+    file_to: str = ""
 
     def to_dict(self) -> dict:
-        """Convert attributes to OrderedDict. """
+        """Convert attributes to OrderedDict."""
         return DMT.orm_to_dict(Backup)
 
-    def from_dict(self,
-                  p_dict: dict,
-                  p_row: int) -> dict:
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
         return DMT.orm_from_dict(self, p_dict, p_row)
 
@@ -62,21 +60,22 @@ class AppConfig(object):
         - cfg, data, img, py, db, sch
     - may need to keep or dup some values for bootstrap
     """
+
     _tablename: str = "APP_CONFIG"
-    config_uid_pk: str = ''
-    version_id: str = ''
-    root_dir: str = ''
-    mem_dir: str = ''
-    cfg_dir: str = ''
-    dat_dir: str = ''
-    html_dir: str = ''
-    img_dir: str = ''
-    snd_dir: str = ''
-    py_dir: str = ''
-    db_dir: str = ''
-    log_dir: str = ''
-    mon_dir: str = ''
-    dbg_dir: str = ''
+    config_uid_pk: str = ""
+    version_id: str = ""
+    root_dir: str = ""
+    mem_dir: str = ""
+    cfg_dir: str = ""
+    dat_dir: str = ""
+    html_dir: str = ""
+    img_dir: str = ""
+    snd_dir: str = ""
+    py_dir: str = ""
+    db_dir: str = ""
+    log_dir: str = ""
+    mon_dir: str = ""
+    dbg_dir: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -98,11 +97,12 @@ class Texts(object):
       across languages..
     - Text string value.
     """
+
     _tablename: str = "TEXTS"
-    text_uid_pk: str = ''
-    lang_code: str = ''
-    text_name: str = ''
-    text_value: str = ''
+    text_uid_pk: str = ""
+    lang_code: str = ""
+    text_name: str = ""
+    text_value: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -117,6 +117,7 @@ class Texts(object):
         CK: dict = {"lang_code": EntityType.LANG_CODE}
         ORDER: list = ["text_name ASC", "lang_code ASC"]
 
+
 # If it turns out the be useful, may want to add an "APP" structure
 
 
@@ -126,20 +127,21 @@ class Frames(object):
     - frame_id: not unique, can be shared by apps,
        e.g. 'admin' or 'game'
     """
+
     _tablename: str = "FRAMES"
-    frame_uid_pk: str = ''
-    version_id: str = ''
-    lang_code: str = ''
-    frame_id: str = ''
-    frame_title: str = ''
-    frame_desc: str = ''
+    frame_uid_pk: str = ""
+    version_id: str = ""
+    lang_code: str = ""
+    frame_id: str = ""
+    frame_title: str = ""
+    frame_desc: str = ""
     frame_w: float = 0.0
     frame_h: float = 0.0
     pg_hdr_x: float = 0.0
     pg_hdr_y: float = 0.0
     pg_hdr_w: float = 0.0
     pg_hdr_h: float = 0.0
-    pg_hdr_txt: str = ''
+    pg_hdr_txt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -162,12 +164,13 @@ class MenuBars(object):
     Its width (w) is derived from width of the frame.
     Its top-left x, y is relative to the frame.
     """
+
     _tablename: str = "MENU_BARS"
-    menu_bar_uid_pk: str = ''
-    frame_uid_fk: str = ''
-    lang_code: str = ''
-    version_id: str = ''
-    frame_id: str = ''
+    menu_bar_uid_pk: str = ""
+    frame_uid_fk: str = ""
+    lang_code: str = ""
+    version_id: str = ""
+    frame_id: str = ""
     mbar_margin: float = 0.0
     mbar_h: float = 0.0
     mbar_x: float = 0.0
@@ -193,14 +196,15 @@ class Menus(object):
     - menu_id: generic string label "ID" or key for menu
     - menu_name: text string label for menu in designated language
     """
+
     _tablename: str = "MENUS"
-    menu_uid_pk: str = ''
-    menu_bar_uid_fk: str = ''
-    frame_id: str = ''
-    lang_code: str = ''
-    version_id: str = ''
-    menu_id: str = ''
-    menu_name: str = ''
+    menu_uid_pk: str = ""
+    menu_bar_uid_fk: str = ""
+    frame_id: str = ""
+    lang_code: str = ""
+    version_id: str = ""
+    menu_id: str = ""
+    menu_name: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -222,17 +226,18 @@ class MenuItems(object):
     - item_id: generic string label "ID" or key for menu item
     - item_name: text string label for menu in designated language
     """
+
     _tablename: str = "MENU_ITEMS"
-    item_uid_pk: str = ''
-    menu_uid_fk: str = ''
-    lang_code: str = ''
-    frame_id: str = ''
-    version_id: str = ''
-    item_id: str = ''
+    item_uid_pk: str = ""
+    menu_uid_fk: str = ""
+    lang_code: str = ""
+    frame_id: str = ""
+    version_id: str = ""
+    item_id: str = ""
     item_order: int = 0
-    item_name: str = ''
-    key_binding: str = ''
-    help_text: str = ''
+    item_name: str = ""
+    key_binding: str = ""
+    help_text: str = ""
     enabled_default: bool = True
 
     def to_dict(self) -> dict:
@@ -259,14 +264,15 @@ class Windows(object):
     - Window title
     - x, y, w, h, margin
     """
+
     _tablename: str = "WINDOWS"
-    win_uid_pk: str = ''
-    frame_uid_fk: str = ''
-    frame_id: str = ''
-    lang_code: str = ''
-    version_id: str = ''
-    win_id: str = ''
-    win_title: str = ''
+    win_uid_pk: str = ""
+    frame_uid_fk: str = ""
+    frame_id: str = ""
+    lang_code: str = ""
+    version_id: str = ""
+    win_id: str = ""
+    win_title: str = ""
     win_margin: float = 0.0
 
     def to_dict(self) -> dict:
@@ -290,17 +296,18 @@ class Links(object):
     - link_value: URI to retrieve
     - link_icon: name of a file in app images directory
     """
+
     _tablename: str = "LINKS"
-    link_uid_pk: str = ''
-    version_id: str = ''
-    lang_code: str = ''
-    link_id: str = ''
-    frame_id: str = ''
-    link_protocol: str = ''
-    mime_type: str = ''
-    link_name: str = ''
-    link_value: str = ''
-    link_icon: str = ''
+    link_uid_pk: str = ""
+    version_id: str = ""
+    lang_code: str = ""
+    link_id: str = ""
+    frame_id: str = ""
+    link_protocol: str = ""
+    mime_type: str = ""
+    link_name: str = ""
+    link_value: str = ""
+    link_icon: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -312,11 +319,12 @@ class Links(object):
 
     class Constraints(object):
         PK: dict = {"link_uid_pk": ["link_uid_pk"]}
-        CK: dict = {"link_protocol": EntityType.LINK_PROTOCOL,
-                    "lang_code": EntityType.LANG_CODE,
-                    "mime_type": EntityType.MIME_TYPE}
-        ORDER: list = ["frame_id ASC", "link_id ASC",
-                       "lang_code ASC"]
+        CK: dict = {
+            "link_protocol": EntityType.LINK_PROTOCOL,
+            "lang_code": EntityType.LANG_CODE,
+            "mime_type": EntityType.MIME_TYPE,
+        }
+        ORDER: list = ["frame_id ASC", "link_id ASC", "lang_code ASC"]
 
 
 class ButtonSingle(object):
@@ -330,20 +338,21 @@ class ButtonSingle(object):
     - help_text: text to display when mouse hovers over button
     - action: name of function to call when button is clicked
     """
+
     _tablename: str = "BUTTON_SINGLE"
-    button_single_uid_pk: str = ''
-    version_id: str = ''
-    button_type: str = ''
-    button_name: str = ''
-    button_icon: str = ''
-    button_key: str = ''
-    frame_uid_fk: str = ''
-    window_uid_fk: str = ''
+    button_single_uid_pk: str = ""
+    version_id: str = ""
+    button_type: str = ""
+    button_name: str = ""
+    button_icon: str = ""
+    button_key: str = ""
+    frame_uid_fk: str = ""
+    window_uid_fk: str = ""
     x: float = 0.0
     y: float = 0.0
     enabled: bool = True
-    help_text: str = ''
-    action: str = ''
+    help_text: str = ""
+    action: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -355,27 +364,29 @@ class ButtonSingle(object):
 
     class Constraints(object):
         PK: dict = {"button_single_uid_pk": ["button_single_uid_pk"]}
-        FK: dict = {"frame_uid_fk": ("FRAMES", "frame_uid_pk"),
-                    "window_uid_fk": ("WINDOWS", "window_uid_pk")}
+        FK: dict = {
+            "frame_uid_fk": ("FRAMES", "frame_uid_pk"),
+            "window_uid_fk": ("WINDOWS", "window_uid_pk"),
+        }
         CK: dict = {"button_type": EntityType.BUTTON_TYPE}
         ORDER: list = ["button_name ASC"]
 
 
 class ButtonMulti(object):
-    """Define values for multi-choice button group
-    """
+    """Define values for multi-choice button group"""
+
     _tablename: str = "BUTTON_MULTI"
-    button_multi_uid_pk: str = ''
-    version_id: str = ''
-    button_type: str = ''
-    button_name: str = ''
-    button_icon: str = ''
-    frame_uid_fk: str = ''
-    window_uid_fk: str = ''
+    button_multi_uid_pk: str = ""
+    version_id: str = ""
+    button_type: str = ""
+    button_name: str = ""
+    button_icon: str = ""
+    frame_uid_fk: str = ""
+    window_uid_fk: str = ""
     x: float = 0.0
     y: float = 0.0
     enabled: bool = True
-    help_text: str = ''
+    help_text: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -387,26 +398,29 @@ class ButtonMulti(object):
 
     class Constraints(object):
         PK: dict = {"button_multi_uid_pk": ["button_multi_uid_pk"]}
-        FK: dict = {"frame_uid_fk": ("FRAMES", "frame_uid_pk"),
-                    "window_uid_fk": ("WINDOWS", "window_uid_pk")}
+        FK: dict = {
+            "frame_uid_fk": ("FRAMES", "frame_uid_pk"),
+            "window_uid_fk": ("WINDOWS", "window_uid_pk"),
+        }
         CK: dict = {"button_type": EntityType.BUTTON_TYPE}
         ORDER: list = ["button_name ASC"]
 
 
 class ButtonItem(object):
     """Define values for button item within a check or
-       radio button group.
+    radio button group.
     """
+
     _tablename: str = "BUTTON_ITEM"
-    button_item_uid_pk: str = ''
-    version_id: str = ''
-    button_multi_uid_pk: str = ''
-    button_name: str = ''
-    button_icon: str = ''
+    button_item_uid_pk: str = ""
+    version_id: str = ""
+    button_multi_uid_pk: str = ""
+    button_name: str = ""
+    button_icon: str = ""
     order: int = 0
     enabled: bool = True
-    help_text: str = ''
-    action: str = ''
+    help_text: str = ""
+    action: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -418,6 +432,5 @@ class ButtonItem(object):
 
     class Constraints(object):
         PK: dict = {"button_item_uid_pk": ["button_item_uid_pk"]}
-        FK: dict = {"button_multi_uid_fk":
-                    ("BUTTON_MULTI", "button_multi_uid_pk")}
+        FK: dict = {"button_multi_uid_fk": ("BUTTON_MULTI", "button_multi_uid_pk")}
         ORDER: list = ["button_name ASC"]

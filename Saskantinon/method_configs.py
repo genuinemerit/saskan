@@ -10,20 +10,18 @@ author:    GM <genuinemerit @ pm.me>
 from os import path
 from pprint import pprint as pp  # noqa: F401
 
-from method_shell import ShellMethods
 from method_files import FileMethods
+from method_shell import ShellMethods
 
 SM = ShellMethods()
 FM = FileMethods()
 
 
 class ConfigMethods(object):
-    """Config IO utilities.
-    """
+    """Config IO utilities."""
 
     def __init__(self):
-        """Initialize ConfigMethods object.
-        """
+        """Initialize ConfigMethods object."""
         pass
 
     def get_configs(self) -> tuple:
@@ -42,9 +40,9 @@ class ConfigMethods(object):
         """
         cfg = dict()
         try:
-            cfg = FM.get_json_file(path.join(
-                SM.get_cwd_home(),
-                "saskan/config/bootstrap.json"))
+            cfg = FM.get_json_file(
+                path.join(SM.get_cwd_home(), "saskan/config/bootstrap.json")
+            )
             return cfg
         except Exception as err:
             print(err)
@@ -56,12 +54,12 @@ class ConfigMethods(object):
         - (dict) DB config values as python dict else None."""
         cfg = dict()
         try:
-            cfg["sql"] = path.join(SM.get_cwd_home(),
-                                   self.BOOT['app_dir'],
-                                   self.BOOT['db_dir'])
-            cfg["main_db"] = path.join(cfg["sql"], self.BOOT['main_db'])
-            cfg["version"] = self.BOOT['db_version']
-            cfg["bkup_db"] = path.join(cfg["sql"], self.BOOT['bkup_db'])
+            cfg["sql"] = path.join(
+                SM.get_cwd_home(), self.BOOT["app_dir"], self.BOOT["db_dir"]
+            )
+            cfg["main_db"] = path.join(cfg["sql"], self.BOOT["main_db"])
+            cfg["version"] = self.BOOT["db_version"]
+            cfg["bkup_db"] = path.join(cfg["sql"], self.BOOT["bkup_db"])
             return cfg
         except Exception as err:
             print(err)

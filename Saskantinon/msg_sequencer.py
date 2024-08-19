@@ -28,7 +28,7 @@ class MsgSequencer(object):
         Convert them to an integer and read the rest of the message.
         """
         size_bytes = await stream.readexactly(4)
-        size = int.from_bytes(size_bytes, byteorder='big')
+        size = int.from_bytes(size_bytes, byteorder="big")
         data = await stream.readexactly(size)
         return data
 
@@ -37,6 +37,6 @@ class MsgSequencer(object):
         First send the size of the message in 4 bytes.
         Then send the message.
         """
-        size_bytes = len(data).to_bytes(4, byteorder='big')
+        size_bytes = len(data).to_bytes(4, byteorder="big")
         stream.writelines([size_bytes, data])
         await stream.drain()

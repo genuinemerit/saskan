@@ -39,7 +39,7 @@ dependencies:
   - isort
   - coverage
   - black
-  - pycodestyle
+  - twine
   - pathlib
   - requests
   - tzlocal

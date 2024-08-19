@@ -6,12 +6,11 @@
 Saskan Data Management middleware.
 """
 
-from pprint import pformat as pf    # noqa: F401
-from pprint import pprint as pp     # noqa: F401
+from pprint import pformat as pf  # noqa: F401
+from pprint import pprint as pp  # noqa: F401
 
 import data_model_tool as DMT
-from data_structs import EntityType
-from data_structs import GroupStruct
+from data_structs import EntityType, GroupStruct
 from method_files import FileMethods
 from method_shell import ShellMethods
 
@@ -61,12 +60,13 @@ class Map(object):
     - May want to provide circular dimensions for 3D maps
     - Might make sense to have separate tables for 2D and 3D maps.
     """
+
     _tablename: str = "MAP"
-    map_uid_pk: str = ''
-    version_id: str = ''
-    map_name: str = ''
-    map_type: str = ''
-    unit_of_measure: str = ''
+    map_uid_pk: str = ""
+    version_id: str = ""
+    map_name: str = ""
+    map_type: str = ""
+    unit_of_measure: str = ""
     origin_2d_lat: float = 0.0
     origin_2d_lon: float = 0.0
     width_e_w_2d: float = 0.0
@@ -91,11 +91,15 @@ class Map(object):
 
     class Constraints(object):
         PK: dict = {"map_uid_pk": ["map_uid_pk"]}
-        CK: dict = {"map_type": EntityType.MAP_TYPE,
-                    "unit_of_measure": EntityType.MEASURE_TYPE}
+        CK: dict = {
+            "map_type": EntityType.MAP_TYPE,
+            "unit_of_measure": EntityType.MEASURE_TYPE,
+        }
         CK: dict = {"map_type": EntityType.MAP_TYPE}
-        GROUP: dict = {"map_geo_2d": GroupStruct.GameGeo,
-                       "map_geo_3d": GroupStruct.Game3DLoc}
+        GROUP: dict = {
+            "map_geo_2d": GroupStruct.GameGeo,
+            "map_geo_3d": GroupStruct.Game3DLoc,
+        }
         ORDER: list = ["map_name ASC"]
 
 
@@ -106,11 +110,12 @@ class MapXMap(object):
     The "touch type" reads in direction 1-->2.
     For example, 1-contains-2, 1-is_contained_by-2, etc.
     """
+
     _tablename: str = "MAP_X_MAP"
-    map_x_map_uid_pk: str = ''
-    map_uid_1_fk: str = ''
-    map_uid_2_fk: str = ''
-    touch_type: str = ''
+    map_x_map_uid_pk: str = ""
+    map_uid_1_fk: str = ""
+    map_uid_2_fk: str = ""
+    touch_type: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -122,8 +127,10 @@ class MapXMap(object):
 
     class Constraints(object):
         PK: dict = {"map_x_map_uid_pk": ["map_x_map_uid_pk"]}
-        FK: dict = {"map_uid_1_fk": ("MAP", "map_uid_pk"),
-                    "map_uid_2_fk": ("MAP", "map_uid_pk")}
+        FK: dict = {
+            "map_uid_1_fk": ("MAP", "map_uid_pk"),
+            "map_uid_2_fk": ("MAP", "map_uid_pk"),
+        }
         CK: dict = {"touch_type": EntityType.MAP_TOUCH_TYPE}
 
 
@@ -151,10 +158,11 @@ class Grid(object):
     The actual size of the grid and its cells is determined by
     rendering software, not by the data model.
     """
+
     _tablename: str = "GRID"
-    grid_uid_pk: str = ''
-    version_id: str = ''
-    grid_name: str = ''
+    grid_uid_pk: str = ""
+    version_id: str = ""
+    grid_name: str = ""
     row_cnt: int = 0
     col_cnt: int = 0
     z_up_cnt: int = 0
@@ -178,10 +186,11 @@ class GridXMap(object):
     Associative keys --
     - GRIDs (n) <--> MAPs (n)
     """
+
     _tablename: str = "GRID_X_MAP"
-    grid_x_map_uid_pk: str = ''
-    grid_uid_fk: str = ''
-    map_uid_fk: str = ''
+    grid_x_map_uid_pk: str = ""
+    grid_uid_fk: str = ""
+    map_uid_fk: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -193,10 +202,10 @@ class GridXMap(object):
 
     class Constraints(object):
         PK: dict = {"grid_x_map_uid_pk": ["grid_x_map_uid_pk"]}
-        FK: dict = {"grid_uid_fk":
-                    ("GRID", "grid_uid_pk"),
-                    "map_uid_fk":
-                    ("MAP", "map_uid_pk")}
+        FK: dict = {
+            "grid_uid_fk": ("GRID", "grid_uid_pk"),
+            "map_uid_fk": ("MAP", "map_uid_pk"),
+        }
 
 
 # =============================================================
@@ -208,9 +217,10 @@ class Universe(object):
     A Universe may contain multiple Galactic Clusters.
     It is conceptualized as a sphere.
     """
+
     _tablename: str = "UNIVERSE"
-    univ_uid_pk: str = ''
-    univ_name: str = ''
+    univ_uid_pk: str = ""
+    univ_name: str = ""
     radius_gly: float = 0.0
     volume_gly3: float = 0.0
     volume_pc3: float = 0.0
@@ -239,10 +249,11 @@ class ExternalUniv(object):
     Universe that lie outside of the "playable" Universe. An External
     Universe is always 1:1 to a Universe. It has no shape, only mass.
     """
+
     _tablename: str = "EXTERNAL_UNIVERSE"
-    external_univ_uid_pk: str = ''
-    univ_uid_fk: str = ''
-    external_univ_name: str = ''
+    external_univ_uid_pk: str = ""
+    univ_uid_fk: str = ""
+    external_univ_name: str = ""
     mass_kg: float = 0.0
     dark_energy_kg: float = 0.0
     dark_matter_kg: float = 0.0
@@ -278,13 +289,14 @@ class GalacticCluster(object):
     - An alternative would be to convert the grouped set back into
       the data structure object when reading from the database.
     """
+
     _tablename: str = "GALACTIC_CLUSTER"
-    galactic_cluster_uid_pk: str = ''
-    univ_uid_fk: str = ''
-    galactic_cluster_name: str = ''
+    galactic_cluster_uid_pk: str = ""
+    univ_uid_fk: str = ""
+    galactic_cluster_name: str = ""
     center_from_univ_center_gly: GroupStruct.CoordXYZ = GroupStruct.CoordXYZ()
     boundary_gly: GroupStruct.Game3DLoc = GroupStruct.Game3DLoc()
-    cluster_shape: str = 'ellipsoid'
+    cluster_shape: str = "ellipsoid"
     shape_pc: GroupStruct.CoordXYZ = GroupStruct.CoordXYZ()
     shape_axes: GroupStruct.AxesABC = GroupStruct.AxesABC()
     shape_rot: GroupStruct.PitchYawRollAngle = GroupStruct.PitchYawRollAngle()
@@ -308,12 +320,14 @@ class GalacticCluster(object):
         PK: dict = {"galactic_cluster_uid_pk": ["galactic_cluster_uid_pk"]}
         FK: dict = {"univ_uid_fk": ("UNIVERSE", "univ_uid_pk")}
         CK: dict = {"cluster_shape": EntityType.CLUSTER_SHAPE}
-        GROUP: dict = {"center_from_univ_center_gly": GroupStruct.CoordXYZ,
-                       "boundary_gly": GroupStruct.Game3DLoc,
-                       "shape_pc": GroupStruct.CoordXYZ,
-                       "shape_axes": GroupStruct.AxesABC,
-                       "shape_rot":  GroupStruct.PitchYawRollAngle,
-                       "timing_pulsar_loc_gly": GroupStruct.CoordXYZ}
+        GROUP: dict = {
+            "center_from_univ_center_gly": GroupStruct.CoordXYZ,
+            "boundary_gly": GroupStruct.Game3DLoc,
+            "shape_pc": GroupStruct.CoordXYZ,
+            "shape_axes": GroupStruct.AxesABC,
+            "shape_rot": GroupStruct.PitchYawRollAngle,
+            "timing_pulsar_loc_gly": GroupStruct.CoordXYZ,
+        }
         ORDER: list = ["galactic_cluster_name ASC"]
 
 
@@ -341,32 +355,28 @@ class Galaxy(object):
     scrubbing? Nah..  I think I got it.  At some point I am stripping a
     comma that should not be stripped, when it precedes a line break.
     """
+
     _tablename: str = "GALAXY"
-    galaxy_uid_pk: str = ''
-    galactic_cluster_uid_fk: str = ''
-    galaxy_name: str = ''
-    relative_size: str = 'medium'
-    center_from_univ_center_kpc: GroupStruct.CoordXYZ =\
-        GroupStruct.CoordXYZ()
+    galaxy_uid_pk: str = ""
+    galactic_cluster_uid_fk: str = ""
+    galaxy_name: str = ""
+    relative_size: str = "medium"
+    center_from_univ_center_kpc: GroupStruct.CoordXYZ = GroupStruct.CoordXYZ()
     halo_radius_pc: float = 0.0
     boundary_pc: GroupStruct.Game3DLoc = GroupStruct.Game3DLoc()
     volume_gpc3: float = 0.0
     mass_kg: float = 0.0
-    bulge_shape: str = 'ellipsoid'
-    bulge_center_from_center_ly: GroupStruct.CoordXYZ =\
-        GroupStruct.CoordXYZ()
+    bulge_shape: str = "ellipsoid"
+    bulge_center_from_center_ly: GroupStruct.CoordXYZ = GroupStruct.CoordXYZ()
     bulge_dim_axes: GroupStruct.AxesABC = GroupStruct.AxesABC()
-    bulge_dim_rot: GroupStruct.PitchYawRollAngle =\
-        GroupStruct.PitchYawRollAngle()
+    bulge_dim_rot: GroupStruct.PitchYawRollAngle = GroupStruct.PitchYawRollAngle()
     bulge_black_hole_mass_kg: float = 0.0
     bulge_volume_ly3: float = 0.0
     bulge_total_mass_kg: float = 0.0
-    star_field_shape: str = 'ellipsoid'
-    star_field_dim_from_center_ly: GroupStruct.CoordXYZ =\
-        GroupStruct.CoordXYZ()
+    star_field_shape: str = "ellipsoid"
+    star_field_dim_from_center_ly: GroupStruct.CoordXYZ = GroupStruct.CoordXYZ()
     star_field_dim_axes: GroupStruct.AxesABC = GroupStruct.AxesABC()
-    star_field_dim_rot: GroupStruct.PitchYawRollAngle =\
-        GroupStruct.PitchYawRollAngle()
+    star_field_dim_rot: GroupStruct.PitchYawRollAngle = GroupStruct.PitchYawRollAngle()
     star_field_vol_ly3: float = 0.0
     star_field_mass_kg: float = 0.0
     interstellar_mass_kg: float = 0.0
@@ -381,20 +391,24 @@ class Galaxy(object):
 
     class Constraints(object):
         PK: dict = {"galaxy_uid_pk": ["galaxy_uid_pk"]}
-        FK: dict = {"galactic_cluster_uid_fk":
-                    ("GALACTIC_CLUSTER",
-                     "galactic_cluster_uid_pk")}
-        CK: dict = {"relative_size": EntityType.RELATIVE_SIZE,
-                    "bulge_shape": EntityType.ASTRO_SHAPE,
-                    "star_field_shape": EntityType.ASTRO_SHAPE}
-        GROUP: dict = {"center_from_univ_center_kpc": GroupStruct.CoordXYZ,
-                       "boundary_pc": GroupStruct.Game3DLoc,
-                       "bulge_center_from_center_ly": GroupStruct.CoordXYZ,
-                       "bulge_dim_axes": GroupStruct.AxesABC,
-                       "bulge_dim_rot": GroupStruct.PitchYawRollAngle,
-                       "star_field_dim_from_center_ly": GroupStruct.CoordXYZ,
-                       "star_field_dim_axes": GroupStruct.AxesABC,
-                       "star_field_dim_rot": GroupStruct.PitchYawRollAngle}
+        FK: dict = {
+            "galactic_cluster_uid_fk": ("GALACTIC_CLUSTER", "galactic_cluster_uid_pk")
+        }
+        CK: dict = {
+            "relative_size": EntityType.RELATIVE_SIZE,
+            "bulge_shape": EntityType.ASTRO_SHAPE,
+            "star_field_shape": EntityType.ASTRO_SHAPE,
+        }
+        GROUP: dict = {
+            "center_from_univ_center_kpc": GroupStruct.CoordXYZ,
+            "boundary_pc": GroupStruct.Game3DLoc,
+            "bulge_center_from_center_ly": GroupStruct.CoordXYZ,
+            "bulge_dim_axes": GroupStruct.AxesABC,
+            "bulge_dim_rot": GroupStruct.PitchYawRollAngle,
+            "star_field_dim_from_center_ly": GroupStruct.CoordXYZ,
+            "star_field_dim_axes": GroupStruct.AxesABC,
+            "star_field_dim_rot": GroupStruct.PitchYawRollAngle,
+        }
         ORDER: list = ["galaxy_name ASC"]
 
 
@@ -488,36 +502,35 @@ class StarSystem(object):
     Conceptualized as a bulging shape, usually ellipsoid, centered in
     a boundary box.
     """
+
     _tablename: str = "STAR_SYSTEM"
-    star_system_uid_pk: str = ''
-    galaxy_uid_fk: str = ''
-    star_system_name: str = ''
+    star_system_uid_pk: str = ""
+    galaxy_uid_fk: str = ""
+    star_system_name: str = ""
     is_black_hole: bool = False
     is_pulsar: bool = False
     boundary_pc: GroupStruct.Game3DLoc = GroupStruct.Game3DLoc()
     volume_pc3: float = 0.0
     mass_kg: float = 0.0
-    system_shape: str = 'ellipsoid'
-    center_from_galaxy_center_pc: GroupStruct.CoordXYZ =\
-        GroupStruct.CoordXYZ()
+    system_shape: str = "ellipsoid"
+    center_from_galaxy_center_pc: GroupStruct.CoordXYZ = GroupStruct.CoordXYZ()
     system_dim_axes: GroupStruct.AxesABC = GroupStruct.AxesABC()
-    system_dim_rot: GroupStruct.PitchYawRollAngle =\
-        GroupStruct.PitchYawRollAngle()
-    relative_size: str = 'medium'
-    spectral_class: str = 'G'
+    system_dim_rot: GroupStruct.PitchYawRollAngle = GroupStruct.PitchYawRollAngle()
+    relative_size: str = "medium"
+    spectral_class: str = "G"
     aprox_age_gyr: float = 0.0
-    luminosity_class: str = 'V'
-    frequency_of_flares: str = 'rare'
-    intensity_of_flares: str = 'low'
-    frequency_of_comets: str = 'rare'
+    luminosity_class: str = "V"
+    frequency_of_flares: str = "rare"
+    intensity_of_flares: str = "low"
+    frequency_of_comets: str = "rare"
     unbound_planets_cnt: int = 0
     orbiting_planets_cnt: int = 0
     inner_habitable_boundary_au: float = 0.0
     outer_habitable_boundary_au: float = 0.0
-    planetary_orbits_shape: str = 'circular'
-    orbital_stability: str = 'stable'
-    asteroid_belt_density: str = 'sparse'
-    asteroid_belt_loc: str = 'inner'
+    planetary_orbits_shape: str = "circular"
+    orbital_stability: str = "stable"
+    asteroid_belt_density: str = "sparse"
+    asteroid_belt_loc: str = "inner"
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -530,21 +543,25 @@ class StarSystem(object):
     class Constraints(object):
         PK: dict = {"star_system_uid_pk": ["star_system_uid_pk"]}
         FK: dict = {"galaxy_uid_fk": ("GALAXY", "galaxy_uid_pk")}
-        CK: dict = {"relative_size": EntityType.RELATIVE_SIZE,
-                    "spectral_class": EntityType.SPECTRAL_CLASS,
-                    'luminosity_class': EntityType.LUMINOSITY_CLASS,
-                    "system_shape": EntityType.ASTRO_SHAPE,
-                    "planetary_orbits_shape": EntityType.ORBITAL_SHAPE,
-                    "orbital_stability": EntityType.STABILITY,
-                    "asteroid_belt_density": EntityType.DENSITY,
-                    'asteroid_belt_loc': EntityType.ASTRO_LOCATION,
-                    "frequency_of_flares": EntityType.FREQUENCY,
-                    "intensity_of_flares": EntityType.INTENSITY,
-                    "frequency_of_comets": EntityType.FREQUENCY}
-        GROUP: dict = {"boundary_pc": GroupStruct.Game3DLoc,
-                       "center_from_galaxy_center_pc": GroupStruct.CoordXYZ,
-                       "system_dim_axes": GroupStruct.AxesABC,
-                       "system_dim_rot": GroupStruct.PitchYawRollAngle}
+        CK: dict = {
+            "relative_size": EntityType.RELATIVE_SIZE,
+            "spectral_class": EntityType.SPECTRAL_CLASS,
+            "luminosity_class": EntityType.LUMINOSITY_CLASS,
+            "system_shape": EntityType.ASTRO_SHAPE,
+            "planetary_orbits_shape": EntityType.ORBITAL_SHAPE,
+            "orbital_stability": EntityType.STABILITY,
+            "asteroid_belt_density": EntityType.DENSITY,
+            "asteroid_belt_loc": EntityType.ASTRO_LOCATION,
+            "frequency_of_flares": EntityType.FREQUENCY,
+            "intensity_of_flares": EntityType.INTENSITY,
+            "frequency_of_comets": EntityType.FREQUENCY,
+        }
+        GROUP: dict = {
+            "boundary_pc": GroupStruct.Game3DLoc,
+            "center_from_galaxy_center_pc": GroupStruct.CoordXYZ,
+            "system_dim_axes": GroupStruct.AxesABC,
+            "system_dim_rot": GroupStruct.PitchYawRollAngle,
+        }
         ORDER: list = ["star_system_name ASC"]
 
 
@@ -566,12 +583,13 @@ class World(object):
     """
     A World is a planet within a Star System. It may be habitable or not.
     """
+
     _tablename: str = "WORLD"
-    world_uid_pk: str = ''
-    star_system_uid_fk: str = ''
-    world_name: str = ''
-    world_type: str = 'habitable'
-    obliquity_dg: float = 0.0    # a/k/a axial tilt
+    world_uid_pk: str = ""
+    star_system_uid_fk: str = ""
+    world_name: str = ""
+    world_type: str = "habitable"
+    obliquity_dg: float = 0.0  # a/k/a axial tilt
     distance_from_star_au: float = 0.0
     distance_from_star_km: float = 0.0
     radius_km: float = 0.0
@@ -581,17 +599,17 @@ class World(object):
     orbit_gyr: float = 0.0
     is_tidally_locked: bool = False
     rotation_gdy: float = 0.0
-    rotation_direction: str = 'prograde'
-    orbit_direction: str = 'prograde'
+    rotation_direction: str = "prograde"
+    orbit_direction: str = "prograde"
     moons_cnt: int = 0
-    world_desc: str = ''
-    atmosphere: str = ''
-    sky_color: str = 'blue'
-    biosphere: str = ''
-    sentients: str = ''
-    climate: str = ''
-    tech_level: str = ''
-    terrain: str = ''
+    world_desc: str = ""
+    atmosphere: str = ""
+    sky_color: str = "blue"
+    biosphere: str = ""
+    sentients: str = ""
+    climate: str = ""
+    tech_level: str = ""
+    terrain: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -603,11 +621,12 @@ class World(object):
 
     class Constraints(object):
         PK: dict = {"world_uid_pk": ["world_uid_pk"]}
-        FK: dict = {"star_system_uid_fk":
-                    ("STAR_SYSTEM", "star_system_uid_pk")}
-        CK: dict = {"world_type": EntityType.WORLD_TYPE,
-                    "rotation_direction": EntityType.ASTRO_DIRECTION,
-                    "orbit_direction": EntityType.ASTRO_DIRECTION}
+        FK: dict = {"star_system_uid_fk": ("STAR_SYSTEM", "star_system_uid_pk")}
+        CK: dict = {
+            "world_type": EntityType.WORLD_TYPE,
+            "rotation_direction": EntityType.ASTRO_DIRECTION,
+            "orbit_direction": EntityType.ASTRO_DIRECTION,
+        }
         ORDER: list = ["world_name ASC"]
 
 
@@ -617,17 +636,18 @@ class Moon(object):
     A Moon is associated with one World, and multiple Moons can be
     associated with one World.
     """
+
     _tablename: str = "MOON"
-    moon_uid_pk: str = ''
-    world_uid_fk: str = ''
-    moon_name: str = ''
+    moon_uid_pk: str = ""
+    world_uid_fk: str = ""
+    moon_name: str = ""
     center_from_world_center_km: GroupStruct.CoordXYZ
     mass_kg: float = 0.0
     radius_km: float = 0.0
-    obliquity_dg: float = 0.0    # a/k/a axial tilt
+    obliquity_dg: float = 0.0  # a/k/a axial tilt
     is_tidally_locked: bool = True
-    rotation_direction: str = 'prograde'
-    orbit_direction: str = 'prograde'
+    rotation_direction: str = "prograde"
+    orbit_direction: str = "prograde"
     orbit_world_days: float = 0.0
     rotation_world_days: float = 0.0
     initial_velocity: float = 0.0
@@ -644,8 +664,10 @@ class Moon(object):
     class Constraints(object):
         PK: dict = {"moon_uid_pk": ["moon_uid_pk"]}
         FK: dict = {"world_uid_fk": ("WORLD", "world_uid_pk")}
-        CK: dict = {"rotation_direction": EntityType.ASTRO_DIRECTION,
-                    "orbit_direction": EntityType.ASTRO_DIRECTION}
+        CK: dict = {
+            "rotation_direction": EntityType.ASTRO_DIRECTION,
+            "orbit_direction": EntityType.ASTRO_DIRECTION,
+        }
         GROUP: dict = {"center_from_world_center_km": GroupStruct.CoordXYZ}
         ORDER: list = ["moon_name ASC"]
 
@@ -669,14 +691,15 @@ class SolarYear(object):
       way they don't account for leap days/years in the
       same way.
     """
+
     _tablename: str = "SOLAR_YEAR"
-    solar_year_uid_pk: str = ''
-    world_uid_fk: str = ''
-    lang_uid_fk: str = ''
-    solar_year_key: str = ''
-    version_id: str = ''
-    solar_year_name: str = ''
-    solar_year_desc: str = ''
+    solar_year_uid_pk: str = ""
+    world_uid_fk: str = ""
+    lang_uid_fk: str = ""
+    solar_year_key: str = ""
+    version_id: str = ""
+    solar_year_name: str = ""
+    solar_year_desc: str = ""
     days_in_solar_year: float = 0.0
 
     def to_dict(self) -> dict:
@@ -689,8 +712,10 @@ class SolarYear(object):
 
     class Constraints(object):
         PK: dict = {"solar_year_uid_pk": ["solar_year_uid_pk"]}
-        FK: dict = {"world_uid_fk": ("WORLD", "world_uid_pk"),
-                    "lang_uid_fk": ("LANGUAGE", "lang_uid_pk")}
+        FK: dict = {
+            "world_uid_fk": ("WORLD", "world_uid_pk"),
+            "lang_uid_fk": ("LANGUAGE", "lang_uid_pk"),
+        }
         ORDER: list = ["solar_year_key ASC", "version_id ASC"]
 
 
@@ -705,13 +730,14 @@ class Season(object):
     Names of seasons are handled as foreign keys to a common
     glossary item.
     """
+
     _tablename: str = "SEASON"
-    season_uid_pk: str = ''
-    solar_year_uid_fk: str = ''
-    gloss_common_uid_fk: str = ''
-    version_id: str = ''
-    season_type: str = ''
-    hemisphere_type: str = ''
+    season_uid_pk: str = ""
+    solar_year_uid_fk: str = ""
+    gloss_common_uid_fk: str = ""
+    version_id: str = ""
+    season_type: str = ""
+    hemisphere_type: str = ""
     years_in_season: float = 0.0
 
     def to_dict(self) -> dict:
@@ -724,11 +750,14 @@ class Season(object):
 
     class Constraints(object):
         PK: dict = {"season_uid_pk": ["season_uid_pk"]}
-        FK: dict = {"solar_year_uid_fk": ("SOLAR_YEAR", "solar_year_uid_pk"),
-                    "gloss_common_uid_fk":
-                    ("GLOSS_COMMON", "gloss_common_uid_pk")}
-        CK: dict = {"season_type": EntityType.SEASON_TYPE,
-                    "hemisphere_type": EntityType.HEMISPHERE_TYPE}
+        FK: dict = {
+            "solar_year_uid_fk": ("SOLAR_YEAR", "solar_year_uid_pk"),
+            "gloss_common_uid_fk": ("GLOSS_COMMON", "gloss_common_uid_pk"),
+        }
+        CK: dict = {
+            "season_type": EntityType.SEASON_TYPE,
+            "hemisphere_type": EntityType.HEMISPHERE_TYPE,
+        }
         ORDER: list = ["season_uid_pk ASC", "season_type ASC"]
 
 
@@ -749,14 +778,15 @@ class LunarYear(object):
 
     The Lunar Year is astronomical data and not a Calendar.
     """
+
     _tablename: str = "LUNAR_YEAR"
-    lunar_year_uid_pk: str = ''
-    world_uid_fk: str = ''
-    lang_uid_fk: str = ''
-    lunar_year_key: str = ''
-    version_id: str = ''
-    lunar_year_name: str = ''
-    lunar_year_desc: str = ''
+    lunar_year_uid_pk: str = ""
+    world_uid_fk: str = ""
+    lang_uid_fk: str = ""
+    lunar_year_key: str = ""
+    version_id: str = ""
+    lunar_year_name: str = ""
+    lunar_year_desc: str = ""
     days_in_lunar_year: float = 0.0
 
     def to_dict(self) -> dict:
@@ -769,8 +799,10 @@ class LunarYear(object):
 
     class Constraints(object):
         PK: dict = {"lunar_year_uid_pk": ["lunar_year_uid_pk"]}
-        FK: dict = {"world_uid_fk": ("WORLD", "world_uid_pk"),
-                    "lang_uid_fk": ("LANGUAGE", "lang_uid_pk")}
+        FK: dict = {
+            "world_uid_fk": ("WORLD", "world_uid_pk"),
+            "lang_uid_fk": ("LANGUAGE", "lang_uid_pk"),
+        }
         ORDER: list = ["lunar_year_key ASC", "version_id ASC"]
 
 
@@ -781,10 +813,11 @@ class LunarYearXMoon(object):
     This table associates Lunar Year astro data with a
     specific moon.
     """
+
     _tablename: str = "LUNAR_YEAR_X_MOON"
-    lunar_year_x_moon_uid_pk: str = ''
-    lunar_year_uid_fk: str = ''
-    moon_uid_fk: str = ''
+    lunar_year_x_moon_uid_pk: str = ""
+    lunar_year_uid_fk: str = ""
+    moon_uid_fk: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -795,11 +828,11 @@ class LunarYearXMoon(object):
         return DMT.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"lunar_year_x_moon_uid_pk":
-                    ["lunar_year_x_moon_uid_pk"]}
-        FK: dict = {"lunar_year_uid_fk": ("LUNAR_YEAR",
-                    "lunar_year_uid_pk"),
-                    "moon_uid_fk": ("MOON", "moon_uid_pk")}
+        PK: dict = {"lunar_year_x_moon_uid_pk": ["lunar_year_x_moon_uid_pk"]}
+        FK: dict = {
+            "lunar_year_uid_fk": ("LUNAR_YEAR", "lunar_year_uid_pk"),
+            "moon_uid_fk": ("MOON", "moon_uid_pk"),
+        }
 
 
 class SolarCalendar(object):
@@ -813,14 +846,15 @@ class SolarCalendar(object):
     Months, Weeks, Days, Hours, etc are defined in distinct tables
     that are associated with Solar and/or Lunar Calendars.
     """
+
     _tablename: str = "SOLAR_CALENDAR"
-    solar_calendar_uid_pk: str = ''
-    solar_year_uid_fk: str = ''
-    year_name_gloss_common_uid_fk: str = ''
-    season_start_uid_fk: str = ''
-    solar_calendar_id: str = ''
-    solar_calendar_desc: str = ''
-    version_id: str = ''
+    solar_calendar_uid_pk: str = ""
+    solar_year_uid_fk: str = ""
+    year_name_gloss_common_uid_fk: str = ""
+    season_start_uid_fk: str = ""
+    solar_calendar_id: str = ""
+    solar_calendar_desc: str = ""
+    version_id: str = ""
     epoch_start_offset: int = 0
     months_in_year: int = 0
     watches_in_day: int = 0
@@ -830,7 +864,7 @@ class SolarCalendar(object):
     leap_year: int = 0
     leap_month: int = 0
     leap_days: int = 0
-    leap_rule: str = 'add_to_end_of_nth_month'
+    leap_rule: str = "add_to_end_of_nth_month"
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -842,12 +876,11 @@ class SolarCalendar(object):
 
     class Constraints(object):
         PK: dict = {"solar_calendar_uid_pk": ["solar_calendar_uid_pk"]}
-        FK: dict = {"solar_year_uid_fk":
-                    ("SOLAR_YEAR", "solar_year_uid_pk"),
-                    "year_name_gloss_common_uid_fk":
-                    ("GLOSS_COMMON", "gloss_common_uid_pk"),
-                    "season_start_uid_fk":
-                    ("SEASON", "season_uid_pk")}
+        FK: dict = {
+            "solar_year_uid_fk": ("SOLAR_YEAR", "solar_year_uid_pk"),
+            "year_name_gloss_common_uid_fk": ("GLOSS_COMMON", "gloss_common_uid_pk"),
+            "season_start_uid_fk": ("SEASON", "season_uid_pk"),
+        }
         CK: dict = {"leap_rule": EntityType.LEAP_RULE}
         ORDER: list = ["solar_calendar_id ASC", "version_id ASC"]
 
@@ -864,13 +897,14 @@ class LunarCalendar(object):
     that are associated with Solar and/or Lunar Calendars.
 
     """
+
     _tablename: str = "LUNAR_CALENDAR"
-    lunar_calendar_uid_pk: str = ''
-    lunar_year_uid_fk: str = ''
-    year_name_gloss_common_uid_fk: str = ''
-    lunar_calendar_id: str = ''
-    lunar_calendar_desc: str = ''
-    version_id: str = ''
+    lunar_calendar_uid_pk: str = ""
+    lunar_year_uid_fk: str = ""
+    year_name_gloss_common_uid_fk: str = ""
+    lunar_calendar_id: str = ""
+    lunar_calendar_desc: str = ""
+    version_id: str = ""
     epoch_start_offset: int = 0
     days_in_month: int = 0
 
@@ -884,10 +918,10 @@ class LunarCalendar(object):
 
     class Constraints(object):
         PK: dict = {"lunar_calendar_uid_pk": ["lunar_calendar_uid_pk"]}
-        FK: dict = {"lunar_year_uid_fk":
-                    ("LUNAR_YEAR", "lunar_year_uid_pk"),
-                    "year_name_gloss_common_uid_fk":
-                    ("GLOSS_COMMON", "gloss_common_uid_pk")}
+        FK: dict = {
+            "lunar_year_uid_fk": ("LUNAR_YEAR", "lunar_year_uid_pk"),
+            "year_name_gloss_common_uid_fk": ("GLOSS_COMMON", "gloss_common_uid_pk"),
+        }
         ORDER: list = ["lunar_calendar_id ASC", "version_id ASC"]
 
 
@@ -898,11 +932,12 @@ class Month(object):
     - is_leap_day_month: true if the month contains leap day/s
     - is_leap_month: true if entire month is leap days
     """
+
     _tablename: str = "MONTH"
-    month_uid_pk: str = ''
-    month_name_gloss_common_uid_fk: str = ''
-    month_id: str = ''
-    version_id: str = ''
+    month_uid_pk: str = ""
+    month_name_gloss_common_uid_fk: str = ""
+    month_id: str = ""
+    version_id: str = ""
     days_in_month: int = 0
     months_number: int = 0
     is_leap_day_month: bool = False
@@ -918,8 +953,9 @@ class Month(object):
 
     class Constraints(object):
         PK: dict = {"month_uid_pk": ["month_uid_pk"]}
-        FK: dict = {"month_name_gloss_common_uid_fk":
-                    ("GLOSS_COMMON", "gloss_common_uid_pk")}
+        FK: dict = {
+            "month_name_gloss_common_uid_fk": ("GLOSS_COMMON", "gloss_common_uid_pk")
+        }
         ORDER: list = ["month_id ASC", "version_id ASC"]
 
 
@@ -930,10 +966,11 @@ class SolarCalendarXMonth(object):
     This table associates Solar Calendar data with a
     set of Months.
     """
+
     _tablename: str = "SOLAR_CALENDAR_X_MONTH"
-    solar_calendar_x_moon_uid_pk: str = ''
-    solar_calendar_uid_fk: str = ''
-    month_uid_fk: str = ''
+    solar_calendar_x_moon_uid_pk: str = ""
+    solar_calendar_uid_fk: str = ""
+    month_uid_fk: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -944,11 +981,11 @@ class SolarCalendarXMonth(object):
         return DMT.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"solar_calendar_x_moon_uid_pk":
-                    ["solar_calendar_x_moon_uid_pk"]}
-        FK: dict = {"solar_calendar_uid_fk": ("SOLAR_CALENDAR",
-                    "solar_calendar_uid_pk"),
-                    "month_uid_fk": ("MONTH", "month_uid_pk")}
+        PK: dict = {"solar_calendar_x_moon_uid_pk": ["solar_calendar_x_moon_uid_pk"]}
+        FK: dict = {
+            "solar_calendar_uid_fk": ("SOLAR_CALENDAR", "solar_calendar_uid_pk"),
+            "month_uid_fk": ("MONTH", "month_uid_pk"),
+        }
 
 
 class LunarCalendarXMonth(object):
@@ -958,10 +995,11 @@ class LunarCalendarXMonth(object):
     This table associates Lunar Calendar data with a
     set of Months.
     """
+
     _tablename: str = "LUNAR_CALENDAR_X_MONTH"
-    lunar_calendar_x_moon_uid_pk: str = ''
-    lunar_calendar_uid_fk: str = ''
-    month_uid_fk: str = ''
+    lunar_calendar_x_moon_uid_pk: str = ""
+    lunar_calendar_uid_fk: str = ""
+    month_uid_fk: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -972,11 +1010,11 @@ class LunarCalendarXMonth(object):
         return DMT.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"lunar_calendar_x_moon_uid_pk":
-                    ["lunar_calendar_x_moon_uid_pk"]}
-        FK: dict = {"lunar_calendar_uid_fk": ("LUNAR_CALENDAR",
-                    "lunar_calendar_uid_pk"),
-                    "month_uid_fk": ("MONTH", "month_uid_pk")}
+        PK: dict = {"lunar_calendar_x_moon_uid_pk": ["lunar_calendar_x_moon_uid_pk"]}
+        FK: dict = {
+            "lunar_calendar_uid_fk": ("LUNAR_CALENDAR", "lunar_calendar_uid_pk"),
+            "month_uid_fk": ("MONTH", "month_uid_pk"),
+        }
 
 
 class WeekTime(object):
@@ -990,12 +1028,13 @@ class WeekTime(object):
     - week_time_number: optional; order of week if multiples
     - is_leap_week_time: true if the week contains only leap day/s
     """
+
     _tablename: str = "WEEK_TIME"
-    week_time_uid_pk: str = ''
-    week_time_name_gloss_common_uid_fk: str = ''
-    week_time_desc: str = ''
-    week_time_id: str = ''
-    version_id: str = ''
+    week_time_uid_pk: str = ""
+    week_time_name_gloss_common_uid_fk: str = ""
+    week_time_desc: str = ""
+    week_time_id: str = ""
+    version_id: str = ""
     days_in_week_time: int = 0
     week_time_number: int = 0
     is_leap_week_time: bool = False
@@ -1010,8 +1049,12 @@ class WeekTime(object):
 
     class Constraints(object):
         PK: dict = {"week_time_uid_pk": ["week_time_uid_pk"]}
-        FK: dict = {"week_time_name_gloss_common_uid_fk":
-                    ("GLOSS_COMMON", "gloss_common_uid_pk")}
+        FK: dict = {
+            "week_time_name_gloss_common_uid_fk": (
+                "GLOSS_COMMON",
+                "gloss_common_uid_pk",
+            )
+        }
         ORDER: list = ["week_time_id ASC", "version_id ASC"]
 
 
@@ -1022,10 +1065,11 @@ class SolarCalendarXWeekTime(object):
     This table associates Solar Calendar data with a
     set of Week Times.
     """
+
     _tablename: str = "SOLAR_CALENDAR_X_WEEK_TIME"
-    solar_calendar_x_week_time_uid_pk: str = ''
-    solar_calendar_uid_fk: str = ''
-    week_time_uid_fk: str = ''
+    solar_calendar_x_week_time_uid_pk: str = ""
+    solar_calendar_uid_fk: str = ""
+    week_time_uid_fk: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -1036,11 +1080,13 @@ class SolarCalendarXWeekTime(object):
         return DMT.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"solar_calendar_x_week_time_uid_pk":
-                    ["solar_calendar_x_week_time_uid_pk"]}
-        FK: dict = {"solar_calendar_uid_fk": ("SOLAR_CALENDAR",
-                    "solar_calendar_uid_pk"),
-                    "week_time_uid_fk": ("WEEK_TIME", "week_time_uid_pk")}
+        PK: dict = {
+            "solar_calendar_x_week_time_uid_pk": ["solar_calendar_x_week_time_uid_pk"]
+        }
+        FK: dict = {
+            "solar_calendar_uid_fk": ("SOLAR_CALENDAR", "solar_calendar_uid_pk"),
+            "week_time_uid_fk": ("WEEK_TIME", "week_time_uid_pk"),
+        }
 
 
 class LunarCalendarXWeekTime(object):
@@ -1050,10 +1096,11 @@ class LunarCalendarXWeekTime(object):
     This table associates Lunar Calendar data with a
     set of Week Times.
     """
+
     _tablename: str = "LUNAR_CALENDAR_X_WEEK_TIME"
-    lunar_calendar_x_week_time_uid_pk: str = ''
-    lunar_calendar_uid_fk: str = ''
-    week_time_uid_fk: str = ''
+    lunar_calendar_x_week_time_uid_pk: str = ""
+    lunar_calendar_uid_fk: str = ""
+    week_time_uid_fk: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -1064,11 +1111,13 @@ class LunarCalendarXWeekTime(object):
         return DMT.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"lunar_calendar_x_week_time_uid_pk":
-                    ["lunar_calendar_x_week_time_uid_pk"]}
-        FK: dict = {"lunar_calendar_uid_fk": ("LUNAR_CALENDAR",
-                    "lunar_calendar_uid_pk"),
-                    "week_time_uid_fk": ("WEEK_TIME", "week_time_uid_pk")}
+        PK: dict = {
+            "lunar_calendar_x_week_time_uid_pk": ["lunar_calendar_x_week_time_uid_pk"]
+        }
+        FK: dict = {
+            "lunar_calendar_uid_fk": ("LUNAR_CALENDAR", "lunar_calendar_uid_pk"),
+            "week_time_uid_fk": ("WEEK_TIME", "week_time_uid_pk"),
+        }
 
 
 class DayTime(object):
@@ -1083,12 +1132,13 @@ class DayTime(object):
     - day_time_number: order of day in a week
     - is_leap_day_time: true if the day is only a leap day
     """
+
     _tablename: str = "DAY_TIME"
-    day_time_uid_pk: str = ''
-    day_time_name_gloss_common_uid_fk: str = ''
-    day_time_desc: str = ''
-    day_time_id: str = ''
-    version_id: str = ''
+    day_time_uid_pk: str = ""
+    day_time_name_gloss_common_uid_fk: str = ""
+    day_time_desc: str = ""
+    day_time_id: str = ""
+    version_id: str = ""
     hours_in_day_time: int = 0
     day_time_number: int = 0
     is_leap_day_time: bool = False
@@ -1103,8 +1153,9 @@ class DayTime(object):
 
     class Constraints(object):
         PK: dict = {"day_time_uid_pk": ["day_time_uid_pk"]}
-        FK: dict = {"day_time_name_gloss_common_uid_fk":
-                    ("GLOSS_COMMON", "gloss_common_uid_pk")}
+        FK: dict = {
+            "day_time_name_gloss_common_uid_fk": ("GLOSS_COMMON", "gloss_common_uid_pk")
+        }
         ORDER: list = ["day_time_id ASC", "version_id ASC"]
 
 
@@ -1115,10 +1166,11 @@ class WeekTimeXDayTime(object):
     This table associates Week Time data with a
     set of Day Times.
     """
+
     _tablename: str = "WEEK_TIME_X_DAY_TIME"
-    week_time_x_day_time_uid_pk: str = ''
-    week_time_uid_fk: str = ''
-    day_time_uid_fk: str = ''
+    week_time_x_day_time_uid_pk: str = ""
+    week_time_uid_fk: str = ""
+    day_time_uid_fk: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -1129,10 +1181,11 @@ class WeekTimeXDayTime(object):
         return DMT.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"week_time_x_day_time_uid_pk":
-                    ["week_time_x_day_time_uid_pk"]}
-        FK: dict = {"week_time_uid_fk": ("WEEK_TIME", "week_time_uid_pk"),
-                    "day_time_uid_fk": ("DAY_TIME", "day_time_uid_pk")}
+        PK: dict = {"week_time_x_day_time_uid_pk": ["week_time_x_day_time_uid_pk"]}
+        FK: dict = {
+            "week_time_uid_fk": ("WEEK_TIME", "week_time_uid_pk"),
+            "day_time_uid_fk": ("DAY_TIME", "day_time_uid_pk"),
+        }
 
 
 # Next: Hours, Scenes, Locations, Buildings, Sets, Characters, Inventories,
@@ -1141,6 +1194,7 @@ class WeekTimeXDayTime(object):
 # the front end and middle ware to the new database and data model, including
 # generation of initial set-up data. Maybe do some implementation on the
 # financial app too.
+
 
 # =============================================================
 # Semantics and Languages
@@ -1168,11 +1222,12 @@ class CharSet(object):
     actually be compound, with one portion signalling the
     pronunciation, and another portion signalling the meaning.
     """
+
     _tablename: str = "CHAR_SET"
-    char_set_uid_pk: str = ''
-    char_set_name: str = ''
-    char_set_type: str = 'alphabet'
-    char_set_desc: str = ''
+    char_set_uid_pk: str = ""
+    char_set_name: str = ""
+    char_set_type: str = "alphabet"
+    char_set_desc: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -1198,12 +1253,13 @@ class CharMember(object):
     (character set) they belong to. Further categorizations
     are possible for numerics, punctuation, and so on.
     """
+
     _tablename: str = "CHAR_MEMBER"
-    char_member_uid_pk: str = ''
-    char_set_uid_fk: str = ''
-    char_member_name: str = ''
-    char_member_uri: str = ''
-    char_member_desc: str = ''
+    char_member_uid_pk: str = ""
+    char_set_uid_fk: str = ""
+    char_member_name: str = ""
+    char_member_uri: str = ""
+    char_member_desc: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -1228,13 +1284,14 @@ class LangFamily(object):
     - cultural influences: e.g. from other languages, or from
       historical events, migration patterns, etc.
     """
+
     _tablename: str = "LANG_FAMILY"
-    lang_family_uid_pk: str = ''
-    char_set_uid_fk: str = ''
-    lang_family_name: str = ''
-    lang_family_desc: str = ''
-    phonetics: str = ''
-    cultural_influences: str = ''
+    lang_family_uid_pk: str = ""
+    char_set_uid_fk: str = ""
+    lang_family_name: str = ""
+    lang_family_desc: str = ""
+    phonetics: str = ""
+    cultural_influences: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -1252,67 +1309,68 @@ class LangFamily(object):
 
 class Language(object):
     """
-    Describe basic features of a language, without getting too
-    complicated.
-    - desc: overiew
-    - gramatics: how phrases are generally structured,
-        e.g. subject-verb-object
-    - lexicals: major sources of lexicon, for example, lots of
-        words relating to the sea, or to the sky, or to the
-        land, or to the stars, or to the gods, etc.
-    - social influences: e.g. from other languages, or from
-        class, trade, migration patterns, etc.
-    - word formations:  how words are generally structured,
-        e.g. single-syllable-only, consonant-vowel-consonant,
-        multiples by prefix, etc.
-    More possible features:
-/*
-lang_object structure:
-{"glossary":
-    {"phrase": "definition", ...},
- "lexicon":
-    {"word": "definition", ...},
- "grammar":
-    # the entire structure of a language, includes most of the
-    following,
-    # as well as things like rules for making plurals, etc.
-    {"rule": "explanation", ...},
- "phonology":
-   # distribtution of phonemes (sounds) in a language
-    {"rule": "explanation", ...},
- "morphology":
-   # how words are constructed from morphemes (smallest units
-   of meaning)
-    {"rule": "explanation", ...},
- "syntax":
-    # how words are combined into phrases and sentences
-    {"rule": "explanation", ...},
- "semantics":
-    {"rule": "explanation", ...},
- "pragmatics":
-   # how context affects meaning, for example, intention,
-   social status, etc.
-    {"rule": "explanation", ...},
- "orthography":
-   # how a language is written, for example, alphabet,
-   syllabary, etc.
-    {"rule": "explanation", ...},
-    {"letter": "pronunciation", ...},
- "phonotactics":
-    # how sounds are combined into syllables and words
-     {"rule": "explanation", ...},
-    {"rule": "explanation", ...},
-*/
+        Describe basic features of a language, without getting too
+        complicated.
+        - desc: overiew
+        - gramatics: how phrases are generally structured,
+            e.g. subject-verb-object
+        - lexicals: major sources of lexicon, for example, lots of
+            words relating to the sea, or to the sky, or to the
+            land, or to the stars, or to the gods, etc.
+        - social influences: e.g. from other languages, or from
+            class, trade, migration patterns, etc.
+        - word formations:  how words are generally structured,
+            e.g. single-syllable-only, consonant-vowel-consonant,
+            multiples by prefix, etc.
+        More possible features:
+    /*
+    lang_object structure:
+    {"glossary":
+        {"phrase": "definition", ...},
+     "lexicon":
+        {"word": "definition", ...},
+     "grammar":
+        # the entire structure of a language, includes most of the
+        following,
+        # as well as things like rules for making plurals, etc.
+        {"rule": "explanation", ...},
+     "phonology":
+       # distribtution of phonemes (sounds) in a language
+        {"rule": "explanation", ...},
+     "morphology":
+       # how words are constructed from morphemes (smallest units
+       of meaning)
+        {"rule": "explanation", ...},
+     "syntax":
+        # how words are combined into phrases and sentences
+        {"rule": "explanation", ...},
+     "semantics":
+        {"rule": "explanation", ...},
+     "pragmatics":
+       # how context affects meaning, for example, intention,
+       social status, etc.
+        {"rule": "explanation", ...},
+     "orthography":
+       # how a language is written, for example, alphabet,
+       syllabary, etc.
+        {"rule": "explanation", ...},
+        {"letter": "pronunciation", ...},
+     "phonotactics":
+        # how sounds are combined into syllables and words
+         {"rule": "explanation", ...},
+        {"rule": "explanation", ...},
+    */
     """
+
     _tablename: str = "LANGUAGE"
-    lang_uid_pk: str = ''
-    lang_family_uid_fk: str = ''
-    lang_name: str = ''
-    lang_desc: str = ''
-    gramatics: str = ''
-    lexicals: str = ''
-    social_influences: str = ''
-    word_formations: str = ''
+    lang_uid_pk: str = ""
+    lang_family_uid_fk: str = ""
+    lang_name: str = ""
+    lang_desc: str = ""
+    gramatics: str = ""
+    lexicals: str = ""
+    social_influences: str = ""
+    word_formations: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -1324,8 +1382,7 @@ lang_object structure:
 
     class Constraints(object):
         PK: dict = {"lang_uid_pk": ["lang_uid_pk"]}
-        FK: dict = {"lang_family_uid_fk":
-                    ("LANG_FAMILY", "lang_family_uid_pk")}
+        FK: dict = {"lang_family_uid_fk": ("LANG_FAMILY", "lang_family_uid_pk")}
         ORDER: list = ["lang_name ASC"]
 
 
@@ -1340,14 +1397,15 @@ class LangDialect(object):
     - preservation_factors: how the dialect preserves old features
       of the main language which are no longer standard
     """
+
     _tablename: str = "LANG_DIALECT"
-    dialect_uid_pk: str = ''
-    lang_uid_fk: str = ''
-    dialect_name: str = ''
-    dialect_desc: str = ''
-    divergence_factors: str = ''
-    syncretic_factors: str = ''
-    preservation_factors: str = ''
+    dialect_uid_pk: str = ""
+    lang_uid_fk: str = ""
+    dialect_name: str = ""
+    dialect_desc: str = ""
+    divergence_factors: str = ""
+    syncretic_factors: str = ""
+    preservation_factors: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -1379,13 +1437,14 @@ class GlossCommon(object):
     - gloss_uri (optional): a URI for the glossary entry, a web page,
       a local file or external software/plug-in, a sound file, etc.
     """
+
     _tablename: str = "GLOSS_COMMON"
-    gloss_common_uid_pk: str = ''
-    dialect_uid_fk: str = ''
-    gloss_type: str = ''
-    gloss_name: str = ''
-    gloss_value: str = ''
-    gloss_uri: str = ''
+    gloss_common_uid_pk: str = ""
+    dialect_uid_fk: str = ""
+    gloss_type: str = ""
+    gloss_name: str = ""
+    gloss_value: str = ""
+    gloss_uri: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -1407,14 +1466,15 @@ class Glossary(object):
     The glossary is a multi-lingual dictionary as well an extension
     for the GlossCommon items.
     """
+
     _tablename: str = "GLOSSARY"
-    glossary_uid_pk: str = ''
-    gloss_common_uid_fk: str = ''
-    dialect_uid_fk: str = ''
-    gloss_type: str = ''
-    gloss_name: str = ''
-    gloss_value: str = ''
-    gloss_uri: str = ''
+    glossary_uid_pk: str = ""
+    gloss_common_uid_fk: str = ""
+    dialect_uid_fk: str = ""
+    gloss_type: str = ""
+    gloss_name: str = ""
+    gloss_value: str = ""
+    gloss_uri: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -1426,9 +1486,10 @@ class Glossary(object):
 
     class Constraints(object):
         PK: dict = {"glossary_uid_pk": ["glossary_uid_pk"]}
-        FK: dict = {"gloss_common_uid_fk":
-                    ("GLOSS_COMMON", "gloss_common_uid_pk"),
-                    "dialect_uid_fk": ("LANG_DIALECT", "dialect_uid_pk")}
+        FK: dict = {
+            "gloss_common_uid_fk": ("GLOSS_COMMON", "gloss_common_uid_pk"),
+            "dialect_uid_fk": ("LANG_DIALECT", "dialect_uid_pk"),
+        }
         CK: dict = {"gloss_type": EntityType.GLOSS_TYPE}
         ORDER: list = ["gloss_name ASC"]
 
@@ -1472,10 +1533,11 @@ class Lake(object):
     JSON:
     lake_shorline_points: [GeogLatLong, ..]
     """
+
     _tablename: str = "LAKE"
-    lake_uid_pk: str = ''
-    gloss_common_uid_fk: str = ''
-    lake_shoreline_points_json: str = ''
+    lake_uid_pk: str = ""
+    gloss_common_uid_fk: str = ""
+    lake_shoreline_points_json: str = ""
     lake_size: str = "medium"
     water_type: str = "freshwater"
     lake_type: str = "lake"
@@ -1485,16 +1547,16 @@ class Lake(object):
     avg_depth_m: float = 0.0
     lake_altitude_m: float = 0.0
     catchment_area_radius_m: float = 0.0
-    lake_origin: str = ''
-    flora_and_fauna: str = ''
-    water_color: str = ''
-    accessibility: str = ''
-    special_features: str = ''
-    lake_usage: str = ''
-    legends_or_myths: str = ''
-    lake_history: str = ''
-    conservation_status: str = ''
-    current_conditions: str = ''
+    lake_origin: str = ""
+    flora_and_fauna: str = ""
+    water_color: str = ""
+    accessibility: str = ""
+    special_features: str = ""
+    lake_usage: str = ""
+    legends_or_myths: str = ""
+    lake_history: str = ""
+    conservation_status: str = ""
+    current_conditions: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -1506,12 +1568,13 @@ class Lake(object):
 
     class Constraints(object):
         PK: dict = {"lake_uid_pk": ["lake_uid_pk"]}
-        FK: dict = {"gloss_common_uid_fk":
-                    ("GLOSS_COMMON", "gloss_common_uid_pk")}
+        FK: dict = {"gloss_common_uid_fk": ("GLOSS_COMMON", "gloss_common_uid_pk")}
         JSON: list = ["lake_shoreline_points_json"]
-        CK: dict = {"lake_size": EntityType.LAKE_SIZE,
-                    "water_type": EntityType.WATER_TYPE,
-                    "lake_type": EntityType.LAKE_TYPE}
+        CK: dict = {
+            "lake_size": EntityType.LAKE_SIZE,
+            "water_type": EntityType.WATER_TYPE,
+            "lake_type": EntityType.LAKE_TYPE,
+        }
         ORDER: list = ["lake_uid_pk ASC"]
 
 
@@ -1520,10 +1583,11 @@ class LakeXMap(object):
     Associative keys --
     - LAKEs (n) <--> MAPs (n)
     """
+
     _tablename: str = "LAKE_X_MAP"
-    lake_x_map_pk: str = ''
-    lake_uid_fk: str = ''
-    map_uid_fk: str = ''
+    lake_x_map_pk: str = ""
+    lake_uid_fk: str = ""
+    map_uid_fk: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -1535,12 +1599,11 @@ class LakeXMap(object):
 
     class Constraints(object):
         PK: dict = {"lake_x_map_pk": "lake_x_map_pk"}
-        FK: dict = {"lake_uid_fk":
-                    ("LAKE", "lake_uid_pk"),
-                    "map_uid_fk":
-                    ("MAP", "map_uid_pk")}
-        ORDER: list =\
-            ["lake_uid_fk ASC", "map_uid_fk ASC"]
+        FK: dict = {
+            "lake_uid_fk": ("LAKE", "lake_uid_pk"),
+            "map_uid_fk": ("MAP", "map_uid_pk"),
+        }
+        ORDER: list = ["lake_uid_fk ASC", "map_uid_fk ASC"]
 
 
 class River(object):
@@ -1573,25 +1636,26 @@ class River(object):
                   "type": EntityType.RIVER_FEATURE,
                    "loc": lat-long}, ...]
     """
+
     _tablename: str = "RIVER"
-    river_uid_pk: str = ''
-    gloss_common_uid_fk: str = ''
-    river_course_points_json: str = ''
-    river_bank_points_json: str = ''
-    river_type: str = 'perrenial'
+    river_uid_pk: str = ""
+    gloss_common_uid_fk: str = ""
+    river_course_points_json: str = ""
+    river_bank_points_json: str = ""
+    river_type: str = "perrenial"
     avg_width_m: float = 0.0
     avg_depth_m: float = 0.0
     total_length_km: float = 0.0
     drainage_basin_km: float = 0.0
     avg_velocity_m_per_h: float = 0.0
     gradient_m_per_km: float = 0.0
-    river_hazards_json: str = ''
-    river_features_json: str = ''
-    river_nav_type: str = 'none'
-    flora_and_fauna: str = ''
-    water_quality: str = ''
-    historical_events: str = ''
-    current_conditions: str = ''
+    river_hazards_json: str = ""
+    river_features_json: str = ""
+    river_nav_type: str = "none"
+    flora_and_fauna: str = ""
+    water_quality: str = ""
+    historical_events: str = ""
+    current_conditions: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -1603,18 +1667,18 @@ class River(object):
 
     class Constraints(object):
         PK: dict = {"river_uid_pk": "river_uid_pk"}
-        FK: dict = {"gloss_common_uid_fk":
-                    ("GLOSS_COMMON", "gloss_common_uid_pk")}
-        CK: dict = {"river_type":
-                    EntityType.RIVER_TYPE,
-                    "river_nav_type":
-                    EntityType.RIVER_NAV_TYPE}
-        JSON: list = ["river_course_points_json",
-                      "river_bank_points_json",
-                      "river_hazards_json",
-                      "river_features_json"]
-        ORDER: list =\
-            ["river_uid_pk ASC"]
+        FK: dict = {"gloss_common_uid_fk": ("GLOSS_COMMON", "gloss_common_uid_pk")}
+        CK: dict = {
+            "river_type": EntityType.RIVER_TYPE,
+            "river_nav_type": EntityType.RIVER_NAV_TYPE,
+        }
+        JSON: list = [
+            "river_course_points_json",
+            "river_bank_points_json",
+            "river_hazards_json",
+            "river_features_json",
+        ]
+        ORDER: list = ["river_uid_pk ASC"]
 
 
 class RiverXMap(object):
@@ -1622,10 +1686,11 @@ class RiverXMap(object):
     Associative keys --
     - RIVERs (n) <--> MAPs (n)
     """
+
     _tablename: str = "RIVER_X_MAP"
-    river_x_map_uid_pk: str = ''
-    river_uid_fk: str = ''
-    map_uid_fk: str = ''
+    river_x_map_uid_pk: str = ""
+    river_uid_fk: str = ""
+    map_uid_fk: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -1636,39 +1701,37 @@ class RiverXMap(object):
         return DMT.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"river_x_map_uid_pk":
-                    "river_x_map_uid_pk"}
-        FK: dict = {"river_uid_fk":
-                    ("RIVER", "river_uid_pk"),
-                    "map_uid_fk":
-                    ("MAP", "map_uid_pk")}
-        ORDER: list =\
-            ["river_x_map_uid_pk ASC"]
+        PK: dict = {"river_x_map_uid_pk": "river_x_map_uid_pk"}
+        FK: dict = {
+            "river_uid_fk": ("RIVER", "river_uid_pk"),
+            "map_uid_fk": ("MAP", "map_uid_pk"),
+        }
+        ORDER: list = ["river_x_map_uid_pk ASC"]
 
 
 class OceanBody(object):
-    """For bodies of water associated with oceans.
-    """
+    """For bodies of water associated with oceans."""
+
     _tablename: str = "OCEAN_BODY"
-    ocean_body_uid_pk: str = ''
-    gloss_common_uid_fk: str = ''
-    body_shoreline_points_json: str = ''
+    ocean_body_uid_pk: str = ""
+    gloss_common_uid_fk: str = ""
+    body_shoreline_points_json: str = ""
     is_coastal: bool = True
     is_frozen: bool = False
-    ocean_body_type: str = ''
-    water_type: str = ''
+    ocean_body_type: str = ""
+    water_type: str = ""
     is_tidal_influence: bool = False
     tidal_flows_per_day: int = 0
     avg_high_tide_m: float = 0.0
     avg_low_tide_m: float = 0.0
     max_high_tide_m: float = 0.0
-    ocean_wave_type: str = ''
+    ocean_wave_type: str = ""
     body_surface_area_m2: float = 0.0
     body_surface_altitude_m: float = 0.0
     max_depth_m: float = 0.0
     avg_depth_m: float = 0.0
-    ocean_hazards_json: str = ''
-    ocean_features_json: str = ''
+    ocean_hazards_json: str = ""
+    ocean_features_json: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -1679,22 +1742,20 @@ class OceanBody(object):
         return DMT.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"ocean_body_uid_pk":
-                    "ocean_body_uid_pk"}
-        FK: dict = {"gloss_common_uid_fk":
-                    ("GLOSS_COMMON", "gloss_common_uid_pk")}
-        CK: dict = {"ocean_body_type":
-                    EntityType.OCEAN_BODY_TYPE,
-                    "water_type":
-                    EntityType.WATER_TYPE,
-                    "ocean_wave_type":
-                    EntityType.OCEAN_WAVE_TYPE}
-        JSON: list = ["river_course_points_json",
-                      "river_bank_points_json",
-                      "ocean_hazards_json",
-                      "ocean_features_json"]
-        ORDER: list =\
-            ["ocean_body_uid_pk ASC"]
+        PK: dict = {"ocean_body_uid_pk": "ocean_body_uid_pk"}
+        FK: dict = {"gloss_common_uid_fk": ("GLOSS_COMMON", "gloss_common_uid_pk")}
+        CK: dict = {
+            "ocean_body_type": EntityType.OCEAN_BODY_TYPE,
+            "water_type": EntityType.WATER_TYPE,
+            "ocean_wave_type": EntityType.OCEAN_WAVE_TYPE,
+        }
+        JSON: list = [
+            "river_course_points_json",
+            "river_bank_points_json",
+            "ocean_hazards_json",
+            "ocean_features_json",
+        ]
+        ORDER: list = ["ocean_body_uid_pk ASC"]
 
 
 class OceanBodyXMap(object):
@@ -1702,10 +1763,11 @@ class OceanBodyXMap(object):
     Associative keys --
     - OCEAN_BODY (n) <--> MAP (n)
     """
+
     _tablename: str = "OCEAN_BODY_X_MAP"
-    ocean_body_x_map_uid_pk: str = ''
-    ocean_body_uid_fk: str = ''
-    map_uid_fk: str = ''
+    ocean_body_x_map_uid_pk: str = ""
+    ocean_body_uid_fk: str = ""
+    map_uid_fk: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -1716,14 +1778,12 @@ class OceanBodyXMap(object):
         return DMT.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"ocean_body_x_map_uid_pk":
-                    "ocean_body_x_map_uid_pk"}
-        FK: dict = {"ocean_body_uid_fk":
-                    ("OCEAN_BODY", "ocean_body_uid_pk"),
-                    "map_uid_fk":
-                    ("MAP", "map_uid_pk")}
-        ORDER: list =\
-            ["ocean_body_x_map_uid_pk ASC"]
+        PK: dict = {"ocean_body_x_map_uid_pk": "ocean_body_x_map_uid_pk"}
+        FK: dict = {
+            "ocean_body_uid_fk": ("OCEAN_BODY", "ocean_body_uid_pk"),
+            "map_uid_fk": ("MAP", "map_uid_pk"),
+        }
+        ORDER: list = ["ocean_body_x_map_uid_pk ASC"]
 
 
 class OceanBodyXRiver(object):
@@ -1731,10 +1791,11 @@ class OceanBodyXRiver(object):
     Associative keys --
     - OCEAN_BODY (n) <--> RIVER (n)
     """
+
     _tablename: str = "OCEAN_BODY_X_RIVER"
-    ocean_body_x_river_uid_pk: str = ''
-    ocean_body_uid_fk: str = ''
-    river_uid_fk: str = ''
+    ocean_body_x_river_uid_pk: str = ""
+    ocean_body_uid_fk: str = ""
+    river_uid_fk: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -1745,14 +1806,12 @@ class OceanBodyXRiver(object):
         return DMT.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"ocean_body_x_river_uid_pk":
-                    "ocean_body_x_river_uid_pk"}
-        FK: dict = {"ocean_body_uid_fk":
-                    ("OCEAN_BODY", "ocean_body_uid_pk"),
-                    "river_uid_fk":
-                    ("RIVER", "river_uid_pk")}
-        ORDER: list =\
-            ["ocean_body_x_river_uid_pk ASC"]
+        PK: dict = {"ocean_body_x_river_uid_pk": "ocean_body_x_river_uid_pk"}
+        FK: dict = {
+            "ocean_body_uid_fk": ("OCEAN_BODY", "ocean_body_uid_pk"),
+            "river_uid_fk": ("RIVER", "river_uid_pk"),
+        }
+        ORDER: list = ["ocean_body_x_river_uid_pk ASC"]
 
 
 class LandBody(object):
@@ -1760,11 +1819,12 @@ class LandBody(object):
     Use this for geographic features that are not water.
     Including: continents, islands, geographic regions.
     """
+
     _tablename: str = "LAND_BODY"
-    land_body_uid_pk: str = ''
-    gloss_common_uid_fk: str = ''
-    body_landline_points_json: str = ''
-    land_body_type: str = ''
+    land_body_uid_pk: str = ""
+    gloss_common_uid_fk: str = ""
+    body_landline_points_json: str = ""
+    land_body_type: str = ""
     land_body_surface_area_m2: float = 0.0
     land_body_surface_avg_altitude_m: float = 0.0
     max_altitude_m: float = 0.0
@@ -1779,14 +1839,10 @@ class LandBody(object):
         return DMT.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"land_body_uid_pk":
-                    "land_body_uid_pk"}
-        FK: dict = {"gloss_common_uid_fk":
-                    ("GLOSS_COMMON", "gloss_common_uid_pk")}
-        CK: dict = {"land_body_type":
-                    EntityType.LAND_BODY_TYPE}
-        ORDER: list =\
-            ["land_body_uid_pk ASC"]
+        PK: dict = {"land_body_uid_pk": "land_body_uid_pk"}
+        FK: dict = {"gloss_common_uid_fk": ("GLOSS_COMMON", "gloss_common_uid_pk")}
+        CK: dict = {"land_body_type": EntityType.LAND_BODY_TYPE}
+        ORDER: list = ["land_body_uid_pk ASC"]
 
 
 class LandBodyXMap(object):
@@ -1794,10 +1850,11 @@ class LandBodyXMap(object):
     Associative keys --
     - LAND_BODY (n) <--> MAP (n)
     """
+
     _tablename: str = "LAND_BODY_X_MAP"
-    land_body_x_map_uid_pk: str = ''
-    land_body_uid_fk: str = ''
-    map_uid_fk: str = ''
+    land_body_x_map_uid_pk: str = ""
+    land_body_uid_fk: str = ""
+    map_uid_fk: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -1808,14 +1865,12 @@ class LandBodyXMap(object):
         return DMT.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"land_body_x_map_uid_pk":
-                    "land_body_x_map_uid_pk"}
-        FK: dict = {"land_body_uid_fk":
-                    ("LAND_BODY", "land_body_uid_pk"),
-                    "map_uid_fk":
-                    ("MAP", "map_uid_pk")}
-        ORDER: list =\
-            ["land_body_x_map_uid_pk ASC"]
+        PK: dict = {"land_body_x_map_uid_pk": "land_body_x_map_uid_pk"}
+        FK: dict = {
+            "land_body_uid_fk": ("LAND_BODY", "land_body_uid_pk"),
+            "map_uid_fk": ("MAP", "map_uid_pk"),
+        }
+        ORDER: list = ["land_body_x_map_uid_pk ASC"]
 
 
 class LandBodyXLandBody(object):
@@ -1825,11 +1880,12 @@ class LandBodyXLandBody(object):
     - relation:
         - body 1 --> body 2
     """
+
     _tablename: str = "LAND_BODY_X_LAND_BODY"
-    land_body_x_land_body_uid_pk: str = ''
-    land_body_1_uid_fk: str = ''
-    land_body_2_uid_fk: str = ''
-    land_land_relation_type: str = ''
+    land_body_x_land_body_uid_pk: str = ""
+    land_body_1_uid_fk: str = ""
+    land_body_2_uid_fk: str = ""
+    land_land_relation_type: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -1840,16 +1896,13 @@ class LandBodyXLandBody(object):
         return DMT.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"land_body_x_land_body_uid_pk":
-                    "land_body_x_land_body_uid_pk"}
-        FK: dict = {"land_body_1_uid_fk":
-                    ("LAND_BODY", "land_body_uid_pk"),
-                    "land_body_2_uid_fk":
-                    ("LAND_BODY", "land_body_uid_pk")}
-        CK: dict = {"land_land_relation_type":
-                    EntityType.LAND_LAND_RELATION_TYPE}
-        ORDER: list =\
-            ["land_body_x_land_body_uid_pk ASC"]
+        PK: dict = {"land_body_x_land_body_uid_pk": "land_body_x_land_body_uid_pk"}
+        FK: dict = {
+            "land_body_1_uid_fk": ("LAND_BODY", "land_body_uid_pk"),
+            "land_body_2_uid_fk": ("LAND_BODY", "land_body_uid_pk"),
+        }
+        CK: dict = {"land_land_relation_type": EntityType.LAND_LAND_RELATION_TYPE}
+        ORDER: list = ["land_body_x_land_body_uid_pk ASC"]
 
 
 class LandBodyXOceanBody(object):
@@ -1857,11 +1910,12 @@ class LandBodyXOceanBody(object):
     Associative keys --
     - LAND_BODY (n) <--> OCEAN_BODY (n)
     """
+
     _tablename: str = "LAND_BODY_X_OCEAN_BODY"
-    land_body_x_ocean_body_uid_pk: str = ''
-    land_body_uid_fk: str = ''
-    ocean_body_uid_fk: str = ''
-    land_ocean_relation_type: str = ''
+    land_body_x_ocean_body_uid_pk: str = ""
+    land_body_uid_fk: str = ""
+    ocean_body_uid_fk: str = ""
+    land_ocean_relation_type: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -1872,13 +1926,10 @@ class LandBodyXOceanBody(object):
         return DMT.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"land_body_x_ocean_body_uid_pk":
-                    "land_body_x_ocean_body_uid_pk"}
-        FK: dict = {"land_body_uid_fk":
-                    ("LAND_BODY", "land_body_uid_pk"),
-                    "ocean_body_uid_fk":
-                    ("OCEAN_BODY", "ocean_body_uid_pk")}
-        CK: dict = {"land_ocean_relation_type":
-                    EntityType.LAND_OCEAN_RELATION_TYPE}
-        ORDER: list =\
-            ["land_body_x_ocean_body_uid_pk ASC"]
+        PK: dict = {"land_body_x_ocean_body_uid_pk": "land_body_x_ocean_body_uid_pk"}
+        FK: dict = {
+            "land_body_uid_fk": ("LAND_BODY", "land_body_uid_pk"),
+            "ocean_body_uid_fk": ("OCEAN_BODY", "ocean_body_uid_pk"),
+        }
+        CK: dict = {"land_ocean_relation_type": EntityType.LAND_OCEAN_RELATION_TYPE}
+        ORDER: list = ["land_body_x_ocean_body_uid_pk ASC"]

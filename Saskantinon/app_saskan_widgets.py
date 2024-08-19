@@ -5,13 +5,13 @@
 Saskan Game module for managing console widgets,
  including buttons, text edits, etc.
 """
-import pygame as pg
 
 from copy import copy
-from pprint import pformat as pf    # noqa: F401
-from pprint import pprint as pp     # noqa: F401
+from pprint import pformat as pf  # noqa: F401
+from pprint import pprint as pp  # noqa: F401
 
-from data_structs_pg import PygColors, AppDisplay
+import pygame as pg
+from data_structs_pg import AppDisplay, PygColors
 
 APD = AppDisplay()
 CLR = PygColors()
@@ -24,22 +24,23 @@ class Widgets(object):
     Decide if it is better to have a single class for all widgets,
     or if this is like the factory / consolidator of widget objectss.
     """
+
     def __init__(self):
         """Create WIDGETS object."""
         pass
 
-    def create_widgets(self,
-                       WINDOWS: object,
-                       MAPS: object,
-                       GRIDS: object,
-                       p_map_name: str = None,
-                       p_grid_name: str = None):
-        """
-        """
+    def create_widgets(
+        self,
+        WINDOWS: object,
+        MAPS: object,
+        GRIDS: object,
+        p_map_name: str = None,
+        p_grid_name: str = None,
+    ):
+        """ """
         pass
 
-    def set_label_name(self,
-                       p_attr: dict):
+    def set_label_name(self, p_attr: dict):
         """Set text for a label (l) and name (n), but no type (t) value.
            Example: "type" attribute
         :attr:
@@ -47,15 +48,12 @@ class Widgets(object):
         :sets:
         - self.APD.CONSOLE[n]["txt"] (list): strings to render as text
         """
-        for t in [APD.DASH16,
-                  f"{p_attr['label']}:",
-                  f"  {p_attr['name']}"]:
+        for t in [APD.DASH16, f"{p_attr['label']}:", f"  {p_attr['name']}"]:
             rec = copy(self.CONSOLE_REC)
-            rec['txt'] = t
+            rec["txt"] = t
             self.CONSOLE_TEXT.append(rec)
 
-    def set_label_name_type(self,
-                            p_attr: dict):
+    def set_label_name_type(self, p_attr: dict):
         """Set text for a label (l), a name (n), and a type (t).
            Example: "contained_by" attribute
         :attr:
@@ -63,16 +61,17 @@ class Widgets(object):
         :sets:
         - self.APD.CONSOLE[n]["txt"] (list): strings to render as text
         """
-        for t in [APD.DASH16,
-                  f"{p_attr['label']}:",
-                  f"  {p_attr['name']}",
-                  f"  {p_attr['type']}"]:
+        for t in [
+            APD.DASH16,
+            f"{p_attr['label']}:",
+            f"  {p_attr['name']}",
+            f"  {p_attr['type']}",
+        ]:
             rec = copy(self.CONSOLE_REC)
-            rec['txt'] = t
+            rec["txt"] = t
             self.CONSOLE_TEXT.append(rec)
 
-    def set_proper_names(self,
-                         p_attr: dict):
+    def set_proper_names(self, p_attr: dict):
         """Set text for a "name" attribute, which refers to proper
             names. Required value is indexed by "common". Optional
             set of names in various game languages or dialects have
@@ -82,20 +81,17 @@ class Widgets(object):
         :sets:
         - self.APD.CONSOLE[n]["txt"] (list): strings to render as text
         """
-        for t in [APD.DASH16,
-                  f"{p_attr['label']}:",
-                  f"  {p_attr['common']}"]:
+        for t in [APD.DASH16, f"{p_attr['label']}:", f"  {p_attr['common']}"]:
             rec = copy(self.CONSOLE_REC)
-            rec['txt'] = t
+            rec["txt"] = t
             self.CONSOLE_TEXT.append(rec)
         if "other" in p_attr.keys():
             for k, v in p_attr["other"].items():
                 rec = copy(self.CONSOLE_REC)
-                rec['txt'] = f"    {k}: {v}"
+                rec["txt"] = f"    {k}: {v}"
                 self.CONSOLE_TEXT.append(rec)
 
-    def set_map_attr(self,
-                     p_attr: dict):
+    def set_map_attr(self, p_attr: dict):
         """Set text for a "map" attribute, referring to game-map data.
            Examples: "distance" or "location" expressed in
               kilometers, degrees, or other in-game measures
@@ -104,28 +100,33 @@ class Widgets(object):
         :sets:
         - self.APD.CONSOLE[n]["txt"] (list): strings to render as text
         """
-        ky = "distance" if "distance" in p_attr.keys() else\
-            "location" if "location" in p_attr.keys() else None
+        ky = (
+            "distance"
+            if "distance" in p_attr.keys()
+            else "location" if "location" in p_attr.keys() else None
+        )
         if ky is not None:
-            sub_k = ["height", "width"] if ky == "distance" else\
-                ["top", "bottom", "left", "right"]
+            sub_k = (
+                ["height", "width"]
+                if ky == "distance"
+                else ["top", "bottom", "left", "right"]
+            )
             rec = copy(self.CONSOLE_REC)
-            rec['txt'] = APD.DASH16
+            rec["txt"] = APD.DASH16
             self.CONSOLE_TEXT.append(rec)
             rec = copy(self.CONSOLE_REC)
-            rec["txt"] =\
-                f"{p_attr[ky]['label']}:"
+            rec["txt"] = f"{p_attr[ky]['label']}:"
             self.CONSOLE_TEXT.append(rec)
             for s in sub_k:
                 rec = copy(self.CONSOLE_REC)
-                rec["txt"] =\
-                    f"  {p_attr[ky][s]['label']}:  " +\
-                    f"{p_attr[ky][s]['amt']} " +\
-                    f"{p_attr[ky]['unit']}"
+                rec["txt"] = (
+                    f"  {p_attr[ky][s]['label']}:  "
+                    + f"{p_attr[ky][s]['amt']} "
+                    + f"{p_attr[ky]['unit']}"
+                )
                 self.CONSOLE_TEXT.append(rec)
 
-    def set_contains_attr(self,
-                          p_attr: dict):
+    def set_contains_attr(self, p_attr: dict):
         """Set text for a "contains" attribute, referring to things
             contained by another object.
             Examples: "sub-region", "movement" (i.e, movement paths)
@@ -143,8 +144,7 @@ class Widgets(object):
 
         if "sub-region" in p_attr.keys():
             rec = copy(self.CONSOLE_REC)
-            rec["txt"] =\
-                f"  {p_attr['sub-region']['label']}:"
+            rec["txt"] = f"  {p_attr['sub-region']['label']}:"
             self.CONSOLE_TEXT.append(rec)
             for n in p_attr["sub-region"]["names"]:
                 rec = copy(self.CONSOLE_REC)
@@ -156,8 +156,7 @@ class Widgets(object):
             rec = copy(self.CONSOLE_REC)
             rec["txt"] = f"  {p_attr['movement']['label']}:"
             self.CONSOLE_TEXT.append(rec)
-            attr = {k: v for k, v in p_attr["movement"].items()
-                    if k != "label"}
+            attr = {k: v for k, v in p_attr["movement"].items() if k != "label"}
             for _, v in attr.items():
                 rec = copy(self.CONSOLE_REC)
                 rec["txt"] = f"    {v['label']}:"
@@ -175,21 +174,21 @@ class Widgets(object):
         After rendering the img from txt, set the box for the img.
         Then adjust topleft of the box according to line number.
         """
-        print('render_text_lines()...')
+        print("render_text_lines()...")
 
         x = APD.CONSOLE_TTL_BOX.x
         y = APD.CONSOLE_TTL_BOX.y + APD.FONT_MED_SZ
 
         for ix, val in enumerate(self.CONSOLE_TEXT):
             txt = val["txt"]
-            self.CONSOLE_TEXT[ix]["img"] =\
-                APD.F_SANS_TINY.render(txt, True,
-                                       CLR.CP_BLUEPOWDER,
-                                       CLR.CP_BLACK)
-            self.CONSOLE_TEXT[ix]["box"] =\
-                self.CONSOLE_TEXT[ix]["img"].get_rect()
-            self.CONSOLE_TEXT[ix]["box"].topleft =\
-                (x, y + ((APD.FONT_TINY_SZ + 2) * (ix + 1)))
+            self.CONSOLE_TEXT[ix]["img"] = APD.F_SANS_TINY.render(
+                txt, True, CLR.CP_BLUEPOWDER, CLR.CP_BLACK
+            )
+            self.CONSOLE_TEXT[ix]["box"] = self.CONSOLE_TEXT[ix]["img"].get_rect()
+            self.CONSOLE_TEXT[ix]["box"].topleft = (
+                x,
+                y + ((APD.FONT_TINY_SZ + 2) * (ix + 1)),
+            )
 
     def set_console_text(self):
         """Format text lines for display in APD.CONSOLE.
@@ -207,7 +206,9 @@ class Widgets(object):
         """
         self.CONSOLE_TEXT.clear()
         # Contents
+        pass
 
+        """
         if self.DATASRC["catg"] == "geo":
             ci = FM.G[self.DATASRC["catg"]][self.DATASRC["item"]]
 
@@ -222,6 +223,7 @@ class Widgets(object):
             if "contains" in ci.keys():
                 self.set_contains_attr(ci["contains"])
             self.render_text_lines()
+        """
 
 
 class TextInput(pg.sprite.Sprite):
@@ -239,11 +241,8 @@ class TextInput(pg.sprite.Sprite):
     - text display
     - video display and so on
     """
-    def __init__(self,
-                 p_x: int,
-                 p_y: int,
-                 p_w: int = 100,
-                 p_h: int = 50):
+
+    def __init__(self, p_x: int, p_y: int, p_w: int = 100, p_h: int = 50):
         """
         Define text input widget.
 
@@ -254,8 +253,8 @@ class TextInput(pg.sprite.Sprite):
         - p_h: (int) height of text input widget
         """
         super().__init__()
-        self.t_rect = REC.make_rect(p_y, p_x, p_w, p_h)
-        self.t_box = self.t_rect["box"]
+        # self.t_rect = REC.make_rect(p_y, p_x, p_w, p_h)
+        # self.t_box = self.t_rect["box"]
         self.t_value = ""
         self.t_font = APD.F_FIXED_LG
         self.t_color = CLR.CP_GREEN
@@ -263,7 +262,7 @@ class TextInput(pg.sprite.Sprite):
         self.is_selected = False
 
     def update_text(self, p_text: str):
-        """ Update text value.
+        """Update text value.
         If text is too wide for the widget, truncate it.
         - `self.value` is the current value of the text string.
         - `self.text` is the rendered text surface.
@@ -281,20 +280,20 @@ class TextInput(pg.sprite.Sprite):
         self.text = temp_txt
 
     def clicked(self, p_mouse_loc) -> bool:
-        """ Return True if mouse is clicked in the widget.
-        """
+        """Return True if mouse is clicked in the widget."""
         if self.t_box.collidepoint(p_mouse_loc):
             self.is_selected = not (self.is_selected)
             return True
         return False
 
     def draw(self):
-        """ Place text in the widget, centered in the box.
+        """Place text in the widget, centered in the box.
         This has the effect of expanding the text as it is typed
         in both directions. Draw the surface (box). Then blit the text.
         """
-        self.pos = self.text.get_rect(center=(self.t_box.x + self.t_box.w / 2,
-                                              self.t_box.y + self.t_box.h / 2))
+        self.pos = self.text.get_rect(
+            center=(self.t_box.x + self.t_box.w / 2, self.t_box.y + self.t_box.h / 2)
+        )
         if self.is_selected:
             pg.draw.rect(APD.WIN, CLR.CP_BLUEPOWDER, self.t_box, 2)
         else:
@@ -317,6 +316,7 @@ class TextInputGroup(pg.sprite.Group):
     @DEV:
     - Do I actually use this? How? Where? Example?
     """
+
     def __init__(self):
         super().__init__()
-        self.current = None     # ID currently-selected text input widget.
+        self.current = None  # ID currently-selected text input widget.
