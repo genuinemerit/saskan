@@ -14,7 +14,7 @@ from datetime import datetime, timedelta, timezone
 from os import path
 from pprint import pprint as pp  # noqa: F401
 
-from method_files import FileMethods  # type: ignore
+from Saskantinon.method_files import FileMethods  # type: ignore
 
 FM = FileMethods()
 

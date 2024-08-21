@@ -11,7 +11,8 @@ from pprint import pformat as pf  # noqa: F401
 from pprint import pprint as pp  # noqa: F401
 
 import pygame as pg
-from data_structs import ImageType
+
+from Saskantinon.data_structs import ImageType
 
 pg.init()  # Init PyGame for use in this module
 

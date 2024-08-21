@@ -4,6 +4,13 @@
 
 Saskan Game module for managing console widgets,
  including buttons, text edits, etc.
+
+@DEV:
+Determine if this module will work for both
+Saskantinon and Saskantinize, or if I need a separate
+module for Saskantinize. Since the detailed settings
+are defined in JSON files, hopefully can have one
+generic presentation-builder for both?
 """
 
 from copy import copy

@@ -1,8 +1,8 @@
 #!python
 """
-:module:    app_admin.py
+:module:    app_saskantinize.py
 :author:    GM (genuinemerit @ pm.me)
-Saskan App GUI.  pygame version.
+Saskan Admikn App GUI.  pygame/sqlite version.
 
 @DEV:
 - Add interactive functions calling the Analysis class.
@@ -11,92 +11,30 @@ Saskan App GUI.  pygame version.
 - Work on (better) ways of displaying reports.
 - Add a saskan_game pygame module to display maps, protoype game action.
 
-I think the should probably be defined as a separate package within the project.
-In other words, in folder parallel to "Saskantinon".
-
 """
 
 import platform
-import pygame as pg
 import sys
 import webbrowser
 
-from dataclasses import dataclass
-from os import path
-from pathlib import Path
-from pprint import pprint as pp     # noqa: F401
+# from dataclasses import dataclass
+# from os import path
+# from pathlib import Path
+from pprint import pprint as pp  # noqa: F401
 
-from methods_file import FileMethods          # type: ignore
-from io_wiretap import WireTap      # type: ignore
+import pygame as pg
+
+import Saskantinon.data_structs as DS  # noqa: F401
+import Saskantinon.data_structs_pg as DSP  # noqa: F401
+from Saskantinon.method_files import FileMethods  # noqa: F401
+
+# from Saskantinon.rpt_wiretap import WireTap  # noqa: F401
 
 FM = FileMethods()
-WT = WireTap()
+PGC = DSP.PygColors
+PGD = DSP.AppDisplay
+# WT = WireTap()
 pg.init()
-
-
-@dataclass(frozen=True)
-class PG:
-    # CLI Colors and accents
-    CL_BLUE = '\033[94m'
-    CL_BOLD = '\033[1m'
-    CL_CYAN = '\033[96m'
-    CL_DARKCYAN = '\033[36m'
-    CL_END = '\033[0m'
-    CL_GREEN = '\033[92m'
-    CL_PURPLE = '\033[95m'
-    CL_RED = '\033[91m'
-    CL_YELLOW = '\033[93m'
-    CL_UNDERLINE = '\033[4m'
-    # PyGame Colors
-    PC_BLACK = pg.Color(0, 0, 0)
-    PC_BLUE = pg.Color(0, 0, 255)
-    PC_BLUEPOWDER = pg.Color(176, 224, 230)
-    PC_GREEN = pg.Color(0, 255, 0)
-    PC_PALEPINK = pg.Color(215, 198, 198)
-    PC_RED = pg.Color(255, 0, 0)
-    PC_WHITE = pg.Color(255, 255, 255)
-    # PyGame Fonts
-    F_SANS_12 = pg.font.SysFont('DejaVu Sans', 12)
-    F_SANS_16 = pg.font.SysFont('DejaVu Sans', 16)
-    F_SANS_18 = pg.font.SysFont('DejaVu Sans', 18)
-    F_FIXED_18 = pg.font.SysFont('Courier 10 Pitch', 18)
-    # PyGame Cursors
-    CUR_ARROW = pg.cursors.Cursor(pg.SYSTEM_CURSOR_ARROW)
-    CUR_CROSS = pg.cursors.Cursor(pg.SYSTEM_CURSOR_CROSSHAIR)
-    CUR_HAND = pg.cursors.Cursor(pg.SYSTEM_CURSOR_HAND)
-    CUR_IBEAM = pg.cursors.Cursor(pg.SYSTEM_CURSOR_IBEAM)
-    CUR_WAIT = pg.cursors.Cursor(pg.SYSTEM_CURSOR_WAIT)
-
-    # Window / Canvas / Display
-    pg.display.set_caption(FM.G["frame"]["ttl"])
-    WIN_W = FM.G["frame"]["sz"]["w"]
-    WIN_H = FM.G["frame"]["sz"]["h"]
-    WIN_MID = (WIN_W / 2, WIN_H / 2)
-    WIN = pg.display.set_mode((WIN_W, WIN_H))
-    # Menu Bar
-    MBAR_X = FM.G["menus"]["bar"]["x"]
-    MBAR_Y = FM.G["menus"]["bar"]["y"]
-    # Note: MBAR_W is the width of each individual menu bar menu.
-    MBAR_W = FM.G["menus"]["bar"]["w"]
-    MBAR_H = FM.G["menus"]["bar"]["h"]
-    MBAR_MARGIN = FM.G["menus"]["bar"]["margin"]
-    MBAR_LOC = (MBAR_X, MBAR_Y)
-    # Page Header
-    PHDR_LOC = (FM.G["frame"]["pg_hdr"]["x"],
-                FM.G["frame"]["pg_hdr"]["y"])
-    # Info Bar / Dock
-    IBAR_X = FM.G["frame"]["ibar"]["x"]
-    IBAR_Y = FM.G["frame"]["ibar"]["y"]
-    IBAR_LOC = (IBAR_X, IBAR_Y)
-    # Services Admin Window
-    PSRV_LOC = (FM.G["windows"]["srv"]["x"],
-                FM.G["windows"]["srv"]["x"])
-    PSRV_W = FM.G["windows"]["srv"]["w"]
-    PSRV_h = FM.G["windows"]["srv"]["w"]
-
-    # Other
-    KEYMOD_NONE = 4096
-    TIMER = pg.time.Clock()
 
 
 class InfoBar(object):
@@ -104,26 +42,30 @@ class InfoBar(object):
     It is located across bottom of window.
     """
 
-    def __init__(self,
-                 p_text: str = ""):
-        """ Initialize Info Bar. """
+    def __init__(self, p_text: str = ""):
+        """Initialize Info Bar."""
         if p_text == "":
             self.text = (
-                "Python: " + platform.python_version() +
-                " | Pygame: " + pg.version.ver +
-                " | OS: " + platform.platform())
+                "Python: "
+                + platform.python_version()
+                + " | Pygame: "
+                + pg.version.ver
+                + " | OS: "
+                + platform.platform()
+            )
         else:
             self.text = p_text
-        self.itxt = PG.F_SANS_12.render(
-            self.text, True, PG.PC_BLUEPOWDER, PG.PC_BLACK)
+        self.itxt = PGD.F_SANS_TINY.render(self.text, True, PGC.CP_BLUEPOWDER, PGC.CP_BLACK)
         self.ibox = self.itxt.get_rect()
         self.ibox.topleft = PG.IBAR_LOC
 
-    def draw(self,
-             p_frame_cnt_mode: bool = False,
-             p_frame_cnt: int = 0,
-             p_mouse_loc: tuple = (0, 0)):
-        """ Draw Info Bar.
+    def draw(
+        self,
+        p_frame_cnt_mode: bool = False,
+        p_frame_cnt: int = 0,
+        p_mouse_loc: tuple = (0, 0),
+    ):
+        """Draw Info Bar.
         Optionally draw frame count and mouse location.
 
         :args:
@@ -134,22 +76,24 @@ class InfoBar(object):
         PG.WIN.blit(self.itxt, self.ibox)
         if p_frame_cnt_mode is True:
             genimg = PG.F_SANS_12.render(
-                "Generation: " + str(p_frame_cnt) +
-                "    |    Mouse: " + str(p_mouse_loc),
-                True, PG.PC_BLUEPOWDER, PG.PC_BLACK)
-            PG.WIN.blit(genimg,
-                        genimg.get_rect(topleft=(PG.WIN_W * 0.67,
-                                                 PG.IBAR_Y)))
+                "Generation: "
+                + str(p_frame_cnt)
+                + "    |    Mouse: "
+                + str(p_mouse_loc),
+                True,
+                PGC.CP_BLUEPOWDER,
+                PGC.CP_BLACK,
+            )
+            PG.WIN.blit(genimg, genimg.get_rect(topleft=(PG.WIN_W * 0.67, PG.IBAR_Y)))
 
 
 class MenuBar(object):
-    """ Menu Bar items for the application.
+    """Menu Bar items for the application.
     Define a surface for a clickable top-level menu bar item.
     Clicking on a menu bar item opens or closes a MenuItems.
     """
-    def __init__(self,
-                 p_name: str,
-                 p_x_left: int):
+
+    def __init__(self, p_name: str, p_x_left: int):
         """Initialize a Menu Bar object.
         = `text` is text content and UID for the menu bar item.
         - `mbox` is the bounding box for the menu bar item.
@@ -163,29 +107,24 @@ class MenuBar(object):
         self.is_selected = False
         self.text = p_name
         mbox_w = len(self.text) * 12
-        self.mbox = pg.Rect(p_x_left,
-                            PG.MBAR_Y,
-                            mbox_w,
-                            PG.MBAR_H)
-        self.mtxt = PG.F_SANS_12.render(
-            self.text, True, PG.PC_BLUEPOWDER, PG.PC_BLACK)
+        self.mbox = pg.Rect(p_x_left, PG.MBAR_Y, mbox_w, PG.MBAR_H)
+        self.mtxt = PG.F_SANS_12.render(self.text, True, PGC.CP_BLUEPOWDER, PGC.CP_BLACK)
         self.tbox = self.mtxt.get_rect()
-        self.tbox.topleft =\
-            (p_x_left + int((self.mbox.width - self.tbox.width) / 2),
-             PG.MBAR_Y + PG.MBAR_MARGIN)
+        self.tbox.topleft = (
+            p_x_left + int((self.mbox.width - self.tbox.width) / 2),
+            PG.MBAR_Y + PG.MBAR_MARGIN,
+        )
 
     def draw(self):
-        """ Draw a Menu Bar item.
-        """
+        """Draw a Menu Bar item."""
         if self.is_selected:
-            pg.draw.rect(PG.WIN, PG.PC_BLUEPOWDER, self.mbox, 2)
+            pg.draw.rect(PG.WIN, PGC.CP_BLUEPOWDER, self.mbox, 2)
         else:
-            pg.draw.rect(PG.WIN, PG.PC_BLUE, self.mbox, 2)
+            pg.draw.rect(PG.WIN, PGC.CP_BLUE, self.mbox, 2)
         PG.WIN.blit(self.mtxt, self.tbox)
 
     def clicked(self, p_mouse_loc) -> bool:
-        """ Return True if mouse clicked on the mbox.
-        """
+        """Return True if mouse clicked on the mbox."""
         if self.mbox.collidepoint(p_mouse_loc):
             return True
         return False
@@ -196,10 +135,9 @@ class MenuItems(object):
     Clicking on a menu bar item triggers a function and sets
     visibility of the MenuItems to False.
     """
-    def __init__(self,
-                 p_mitm_list: list,
-                 p_mbar: MenuBar):
-        """ Initialize Menu Items.
+
+    def __init__(self, p_mitm_list: list, p_mbar: MenuBar):
+        """Initialize Menu Items.
         The container (mbox) surface holds all the items.
         Each MenuItem is clickable, per its bounding box (tbox).
 
@@ -213,43 +151,39 @@ class MenuItems(object):
         self.is_visible = False
         self.item_cnt = len(p_mitm_list)
         # Protoype of box to draw around  menu items.
-        self.mbox = pg.Rect(p_mbar.mbox.left,
-                            p_mbar.mbox.bottom,
-                            0,
-                            p_mbar.mbox.height * self.item_cnt)
+        self.mbox = pg.Rect(
+            p_mbar.mbox.left, p_mbar.mbox.bottom, 0, p_mbar.mbox.height * self.item_cnt
+        )
         self.mitems = []
         for mx, mi in enumerate(p_mitm_list):
             mi_id = mi[0]
             mi_nm = mi[1]
-            mtxt = PG.F_SANS_12.render(
-                mi_nm, True, PG.PC_BLUEPOWDER, PG.PC_BLACK)
+            mtxt = PG.F_SANS_12.render(mi_nm, True, PGC.CP_BLUEPOWDER, PGC.CP_BLACK)
             mitm_w = mtxt.get_width() + (PG.MBAR_MARGIN * 2)
             # Box for each item in the menu item list.
-            tbox = pg.Rect(self.mbox.left + PG.MBAR_MARGIN,
-                           ((self.mbox.top + (PG.MBAR_H * mx)) +
-                            PG.MBAR_MARGIN),
-                           mitm_w, PG.MBAR_H)
+            tbox = pg.Rect(
+                self.mbox.left + PG.MBAR_MARGIN,
+                ((self.mbox.top + (PG.MBAR_H * mx)) + PG.MBAR_MARGIN),
+                mitm_w,
+                PG.MBAR_H,
+            )
             # Set mbox width equal to largest tbox width
             if tbox.width > self.mbox.width:
                 self.mbox.width = tbox.width
-            self.mitems.append(
-                {'id': mi_id, 'mtxt': mtxt, 'tbox': tbox, 'text': mi_nm})
+            self.mitems.append({"id": mi_id, "mtxt": mtxt, "tbox": tbox, "text": mi_nm})
 
     def draw(self):
-        """ Draw the list of Menu Items.
-        """
+        """Draw the list of Menu Items."""
         if self.is_visible:
-            pg.draw.rect(PG.WIN, PG.PC_BLUEPOWDER, self.mbox, 2)
+            pg.draw.rect(PG.WIN, PGC.CP_BLUEPOWDER, self.mbox, 2)
             for mi in self.mitems:
-                PG.WIN.blit(mi['mtxt'], mi['tbox'])
+                PG.WIN.blit(mi["mtxt"], mi["tbox"])
 
-    def clicked(self,
-                p_mouse_loc):
-        """ Return id and name of clicked menu item or None.
-        """
+    def clicked(self, p_mouse_loc):
+        """Return id and name of clicked menu item or None."""
         for mi in self.mitems:
-            if mi['tbox'].collidepoint(p_mouse_loc):
-                return (mi['id'], mi['text'])
+            if mi["tbox"].collidepoint(p_mouse_loc):
+                return (mi["id"], mi["text"])
         return None
 
 
@@ -257,19 +191,18 @@ class MenuGroup(object):
     """Define a group object for menu bars and menu items.
     Reference menus by name and associate menu bar with its items.
     """
+
     def __init__(self):
         self.mbars: dict = dict()
         self.mitems: dict = dict()
         self.current_bar = None
         self.current_item = None
 
-    def add_bar(self,
-                p_mbar: MenuBar):
+    def add_bar(self, p_mbar: MenuBar):
         """Add a MenuBar to the collection."""
         self.mbars[p_mbar.text] = p_mbar
 
-    def add_item(self,
-                 p_mitems: MenuItems):
+    def add_item(self, p_mitems: MenuItems):
         """Add a MenuItems to the collection."""
         self.mitems[p_mitems.name] = p_mitems
 
@@ -279,34 +212,30 @@ class PageHeader(object):
     HDR is a widget drawn at top of the window.
     """
 
-    def __init__(self,
-                 p_hdr_text: str):
-        """ Initialize PageHeader. """
-        self.img = PG.F_SANS_18.render(p_hdr_text, True,
-                                       PG.PC_BLUEPOWDER, PG.PC_BLACK)
+    def __init__(self, p_hdr_text: str):
+        """Initialize PageHeader."""
+        self.img = PG.F_SANS_18.render(p_hdr_text, True, PGC.CP_BLUEPOWDER, PGC.CP_BLACK)
         self.box = self.img.get_rect()
         self.box.topleft = PG.PHDR_LOC
 
     def draw(self):
-        """ Draw PageHeader. """
+        """Draw PageHeader."""
         PG.WIN.blit(self.img, self.box)
 
 
 class HtmlDisplay(object):
-    """Set content for display in external web browser.
-    """
+    """Set content for display in external web browser."""
 
     def __init__(self):
-        """ Initialize Html Display.
+        """Initialize Html Display.
 
         @DEV
         - Maybe look into ways of configuring browser window.
         """
         pass
 
-    def draw(self,
-             p_help_uri: str):
-        """ Open web browser to display HTML resource.
+    def draw(self, p_help_uri: str):
+        """Open web browser to display HTML resource.
 
         Args: (str) UTI to HTML file to display in browser.
         """
@@ -315,13 +244,9 @@ class HtmlDisplay(object):
 
 
 class TextInput(pg.sprite.Sprite):
-    """Define and handle a text input widget.
-    """
-    def __init__(self,
-                 p_x: int,
-                 p_y: int,
-                 p_w: int = 100,
-                 p_h: int = 50):
+    """Define and handle a text input widget."""
+
+    def __init__(self, p_x: int, p_y: int, p_w: int = 100, p_h: int = 50):
         """
         Define text input widget.
 
@@ -335,33 +260,33 @@ class TextInput(pg.sprite.Sprite):
         self.t_box = pg.Rect(p_x, p_y, p_w, p_h)
         self.t_value = ""
         self.t_font = PG.F_FIXED_18
-        self.t_color = PG.PC_GREEN
+        self.t_color = PGC.CP_GREEN
         self.text = self.t_font.render(self.t_value, True, self.t_color)
         self.is_selected = False
 
     def draw(self):
-        """ Place text in the widget, centered in the box.
+        """Place text in the widget, centered in the box.
         This has the effect of expanding the text as it is typed
         in both directions. Draw the surface (box). Then blit the text.
         """
-        self.pos = self.text.get_rect(center=(self.t_box.x + self.t_box.w / 2,
-                                              self.t_box.y + self.t_box.h / 2))
+        self.pos = self.text.get_rect(
+            center=(self.t_box.x + self.t_box.w / 2, self.t_box.y + self.t_box.h / 2)
+        )
         if self.is_selected:
-            pg.draw.rect(PG.WIN, PG.PC_BLUEPOWDER, self.t_box, 2)
+            pg.draw.rect(PG.WIN, PGC.CP_BLUEPOWDER, self.t_box, 2)
         else:
-            pg.draw.rect(PG.WIN, PG.PC_BLUE, self.t_box, 2)
+            pg.draw.rect(PG.WIN, PGC.CP_BLUE, self.t_box, 2)
         PG.WIN.blit(self.text, self.pos)
 
     def clicked(self, p_mouse_loc) -> bool:
-        """ Return True if mouse is clicked in the widget.
-        """
+        """Return True if mouse is clicked in the widget."""
         if self.t_box.collidepoint(p_mouse_loc):
             self.is_selected = not (self.is_selected)
             return True
         return False
 
     def update_text(self, p_text: str):
-        """ Update text value.
+        """Update text value.
         If text is too wide for the widget, truncate it.
         - `self.value` is the current value of the text string.
         - `self.text` is the rendered text surface.
@@ -388,9 +313,10 @@ class TextInputGroup(pg.sprite.Group):
     If no textinput object is selected, then `current` is None and no
     txtin object has is_selected == True.
     """
+
     def __init__(self):
         super().__init__()
-        self.current = None     # ID currently-selected text input widget.
+        self.current = None  # ID currently-selected text input widget.
 
 
 # ====================================================
@@ -400,14 +326,15 @@ class SaskanAdmin(object):
     """PyGame GUI for controlling Saskantinon functions.
     Initiated and executed by __main__.
     """
+
     def __init__(self, *args, **kwargs):
         """
         Refresh shared data space.
         Initialize counters, modes, trackers, widgets.
         Execute the main event loop.
         """
-        FM.pickle_saskan(path.join("/home", Path.cwd().parts[2], FM.D['APP']))
-        WT.log("info", "", __file__, __name__, self, sys._getframe())
+        # FM.pickle_saskan(path.join("/home", Path.cwd().parts[2], FM.D["APP"]))
+        # WT.log("info", "", __file__, __name__, self, sys._getframe())
 
         # Mouse tracking
         self.mouse_loc = (0, 0)
@@ -422,7 +349,7 @@ class SaskanAdmin(object):
         self.frame_cnt = 0
         self.freeze_mode = False
         # Information bar
-        self.IBAR = InfoBar('')
+        self.IBAR = InfoBar("")
         # Menu bars and items
         self.MEG = MenuGroup()
         prev_x = PG.MBAR_X
@@ -430,7 +357,7 @@ class SaskanAdmin(object):
             mn_nm = mn["nm"]
             self.MEG.add_bar(MenuBar(mn_nm, prev_x))
             prev_x = self.MEG.mbars[mn_nm].mbox.right
-            mil = [(mi_id, mi['nm']) for mi_id, mi in mn["items"].items()]
+            mil = [(mi_id, mi["nm"]) for mi_id, mi in mn["items"].items()]
             self.MEG.add_item(MenuItems(mil, self.MEG.mbars[mn_nm]))
         # Page header
         self.PHDR = PageHeader(FM.G["frame"]["pg_hdr"]["default_text"])
@@ -440,7 +367,7 @@ class SaskanAdmin(object):
 
         # Test log message
         msg = "Mouse location: " + str(self.mouse_loc)
-        WT.log("info", msg, __file__, __name__, self, sys._getframe())
+        # WT.log("info", msg, __file__, __name__, self, sys._getframe())
         # Test log report
         # WT.dump_log()
 
@@ -449,8 +376,7 @@ class SaskanAdmin(object):
 
     # Mouse Click Event Handlers
     # ==============================================================
-    def do_select_mbar(self,
-                       p_mouse_loc):
+    def do_select_mbar(self, p_mouse_loc):
         """Trap for a mouse click on a menu bar item.
 
         :args:
@@ -474,8 +400,7 @@ class SaskanAdmin(object):
             else:
                 mbar.is_selected = False
 
-    def do_select_mitem(self,
-                        p_mouse_loc):
+    def do_select_mitem(self, p_mouse_loc):
         """Trap for a mouse click on a menu item.
 
         :args:
@@ -493,15 +418,12 @@ class SaskanAdmin(object):
     # Keyboard and Menu Item Event Handlers
     # ==============================================================
     def exit_app(self):
-        """Exit the app.
-        """
+        """Exit the app."""
         pg.quit()
         sys.exit()
 
-    def handle_menu_event(self,
-                          p_menu_item):
-        """Trigger an event based on menu item selection.
-        """
+    def handle_menu_event(self, p_menu_item):
+        """Trigger an event based on menu item selection."""
         menu_nm = self.MEG.current_item.name
         m_item_id = p_menu_item[0]
         m_item_text = p_menu_item[1]
@@ -523,8 +445,9 @@ class SaskanAdmin(object):
         :args:
         - event: (pg.event.Event) event to handle
         """
-        if (event.type == pg.QUIT or
-                (event.type == pg.KEYUP and event.key in self.QUIT_KY)):
+        if event.type == pg.QUIT or (
+            event.type == pg.KEYUP and event.key in self.QUIT_KY
+        ):
             self.exit_app()
 
     # Loop Events
@@ -551,7 +474,7 @@ class SaskanAdmin(object):
         30 milliseconds between each frame is the normal framerate.
         To go into slow motion, add a wait here. Don't change the framerate.
         """
-        PG.WIN.fill(PG.PC_BLACK)
+        PG.WIN.fill(PGC.CP_BLACK)
         self.IBAR.draw()
         for m_nm, mbar in self.MEG.mbars.items():
             mbar.draw()
@@ -575,7 +498,7 @@ class SaskanAdmin(object):
         - Handle data load events (F7, F8)
         - Handle mouse events
         """
-        WT.log("info", "", __file__, __name__, self, sys._getframe())
+        # WT.log("info", "", __file__, __name__, self, sys._getframe())
         while True:
             self.track_state()
 
@@ -594,6 +517,6 @@ class SaskanAdmin(object):
 
 
 # Run program
-if __name__ == '__main__':
-    """Run program."""
-    SaskanAdmin()
+# if __name__ == "__main__":
+#     """Run program."""
+#     SaskanAdmin()

@@ -1,11 +1,6 @@
 # This Makefile builds the proejct.
 # It defines several targets and their dependencies.
 
-# TODO:
-#  - Figure out how to build a dev environment
-#    vs. a production environment
-#  - Figure out how to bump the version number
-
 
 ## HEADER MACROS
 ## ========================
@@ -59,7 +54,7 @@ help:
 	@echo "  test_saskantinon		Run app unit tests"
 	@echo "  test_saskantinize  		Run app unit tests"
 	@echo "  docs          		Generate documentation"
-	@echo "  install        	Install all"
+	@echo "  install        		Install all"
 	@echo "  install_saskantinon    	Install the app"
 	@echo "  install_saskantinize		Install the app"
 	@echo "  dist       			Package and upload a release to PyPI"
@@ -77,9 +72,9 @@ help:
 test: test_saskantinon test_saskantinize
 
 test_saskantinon:
-	python -m pytest
+	python -m pytest tests_saskantinon
 test_saskantinize:
-	python -m pytest
+	python -m pytest tests_saskantinize
 
 # Run all of the clean-ups
 # cleans remove temporary files created by the other processes.
@@ -138,7 +133,7 @@ servedocs: docs ## compile the docs watching for changes
 #  use --check on black to just see list of candidates
 #  use --diff on black to see what would be changed
 # - black -t py312 --check Saskantinon || true
-# black -t py312 --diff Saskantinon
+# - black -t py312 --diff Saskantinon
 # N.B. flake8 does everything pycodestyle does and more,
 #  no need to run both of them
 # - flake8 Saskantinon || true
@@ -152,8 +147,6 @@ servedocs: docs ## compile the docs watching for changes
 # or admins.
 lint: lint-saskantinon lint-saskantinize
 
-# This is set up to check only, not fix (other than isort)
-# May want to provide a "fix it" version also
 lint-saskantinon:
 	isort Saskantinon examples_saskantinon tests_saskantinon
 	black -t py312 Saskantinon
@@ -161,9 +154,8 @@ lint-saskantinon:
 
 lint-saskantinize:
 	isort Saskantinize examples_saskantinize tests_saskantinize
-	black Saskantinize examples_saskantinize tests_saskantinize
-	flake8 Saskantinize examples_saskantinize tests_saskantinize
-	black Saskantinize examples_saskantinize tests_saskantinize
+	black -t py312 Saskantinize
+	flake8 Saskantinize
 
 # check code coverage
 # Probably need to play around with this to make

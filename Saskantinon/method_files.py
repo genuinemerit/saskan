@@ -16,8 +16,9 @@ from pathlib import Path
 from pprint import pprint as pp  # noqa: F401
 
 import pandas as pd
-from method_shell import ShellMethods
 from numbers_parser import Document as NumbersDoc
+
+from Saskantinon.method_shell import ShellMethods
 
 SM = ShellMethods()
 

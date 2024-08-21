@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
-import os
+# import os
 import sys
-import app_saskan
+
+from Saskantinize import app_saskantinize
 
 
 def main():
@@ -11,11 +12,12 @@ def main():
 
     # Launch the app_saskan.py module
     try:
-        app_saskan.main()
+        # app_saskantinize.main()
+        app_saskantinize.SaskanAdmin()
     except ImportError:
-        print("Error: app_saskan module not found.")
+        print("Error: app_saskantinize module not found.")
         sys.exit(1)
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
