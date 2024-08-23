@@ -1,7 +1,8 @@
 # Use Mamba to construct development virtual environment for saskan project.
 # Mamba is a fast, scalable package manager for Python that is built on top of conda.
+
 # Use make commands to configure, build, install, distribute the project.
-# (That is still under develompent, not yet tested)
+# The Makefile is still under develompent, not fully tested.
 
 # MAMBA COMMANDS
 # ============================
@@ -17,14 +18,14 @@
 # ====================================================
 # Libraries not available in the conda-forge channel or not recommended to use:
 # mamba activate saskan, then... pip install --upgrade pygame
-# (If latest pygame is in conda-forge then use mamba to install pygame)
+# If latest pygame is in conda-forge then can use mamba to install pygame.
 
 # Required at OS level to use netstat to monitor services traffic:
 # sudo apt-get -y install --upgrade net-tools
-# (Not sure of Windows alternative... best to find python-only solution)
+# Not sure of Windows alternative. Better to find a python-only solution.
 
 # sqlite3 is part of the standard package both in Ubutu and python3.
-# No need for install unless not available in the system.
+# No need for install unlesit s not available in the system.
 # For sqlite command line commands, see:
 #   https://www.sqlitetutorial.net/sqlite-commands/
 

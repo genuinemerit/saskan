@@ -3,12 +3,7 @@
 :module:    app_saskan.py
 :author:    GM (genuinemerit @ pm.me)
 
-Saskan App GUI.  pygame version.
-
-    Note:
-    For scaling images, see: https://www.pygame.org/docs/ref/transform.html
-    Example: scaled_image =\
-        pygame.transform.scale(original_image, (new_width, new_height))
+Saskanantinon App GUI.  pygame/sqlite version.
 
 @DEV:
 - Prototype basic game activities like:
@@ -16,14 +11,9 @@ Saskan App GUI.  pygame version.
     - avatar placement/movement
     - physics
     - sound and music
-- Use pygame for everything.
 - Go for more features, better performance than earler prototypes,
-    but don't worry about interactiviity or complete game yet.
-    Focus most on prototyping the windows and widgets.
-
-    @TODO:
-    - Refactor based on DB and data model implementations.
-    - Implement auto-test scenarios.
+    but don't worry too much about all game interactivity yet.
+    Focus mostly on prototyping the windows and widgets.
 """
 
 import platform
@@ -34,6 +24,7 @@ from pprint import pformat as pf  # noqa: F401, format like pp for files
 from pprint import pprint as pp  # noqa: F401, format like pp for files
 
 import pygame as pg
+
 from app_saskan_gamemap import CompareRect, GameMap
 from data_base import DataBase
 from data_get import GetData
@@ -46,7 +37,6 @@ CLR = PygColors()
 APD = AppDisplay()
 REC = CompareRect()
 GAMEMAP = GameMap()
-
 FM = FileMethods()
 SM = ShellMethods()
 
@@ -88,6 +78,7 @@ class GameMenu(object):
     Clicking on Menu Item triggers an event or sets a status and
       may also close Menu.
     @DEV:
+    - Distinguish between 'ssakan' and 'admin' menus.
     - Work on relationships between 'Start' and 'Restart'. They
       should be mutually exclusive. Maybe simplify to one item,
       like with Pause/Resume. Also consider calling it 'New Game'

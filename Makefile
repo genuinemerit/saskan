@@ -72,9 +72,9 @@ help:
 test: test_saskantinon test_saskantinize
 
 test_saskantinon:
-	python -m pytest tests_saskantinon
+	python -m pytest test/tests_saskantinon
 test_saskantinize:
-	python -m pytest tests_saskantinize
+	python -m pytest test/tests_saskantinize
 
 # Run all of the clean-ups
 # cleans remove temporary files created by the other processes.

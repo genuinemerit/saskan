@@ -19,8 +19,8 @@ from os import path
 from pprint import pprint as pp  # noqa: F401
 
 import pendulum
-from method_files import FileMethods
-from method_shell import ShellMethods
+from Saskantinon.method_files import FileMethods
+from Saskantinon.method_shell import ShellMethods
 
 FM = FileMethods()
 SM = ShellMethods()
