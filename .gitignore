@@ -129,7 +129,6 @@ snips/
 legacy/
 log/
 debug/
-*.db
 *.conf
 *.sqbpro
 .vscode/
