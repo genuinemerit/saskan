@@ -6,9 +6,6 @@ __pycache__/
 # C extensions
 *.so
 
-# Development
-lab/*
-
 # Distribution / packaging
 .Python
 build/
@@ -125,6 +122,7 @@ dmypy.json
 .pyre/
 
 # other
+db/
 snips/
 legacy/
 log/

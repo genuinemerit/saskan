@@ -1,1 +1,0 @@
-db.auth("%USER%", "%PWD%");

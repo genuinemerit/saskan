@@ -1,11 +1,8 @@
 # Use Mamba to construct development virtual environment for saskan project.
 # Mamba is a fast, scalable package manager for Python that is built on top of conda.
 
-# If using Rye, it may not be necessary to build my own virtual environment.
-
-# Using make commands to configure, build, install, distribute the project.
-# The Makefile is still under development, not fully tested.
-# Still investigating setuptools vs. build vs. rye vs. poetry; hatchling, uv, pipx, etc.
+# Use make commands to configure, build, install, distribute the project.
+# The Makefile is still under develompent, not fully tested.
 
 # MAMBA COMMANDS
 # ============================
@@ -16,22 +13,12 @@
 # mamba deactivate
 # mamba update -n base -c defaults mamba
 # mamba update --all
-# mamba list <package>
 
 # OTHER REQUIRED INSTALLS
 # ====================================================
 # Libraries not available in the conda-forge channel or not recommended to use:
-
 # mamba activate saskan, then... pip install --upgrade pygame
-
-# For some reason pygame does not seem to be in conda defaults.
-# If latest pygame is in conda-forge then should be able to use mamba to install pygame.
-# But to ensure latest pygame is being used, get it from PyPI.
-# At this point, seems like mamba has 2.5.2, the latest version.
-
-# Also note: there are some "gui" package add-ons for pygame, but they
-# are small, individual projects separate from the pygame project.
-# Evaluate them before using them.
+# If latest pygame is in conda-forge then can use mamba to install pygame.
 
 # Required at OS level to use netstat to monitor services traffic:
 # sudo apt-get -y install --upgrade net-tools
@@ -48,11 +35,11 @@ channels:
   - defaults
 dependencies:
   - pip
+  - mypy
   - flake8
   - isort
   - coverage
   - black
-  - setuptools
   - twine
   - pathlib
   - requests
@@ -78,4 +65,4 @@ dependencies:
   - sqlalchemy
   - ipykernel
   - sphinx
-  - pygame
+# - pygame
