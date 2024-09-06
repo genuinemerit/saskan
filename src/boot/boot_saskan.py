@@ -1,60 +1,54 @@
 #!python
 """Saskan Apps file installation procedure.
-:module:    install_saskan.py
-:class:     SaskanInstall/0
+:module:    boot_saskan.py
+:class:     SaskanBoot/0
 :author:    GM <genuinemerit @ pm.me>
 
-Command line installer.
-From local git repo, Saskantinon directory:
-- mamba activate sasaken
-- python install_saskan.py
+Configure and boot Saskantinon and Saskantinize databases.
+Development project only. Not part of installed package.
+
+From project directory:
+- make boot
+
+From project src/boot directory:
+- mamba activate saskan
+- python boot_saskan.py
 
 @DEV:
-- Refactor to install only 'saskan' components
-- Maybe install 'saskantinize' separately, but like
-  it is a plug-in, sort of, for saskan. In other words,
-  they can use the same directories and database, but
-  have different configs, data records, GUI components,
-  and maybe a few other things.
+- One install program, with distinct config inputs & params for
+  the two apps. This is data-driven and writes only to the database.
 
-  I think one install program, with distinct config
-  inputs makes more sense.
+-  Config files and database constructor modules like this one are
+   part of the project, but excluded from the PyPI package. I have them
+   stored in the /boot directory.
 
-- If/when I get back to the service architecture...
-- Prototype/test using haproxy to load balance servers.
-- Simplify the proliferation of ports. I shouldn't need so many.
-- Execute this is as part of install in Makefile:
-  `make install_saskantinon`?
+- Regarding packaging and distribution:
+  The database and SQL DML files can be stored in the PyPI package.
+  Could also store the DB and other non-python resources on GitHub
+  or elsewhere and then have the program pull them down from there if
+  they are not present locally.
 
-- Do we just combine the pip install and the local
-  app configuration steps into one make action? Yes,
-  I think so, though make it be available to break it into
-  sub-steps. Should not need to require the user to
-  run steps other than pip install, if possible.
-  Not sure. Feels like a chicken and egg problem.
+  Need to get clear on how to refresh files on PyPI with a release.
 
-  Is it an option to generate the database and store it
-  as part of the PyPI package? How about storing the DB
-  and other (non-python) resources on GitHub (or elsewhere)
-  and then have the program pull them down from there if
-  they are not present locally?
-
-  Yes, see: https://www.turing.com/kb/7-ways-to-include-non-python-files-into-python-package
-  I think we generate the database and store it as part of the PyPI package,
-  but as an included file. Same with docs and other non-python resoources.
+  See: https://www.turing.com/kb/7-ways-to-include-non-python-files-into-python-package
+  Can def generate the database and store it as part of the PyPI package,
+  as an included file. Like with docs and other non-python resoources.
   We can also have a make action that pulls the resources from GitHub if desired.
-  Presumably they will all be deployed in a manner consistent with the dev project?
+  Presumably all will be deployed in a manner consistent with the project, e.,g under
+  the /db directory in the project-level directory.
+  See manifest.in file. See in the dist folder, how the docs are included at the
+  level above the python src folders. Presumably I can access them using `../` in the path
+  from the python programs.
 
-  This implies that the config files and database constructor are part of the
-  development project, but not part of the PyPI package. See manifest.in file.
-  See in the dist folder, how the docs are included at the level above the python app
-  folders. Presumably I can access them using `../` in the path.
+- When I get back to the service architecture...
+- Prototype/test using haproxy to load balance servers.
+- Simplify the proliferation of ports. Shouldn't need so many.
 """
 import json
 from os import path
 from pprint import pprint as pp  # noqa: F401
 
-from data_base import DataBase
+from Saskantinon.data_base import DataBase
 from data_get import GetData
 from data_model_app import AppConfig
 from data_model_tool import InitGameDB
@@ -72,35 +66,48 @@ SD = SetData()
 
 
 class SaskanInstall(object):
-    """Configure and install Saskan apps.
+    """Configure and boot Saskantinon and Saskantinize.
+    (Re-)generate SQL files.
+    (Re-)create and populate database(s).
 
     @DEV:
-    - Create servers, clients, queues, load balancers and so on.
+    - Organize things neatly. Think functionally. Do not recreate the wheel.
+    - Use data and params to drive similar functions.
+    - Later, create servers, clients, queues, load balancers and so on.
+    - If there is anything that needs to happen unique to a local machine,
+      then it doesn't belong here; rather in a StartUp class.
+
+        - Next -- basic futzing with maps and grids
+        - Then -- some implementations of scenes
+        - Consider data structures for Actors and Scenes
+        - Come back to service architecture later.
+        - It is interesting, but a big rabbit hole!
+        - Look at HAProxy to manage service architecture.
     """
 
     def __init__(self):
-        """Initialize database, directories and files.
-        Then set-up dimensions and structure of apps, api's.
-        Finally, load data for world-buidling and story-telling.
-
-        # May be some opportunities to use AI tools.
-        # Experiment with using CLI interfaces and
-        #   GUI interfaces to drive story-telling.
-        # Start with static app config data, then work on
-        #   world-building stuff.
-        #
-        # Next -- basic futzing with maps and grids
-        # Then -- some implementations of scenes
-        # At some point, take a break to consider data
-        #  structures for Actors and Scenes
-        #
-        # Come back to service architecture later.
-        # It is interesting, but a big rabbit hole
-        #  to go down!  When I'm ready, investigate
-        #  using HAProxy to manage the service architecture.
+        """
+        - Initialize database and load tables.
+        - Load data for world-buidling and story-telling.
+        - Set-up dimensions and structure of widgets, API's.
+        - "Environment" set up:
+        -   This is no longer a good idea.
+        -   The user runtime will be the same for all users.
+        -   It should be under user space, not 'sudo' so that
+            the user can run the program as a non-root user and
+            database, possilby other files, can be updated.
+        - Don't want to configure a special directory structure
+            that is any different from what is delivered from PyPI.
+        - Apps GUI data...
+        -   Consider doing this in a separate class.
+        -   For now, I only have a single algorithm for configuring
+        -   the GUI components, but eventually that may change based
+        -   on the local environment.  In either case, it might be
+        -   cleaner to have a separate class for GUI configuration.
         """
         # Environment Set-up
-        self.install_bootstrap_data()
+        self.boot_context()
+        """
         self.BOOT, self.DB_CFG = CM.get_configs()
         self.install_database()
         SD.set_app_config(self.DB_CFG)
@@ -113,7 +120,6 @@ class SaskanInstall(object):
         self.save_db_config(self.BOOT, self.DB_CFG)
 
         # Database Set-up
-        # Apps GUI data
         frame_id = "saskan"
         SD.set_frames(frame_id, self.BOOT, self.DB_CFG)
         SD.set_menu_bars(frame_id, self.BOOT, self.DB_CFG)
@@ -124,30 +130,33 @@ class SaskanInstall(object):
         # Game World data
         SD.set_maps(self.DB_CFG)
         SD.set_grids(self.DB_CFG)
+        """
 
-    def install_bootstrap_data(self):
+    def boot_context(self):
         """
-        Create basic app directories if needed.
-        Write bootstrap data to app directory.
+        Create context data to /db folder.
         """
-        boot_data: dict = {
-            "app_dir": "saskan",
-            "db_dir": "sql",
+        context_data: dict = {
+            "cfg": "boot/config",
+            "ddl": "boot/ddl",
+            "db": "db",
             "db_version": "0.1",
-            "git_source": "/home/dave/Dropbox/GitHub/saskan-app/Saskantinon",
-            "language": "en",
-            "main_db": "SASKAN.db",
-            "bkup_db": "SASKAN.bak",
+            "dml": "db/dml",
+            "git": "https://github.com/genuinemerit/saskan-app/",
+            "lang": "en",
+            "saskan_db": "SASKANTINON.db",
+            "admin_db": "SASKANTINIZE.db"
         }
-        boot_j = json.dumps(boot_data)
-        app_d = path.join(SM.get_cwd_home(), boot_data["app_dir"])
-        config_d = path.join(app_d, "config")
-        sql_d = path.join(app_d, "sql")
-        FM.make_dir(app_d)
-        FM.make_dir(config_d)
-        FM.make_dir(sql_d)
-        FM.write_file(path.join(config_d, "bootstrap.json"), boot_j)
-        print("* Bootstrap file created.")
+        context_j = json.dumps(context_data)
+        # app_d = path.join(SM.get_cwd_home(), context_data["app_dir"])
+        # config_d = path.join(app_d, "config")
+        # sql_d = path.join(app_d, "sql")
+        # FM.make_dir(app_d)
+        # FM.make_dir(config_d)
+        # FM.make_dir(sql_d)
+        context_f = path.join(self.DIR["db"], "context.json")
+        FM.write_file(context_f, context_j)
+        print(f"* Bootstrap file created: {context_f}")
 
     def install_database(self):
         """Copy SQL files to app sql directory.

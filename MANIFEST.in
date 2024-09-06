@@ -10,8 +10,7 @@ include HISTORY.rst
 include LICENSE
 include README.rst
 
-recursive-include tests_saskantinon *
-recursive-include tests_saskantinize *
+recursive-include test *
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]
 

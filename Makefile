@@ -57,6 +57,7 @@ help:
 	@echo "  test_saskantinon		Run app unit tests"
 	@echo "  test_saskantinize  		Run app unit tests"
 	@echo "  docs          		Generate documentation"
+	@echo "  boot          		(Re-)create database"
 	@echo "  dist       			Run setup.py sdist bdist_wheel"
 	@echo "  release       			Package and upload a release to PyPI"
 	@echo "  clean    	    		Clean all"
@@ -79,6 +80,10 @@ test_saskantinon:
 	python -m pytest test/tests_saskantinon
 test_saskantinize:
 	python -m pytest test/tests_saskantinize
+
+boot:
+	@echo "Creating databases..."
+	python -m boot/boot_saskan.py
 
 # Run all of the clean-ups
 # Remove temporary files created by the other processes.

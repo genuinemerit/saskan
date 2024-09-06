@@ -13,7 +13,7 @@ Goals are:
 - Create a package that can be installed with pip.
 - Deploy to PyPI.
 """
-from setuptools import setup, find_packages
+from setuptools import setup
 
 setup(
     version="0.1.1.0"
