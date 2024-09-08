@@ -8,13 +8,15 @@ Saskantinize is the admin controller and manager app
 for Saskantinon.
 
 @DEV:
-- All config data is moved to the DB by the time we use
-  this module. Need to set up config data for the 'Admin' app:
-  Frames, Menus, etc. on the DB. This is done using data_set.py
-  which reads config data files and writes it to the DB.
-- That, in turn, is executed (currently) by install_saskan.py,
+- All config data should be in the DB.
+- Set up config data for the 'Admin' app:
+    - Frames, Menus, etc. on the DB.
+    - Use data_set.py to read config data files, write to DB.
+    - Use Boot/boot_saskan.py
   which presently reads in data only for 'saskan' and not
   'admin'.
+- That should all be done in development, so the DB is already
+  populated when the app fires up.
 - Need to decide if saskan and admin will always be installed
   together. I think yes is the right answer, ultimately, tho
   it will nice if I can set up the Makefile to be able to work
@@ -36,6 +38,11 @@ for Saskantinon.
 - Add functions to modify parameters for Analysis graphs, reports.
 - Work on better ways of displaying graphs.
 - Work on better ways of displaying reports.
+
+- Need to get clear on best way to import modules from other 'apps'
+  within the src directory. It may be easier to just treat
+  Saskantinize as a feature of Saskantinon instead of treating it
+  like a different app.
 """
 
 import platform
@@ -46,13 +53,13 @@ from pprint import pformat as pf  # noqa: F401, format like pp for files
 from pprint import pprint as pp  # noqa: F401, format like pp for files
 
 import pygame as pg
-import Saskantinon.data_structs as DS  # noqa: F401
-import Saskantinon.data_structs_pg as DSP  # noqa: F401
+import data_structs as DS  # noqa: F401
+import data_structs_pg as DSP  # noqa: F401
 
-from Saskantinon.data_base import DataBase  # noqa: F401
-from Saskantinon.data_get import GetData    # noqa: F401
-from Saskantinon.method_files import FileMethods  # noqa: F401
-from Saskantinon.method_shell import ShellMethods  # noqa: F401
+from data_base import DataBase  # noqa: F401
+from data_get import GetData  # noqa: F401
+from method_files import FileMethods  # noqa: F401
+from method_shell import ShellMethods  # noqa: F401
 
 CLR = DSP.PygColors()
 APD = DSP.AppDisplay()
@@ -380,6 +387,7 @@ class InfoBar(object):
             )
             PG.WIN.blit(genimg, genimg.get_rect(topleft=(PG.WIN_W * 0.67, PG.IBAR_Y)))
 
+
 class TextInput(pg.sprite.Sprite):
     """Define and handle a text input widget."""
 
@@ -504,6 +512,7 @@ class SaskanAdmin(object):
 
         # Test log message
         msg = "Mouse location: " + str(self.mouse_loc)
+        pp((msg))
         # WT.log("info", msg, __file__, __name__, self, sys._getframe())
         # Test log report
         # WT.dump_log()
@@ -653,12 +662,9 @@ class SaskanAdmin(object):
                 self.refresh_screen()
 
 
-# Run program
-if __name__ == "__main__":
-    """Run program."""
-    MNU = AdminMenu()
-    # WEB = HtmlDisplay()  # for Help/Link windows
-    # IBAR = InfoBar()
-    # WINS = Windows()
-    # STG = Stage()
-    # SaskanAdmin()
+"""Cache resources in memory."""
+MNU = AdminMenu()
+# WEB = HtmlDisplay()  # for Help/Link windows
+# IBAR = InfoBar()
+# WINS = Windows()
+# STG = Stage()

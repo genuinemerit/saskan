@@ -13,6 +13,12 @@ or from python terminal session:
 N.B.:
 - If running from python terminal, it will request sudo password.
 - If running from bash script, must run it under sudo account.
+- Need to change that probably. Think about it. Is there any
+  point to service-based architecture for single-user app, other
+  than intellectual curiosity?
+- This would need to be more like a start-up method, not a boot
+  method. In other words, we can't "package" the ports and so on
+  into PyPI.
 
 @DEV:
 - If/when I get back to the service architecture...

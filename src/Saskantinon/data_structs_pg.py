@@ -12,7 +12,7 @@ from pprint import pprint as pp  # noqa: F401
 
 import pygame as pg
 
-from Saskantinon.data_structs import ImageType
+from data_structs import ImageType
 
 pg.init()  # Init PyGame for use in this module
 

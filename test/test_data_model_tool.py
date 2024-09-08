@@ -15,9 +15,11 @@ import data_model_app as DMA
 import data_model_world as DMW
 from method_files import FileMethods
 from method_shell import ShellMethods
+from test_data_model import TestDataModel
 
 FM = FileMethods()
 SM = ShellMethods()
+TD = TestDataModel()
 
 # =============================================================
 # DB/DM table definitions
@@ -29,17 +31,17 @@ SM = ShellMethods()
 # - SQLITE constraints,
 # - GROUPed types derived from data types defined above,
 # - sort order for SELECT queries.
-# This module provides the generic tools for running DDL commands.
-#
-# Moved test data set-up methods into a separate module,
-# under the test directory.
 #
 # @DEV:
-# Define database tables to store name, location, other info
-# regarding image, video, sound and possibly other types of resources
-# (plug-ins, mods, external services, etc.).
-# Also regions, countries, provinces, cities, towns, villages, scenes, etc.
-# May want to break this module up into data categories.
+# Define database tables to store
+# name, location, other info regarding image, video,
+# sound and possibly other types of resources (plug-ins,
+# mods, external services, etc.)
+# Also see things like regions, countries,
+# provinces, cities, towns, villages, scenes, etc.
+# Maybe break this module up into data categories.
+# Move test methods into a separate module, under the test
+# directory.
 # =======================================================
 
 
@@ -199,20 +201,21 @@ class InitGameDB(object):
     def boot_db(
         self,
         DB: object,
+        p_create_test_data: bool = False,
         p_backup_archive: bool = False,
     ):
         """
-        Drop and recreate empty all DB tables.
+        Drops and recreates empty all DB tables.
         This is a destructive operation.
-        - Backs up DB if it exists.
-        - Overlays .BAK copy of database.
-        Does not wipe out existing archived DB's.
-        - Logged records appear in .BAK, not in refreshed DB.
+        - Backup DB if it exists.
+        - Overlay .BAK copy of database.
+        Do not wipe out any existing archived DB's.
+        - Logged records appear in .BAK, not in the
+          refreshed database.
         :args:
-        - DB - instantiation of the DataBase() Class.
+        - DB - current instance of the DB object.
+        - p_create_test_data: bool. If True, create test data.
         - p_backup_archive: bool. If True, archive database.
-
-        See test/test_data_model_tool.py for examples of populating test data.
         """
         if p_backup_archive:
             file_path = Path(DB.DB)
@@ -224,3 +227,70 @@ class InitGameDB(object):
         DB.execute_dml(sql_list, p_foreign_keys_on=False)
         sql_list = [sql.name for sql in FM.scan_dir(DB.SQL, "CREATE*")]
         DB.execute_dml(sql_list, p_foreign_keys_on=True)
+
+        if p_create_test_data:
+            for model in [
+                DMA.Backup,
+                DMA.AppConfig,
+                DMA.Texts,
+                DMA.Frames,
+                DMA.MenuBars,
+                DMA.Menus,
+                DMA.MenuItems,
+                DMA.Windows,
+                DMA.Links,
+                DMA.ButtonSingle,
+                DMA.ButtonMulti,
+                DMA.ButtonItem,
+            ]:
+                sql, values = TD.make_algo_test_data(model)
+                for v in values:
+                    DB.execute_insert(sql, v)
+            for model in [
+                DMW.Universe,
+                DMW.ExternalUniv,
+                DMW.GalacticCluster,
+                DMW.Galaxy,
+                DMW.StarSystem,
+                DMW.World,
+                DMW.Moon,
+                DMW.Map,
+                DMW.MapXMap,
+                DMW.Grid,
+                DMW.GridXMap,
+                DMW.CharSet,
+                DMW.CharMember,
+                DMW.LangFamily,
+                DMW.Language,
+                DMW.LangDialect,
+                DMW.GlossCommon,
+                DMW.Glossary,
+                DMW.Lake,
+                DMW.LakeXMap,
+                DMW.River,
+                DMW.RiverXMap,
+                DMW.OceanBody,
+                DMW.OceanBodyXMap,
+                DMW.OceanBodyXRiver,
+                DMW.LandBody,
+                DMW.LandBodyXMap,
+                DMW.LandBodyXLandBody,
+                DMW.LandBodyXOceanBody,
+                DMW.SolarYear,
+                DMW.Season,
+                DMW.LunarYear,
+                DMW.LunarYearXMoon,
+                DMW.SolarCalendar,
+                DMW.LunarCalendar,
+                DMW.Month,
+                DMW.LunarCalendarXMonth,
+                DMW.SolarCalendarXMonth,
+                DMW.WeekTime,
+                DMW.LunarCalendarXWeekTime,
+                DMW.SolarCalendarXWeekTime,
+                DMW.DayTime,
+                DMW.WeekTimeXDayTime,
+            ]:
+                sql, values = TD.make_algo_test_data(model)
+                for v in values:
+                    DB.execute_insert(sql, v)

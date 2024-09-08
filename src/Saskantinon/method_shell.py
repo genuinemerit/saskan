@@ -112,7 +112,7 @@ class ShellMethods(object):
         that is, exclusive of the tokens.
         """
         end_from = full_str.find(from_token) + len(from_token)
-        return full_str[end_from : full_str.find(to_token, end_from)]
+        return full_str[end_from: full_str.find(to_token, end_from)]
 
     @classmethod
     def get_substring_inclusive(
@@ -124,7 +124,7 @@ class ShellMethods(object):
         """
         start_from = full_str.find(from_token)
         return full_str[
-            start_from : full_str.find(to_token, start_from) + len(to_token)
+            start_from: full_str.find(to_token, start_from) + len(to_token)
         ]
 
     @classmethod
@@ -146,7 +146,8 @@ class ShellMethods(object):
             # shell=True means cmd param contains a regular cmd string
             # trunk-ignore(bandit/B602)
             shell = shl.Popen(
-                cmd, shell=True, stdin=shl.PIPE, stdout=shl.PIPE, stderr=shl.STDOUT
+                cmd, shell=True, stdin=shl.PIPE,
+                stdout=shl.PIPE, stderr=shl.STDOUT
             )
             cmd_result, _ = shell.communicate()
             if (
@@ -197,6 +198,15 @@ class ShellMethods(object):
             str: home directory
         """
         return environ["HOME"]
+
+    @classmethod
+    def get_cwd(cls) -> str:
+        """Return the current working directory.
+
+        :returns:
+            str: current working directory
+        """
+        return Path.cwd()
 
     @classmethod
     def get_cwd_home(cls) -> str:

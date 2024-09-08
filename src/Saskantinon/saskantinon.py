@@ -10,11 +10,7 @@ def main():
 
     # Launch the app_saskan.py module
     try:
-        app_saskan.main()
+        app_saskan.SaskanGame()
     except ImportError:
         print("Error: app_saskan module not found.")
         sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()

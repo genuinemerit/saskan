@@ -18,7 +18,7 @@ from pprint import pprint as pp  # noqa: F401
 import pandas as pd
 from numbers_parser import Document as NumbersDoc
 
-from Saskantinon.method_shell import ShellMethods
+from method_shell import ShellMethods
 
 SM = ShellMethods()
 
@@ -52,7 +52,8 @@ class FileMethods(object):
             if Path(p_dir_path).exists() and Path(p_dir_path).is_dir():
                 files = [f for f in Path(p_dir_path).iterdir()]
                 if p_file_pattern != "":
-                    files = [f for f in files if all(s in f.name for s in srch)]
+                    files = [f for f in files
+                             if all(s in f.name for s in srch)]
         except Exception as err:
             raise (err)
         return files
@@ -78,7 +79,9 @@ class FileMethods(object):
             raise (err)
 
     @classmethod
-    def get_numbers_data(cls, p_file_path: str, p_sheet_x: int = 0) -> pd.DataFrame:
+    def get_numbers_data(cls,
+                         p_file_path: str,
+                         p_sheet_x: int = 0) -> pd.DataFrame:
         """Read data from Numbers (MacOS) spreadsheet tab
         and return as a DataFrame.
 
@@ -98,7 +101,9 @@ class FileMethods(object):
         dataf = pd.DataFrame(data[1:], columns=data[0])
         return dataf
 
-    def get_spreadsheet_data(self, p_file_path: str, p_sheet: str = "") -> pd.DataFrame:
+    def get_spreadsheet_data(self,
+                             p_file_path: str,
+                             p_sheet: str = "") -> pd.DataFrame:
         """Get data from Excel, ODF, CSV (tab), or MacOS Numbers spreadsheet.
         Preference is for CSV files.
 
@@ -115,7 +120,8 @@ class FileMethods(object):
         if ss_type.lower() in ("xlsx", "xls"):
             data = pd.read_excel(p_file_path, sheet_name=sheet_nm)
         elif ss_type.lower() in ("ods"):
-            data = pd.read_excel(p_file_path, engine="odf", sheet_name=sheet_nm)
+            data = pd.read_excel(p_file_path,
+                                 engine="odf", sheet_name=sheet_nm)
         elif ss_type.lower() in ("csv"):
             data = pd.read_csv(p_file_path)
         elif ss_type.lower() in ("numbers"):

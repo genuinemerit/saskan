@@ -11,6 +11,7 @@ include LICENSE
 include README.rst
 
 recursive-include test *
+recursive-exclude src/Saskantinon/BootSaskan
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]
 

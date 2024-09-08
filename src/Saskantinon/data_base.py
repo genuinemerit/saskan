@@ -19,8 +19,8 @@ from os import path
 from pprint import pprint as pp  # noqa: F401
 
 import pendulum
-from Saskantinon.method_files import FileMethods
-from Saskantinon.method_shell import ShellMethods
+from method_files import FileMethods
+from method_shell import ShellMethods
 
 FM = FileMethods()
 SM = ShellMethods()
@@ -34,7 +34,6 @@ class DataBase(object):
         self.SQL = p_db_cfg["sql"]
         self.DB = p_db_cfg["main_db"]
         self.DB_BKUP = p_db_cfg["bkup_db"]
-        self.DB_VERS = p_db_cfg["version"]
         self.db_conn = None  # type: ignore
 
     # Generate SQL files from data models

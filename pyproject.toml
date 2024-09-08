@@ -1,0 +1,66 @@
+[project]
+name = "Saskantinon"
+version = "0.0.0.a16"
+description = "Saskantinon game and admin tools"
+authors = [{ name = "Genuine Merit Software", email = "genuinmemerit@pm.me" }]
+keywords = ["game", "saskantinon", "game editor", "RPG"]
+license = "MIT"
+readme = { file = "README.md", content-type = "text/markdown" }
+requires-python = ">=3.12"
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Environment :: X11 Applications",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Games/Entertainment :: Role-Playing",
+    "Topic :: Software Development :: Libraries :: Python Modules"
+]
+dependencies = [
+    "beautifulsoup4",
+    "Levenshtein",
+    "matplotlib",
+    "networkx",
+    "nltk",
+    "numbers-parser",
+    "numpy",
+    "openai",
+    "pandas",
+    "pathlib",
+    "pendulum",
+    "pygame",
+    "requests",
+    "rich",
+    "sqlalchemy",
+    "tabulate",
+    "tornado",
+    "twisted",
+    "tzlocal",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project.scripts]
+saskan = "src/Saskantinon/__main__.py"
+
+[project.urls]
+"Bug Tracker" = "https://github.com/genuinemerit/saskan-app/issues"
+"Documentation" = "https://github.com/genuinemerit/saskan-wiki"
+"Source Code" = "https://github.com/genuinemerit/saskan-app"
+"Story" = "https://github.com/genuinemerit/saskan-story"
+
+[project.optional-dependencies]
+testing = ["pytest", "coverage"]
+linting = ["flake8", "pycodestyle"]
+formatting = ["isort", "black"]
+docs = ["sphinx"]
+
+[tool.hatch.build.targets.wheel]
+include = ["src/Saskantinon"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/Saskantinon"]

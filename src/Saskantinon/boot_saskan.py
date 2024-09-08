@@ -7,20 +7,21 @@
 Configure and boot Saskantinon and Saskantinize databases.
 Development project only. Not part of installed package.
 
-From project directory:
+From project directory if Makefile is being used:
 - make boot
 
-From project src/boot directory:
+From project directory:
 - mamba activate saskan
-- python boot_saskan.py
+- python src/Saskantinon/boot_saskan.py
+
+Assume that python programs are always executed from the
+main project directory. Manage any paths with that in mind.
 
 @DEV:
 - One install program, with distinct config inputs & params for
   the two apps. This is data-driven and writes only to the database.
-
 -  Config files and database constructor modules like this one are
-   part of the project, but excluded from the PyPI package. I have them
-   stored in the /boot directory.
+   part of the project, but exclude them from the PyPI package.
 
 - Regarding packaging and distribution:
   The database and SQL DML files can be stored in the PyPI package.
@@ -30,15 +31,15 @@ From project src/boot directory:
 
   Need to get clear on how to refresh files on PyPI with a release.
 
-  See: https://www.turing.com/kb/7-ways-to-include-non-python-files-into-python-package
-  Can def generate the database and store it as part of the PyPI package,
+  See: https://www.turing.com/kb/7-ways-to-include-non-python-files-into-python-package  # noqa E501
+    Can def generate the database and store it as part of the PyPI package,
   as an included file. Like with docs and other non-python resoources.
-  We can also have a make action that pulls the resources from GitHub if desired.
+  We can make actions to pulls the resources from GitHub if desired.
   Presumably all will be deployed in a manner consistent with the project, e.,g under
   the /db directory in the project-level directory.
-  See manifest.in file. See in the dist folder, how the docs are included at the
-  level above the python src folders. Presumably I can access them using `../` in the path
-  from the python programs.
+  See manifest.in file. See dist folder, how the docs are included at the
+  level above the python src folders. Access them using `../` in the path
+  from the python programs?
 
 - When I get back to the service architecture...
 - Prototype/test using haproxy to load balance servers.
@@ -48,7 +49,7 @@ import json
 from os import path
 from pprint import pprint as pp  # noqa: F401
 
-from Saskantinon.data_base import DataBase
+from data_base import DataBase
 from data_get import GetData
 from data_model_app import AppConfig
 from data_model_tool import InitGameDB
@@ -65,13 +66,13 @@ GD = GetData()
 SD = SetData()
 
 
-class SaskanInstall(object):
+class BootSaskan(object):
     """Configure and boot Saskantinon and Saskantinize.
     (Re-)generate SQL files.
     (Re-)create and populate database(s).
 
     @DEV:
-    - Organize things neatly. Think functionally. Do not recreate the wheel.
+    - Organize things neatly. Think functionally.
     - Use data and params to drive similar functions.
     - Later, create servers, clients, queues, load balancers and so on.
     - If there is anything that needs to happen unique to a local machine,
@@ -83,6 +84,8 @@ class SaskanInstall(object):
         - Come back to service architecture later.
         - It is interesting, but a big rabbit hole!
         - Look at HAProxy to manage service architecture.
+    - It may work better to include the "boot" resources under the
+      Saskantinon directory, but exclude them from the PyPI package.
     """
 
     def __init__(self):
@@ -137,15 +140,15 @@ class SaskanInstall(object):
         Create context data to /db folder.
         """
         context_data: dict = {
+            "admin_db": "ADMIN.db",
             "cfg": "boot/config",
-            "ddl": "boot/ddl",
             "db": "db",
-            "db_version": "0.1",
+            "ddl": "boot/ddl",
             "dml": "db/dml",
             "git": "https://github.com/genuinemerit/saskan-app/",
             "lang": "en",
-            "saskan_db": "SASKANTINON.db",
-            "admin_db": "SASKANTINIZE.db"
+            "saskan_db": "SASKAN.db",
+            "wiki": "https://github.com/genuinemerit/saskan-wiki/",
         }
         context_j = json.dumps(context_data)
         # app_d = path.join(SM.get_cwd_home(), context_data["app_dir"])
@@ -154,9 +157,11 @@ class SaskanInstall(object):
         # FM.make_dir(app_d)
         # FM.make_dir(config_d)
         # FM.make_dir(sql_d)
-        context_f = path.join(self.DIR["db"], "context.json")
+        pp(("context json:", context_j))
+        print(f"Current working directory: {SM.get_cwd()}")
+        context_f = path.join("static/context", "context.json")
         FM.write_file(context_f, context_j)
-        print(f"* Bootstrap file created: {context_f}")
+        print(f"* Context file created: {context_f}")
 
     def install_database(self):
         """Copy SQL files to app sql directory.
@@ -227,7 +232,8 @@ class SaskanInstall(object):
         def _copy_python_files():
             files = FM.scan_dir(git_dir)
             py_files = [
-                f for f in files if str(f).endswith(".py") and "install" not in str(f)
+                f for f in files if str(f).endswith(".py")
+                and "install" not in str(f)
             ]
             if py_files is not None:
                 for f in py_files:
@@ -253,4 +259,4 @@ class SaskanInstall(object):
 
 
 if __name__ == "__main__":
-    AI = SaskanInstall()
+    AI = BootSaskan()

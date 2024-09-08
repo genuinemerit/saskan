@@ -1,0 +1,11 @@
+{
+    "admin_db": "ADMIN.db",
+    "cfg": "boot/config",
+    "db": "db",
+    "ddl": "boot/ddl",
+    "dml": "db/dml",
+    "git": "https://github.com/genuinemerit/saskan-app/",
+    "lang": "en",
+    "saskan_db": "SASKAN.db",
+    "wiki": "https://github.com/genuinemerit/saskan-wiki/"
+}

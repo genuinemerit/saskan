@@ -10,9 +10,9 @@ from os import path
 from pprint import pformat as pf  # noqa: F401
 from pprint import pprint as pp  # noqa: F401
 
-from Saskantinon.data_base import DataBase
-from Saskantinon.method_files import FileMethods  # type: ignore
-from Saskantinon.method_shell import ShellMethods  # type: ignore
+from data_base import DataBase
+from method_files import FileMethods  # type: ignore
+from method_shell import ShellMethods  # type: ignore
 
 FM = FileMethods()
 SM = ShellMethods()
@@ -93,7 +93,7 @@ class GetData(object):
                         data: dict = {}
             return rows
 
-        from Saskantinon.method_files import FileMethods
+        from method_files import FileMethods
 
         FM = FileMethods()
         if FM.is_file_or_dir(DB_CFG["main_db"]):

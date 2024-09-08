@@ -863,14 +863,11 @@ class SaskanGame(object):
             self.refresh_screen()
 
 
-if __name__ == "__main__":
-    """Cache data and resources in memory and launch the app."""
-
-    # Classes used to manage the game
-    # -------------------------------
-    MNU = GameMenu()
-    WEB = HtmlDisplay()  # for Help/Link windows
-    IBAR = InfoBar()
-    WINS = Windows()
-    STG = Stage()
-    SaskanGame()
+# Classes used to manage the game
+# Cache data and resources in memory
+# -------------------------------
+MNU = GameMenu()
+WEB = HtmlDisplay()  # for Help/Link windows
+IBAR = InfoBar()
+WINS = Windows()
+STG = Stage()

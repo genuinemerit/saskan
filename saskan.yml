@@ -54,6 +54,8 @@ dependencies:
   - black
   - setuptools
   - twine
+  - pytest
+  - rich
   - pathlib
   - requests
   - tzlocal
@@ -64,7 +66,6 @@ dependencies:
   - tornado
   - music21
   - pendulum
-  - pytest
   - numbers-parser
   - beautifulsoup4
   - tabulate
@@ -76,6 +77,5 @@ dependencies:
   - numbers-parser
   - beautifulsoup4
   - sqlalchemy
-  - ipykernel
   - sphinx
   - pygame
