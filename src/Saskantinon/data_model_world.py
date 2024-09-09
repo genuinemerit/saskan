@@ -9,7 +9,7 @@ Saskan Data Management middleware.
 from pprint import pformat as pf  # noqa: F401
 from pprint import pprint as pp  # noqa: F401
 
-import data_model_tool as DMT
+import data_model as DM
 from data_structs import EntityType, GroupStruct
 from method_files import FileMethods
 from method_shell import ShellMethods
@@ -83,11 +83,11 @@ class Map(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(Map)
+        return DM.orm_to_dict(Map)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"map_uid_pk": ["map_uid_pk"]}
@@ -119,11 +119,11 @@ class MapXMap(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(MapXMap)
+        return DM.orm_to_dict(MapXMap)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"map_x_map_uid_pk": ["map_x_map_uid_pk"]}
@@ -170,11 +170,11 @@ class Grid(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(Grid)
+        return DM.orm_to_dict(Grid)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"grid_uid_pk": ["grid_uid_pk"]}
@@ -194,11 +194,11 @@ class GridXMap(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(GridXMap)
+        return DM.orm_to_dict(GridXMap)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"grid_x_map_uid_pk": ["grid_x_map_uid_pk"]}
@@ -233,11 +233,11 @@ class Universe(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(Universe)
+        return DM.orm_to_dict(Universe)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"univ_uid_pk": ["univ_uid_pk"]}
@@ -261,11 +261,11 @@ class ExternalUniv(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(ExternalUniv)
+        return DM.orm_to_dict(ExternalUniv)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"external_univ_uid_pk": ["external_univ_uid_pk"]}
@@ -310,11 +310,11 @@ class GalacticCluster(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(GalacticCluster)
+        return DM.orm_to_dict(GalacticCluster)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"galactic_cluster_uid_pk": ["galactic_cluster_uid_pk"]}
@@ -383,11 +383,11 @@ class Galaxy(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(Galaxy)
+        return DM.orm_to_dict(Galaxy)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"galaxy_uid_pk": ["galaxy_uid_pk"]}
@@ -534,11 +534,11 @@ class StarSystem(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(StarSystem)
+        return DM.orm_to_dict(StarSystem)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"star_system_uid_pk": ["star_system_uid_pk"]}
@@ -613,11 +613,11 @@ class World(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(World)
+        return DM.orm_to_dict(World)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"world_uid_pk": ["world_uid_pk"]}
@@ -655,11 +655,11 @@ class Moon(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(Moon)
+        return DM.orm_to_dict(Moon)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"moon_uid_pk": ["moon_uid_pk"]}
@@ -704,11 +704,11 @@ class SolarYear(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(SolarYear)
+        return DM.orm_to_dict(SolarYear)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"solar_year_uid_pk": ["solar_year_uid_pk"]}
@@ -742,11 +742,11 @@ class Season(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(Season)
+        return DM.orm_to_dict(Season)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"season_uid_pk": ["season_uid_pk"]}
@@ -791,11 +791,11 @@ class LunarYear(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(LunarYear)
+        return DM.orm_to_dict(LunarYear)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"lunar_year_uid_pk": ["lunar_year_uid_pk"]}
@@ -821,11 +821,11 @@ class LunarYearXMoon(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(LunarYearXMoon)
+        return DM.orm_to_dict(LunarYearXMoon)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"lunar_year_x_moon_uid_pk": ["lunar_year_x_moon_uid_pk"]}
@@ -868,11 +868,11 @@ class SolarCalendar(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(SolarCalendar)
+        return DM.orm_to_dict(SolarCalendar)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"solar_calendar_uid_pk": ["solar_calendar_uid_pk"]}
@@ -910,11 +910,11 @@ class LunarCalendar(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(LunarCalendar)
+        return DM.orm_to_dict(LunarCalendar)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"lunar_calendar_uid_pk": ["lunar_calendar_uid_pk"]}
@@ -945,11 +945,11 @@ class Month(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(Month)
+        return DM.orm_to_dict(Month)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"month_uid_pk": ["month_uid_pk"]}
@@ -974,11 +974,11 @@ class SolarCalendarXMonth(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(SolarCalendarXMonth)
+        return DM.orm_to_dict(SolarCalendarXMonth)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"solar_calendar_x_moon_uid_pk": ["solar_calendar_x_moon_uid_pk"]}
@@ -1003,11 +1003,11 @@ class LunarCalendarXMonth(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(LunarCalendarXMonth)
+        return DM.orm_to_dict(LunarCalendarXMonth)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"lunar_calendar_x_moon_uid_pk": ["lunar_calendar_x_moon_uid_pk"]}
@@ -1041,11 +1041,11 @@ class WeekTime(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(WeekTime)
+        return DM.orm_to_dict(WeekTime)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"week_time_uid_pk": ["week_time_uid_pk"]}
@@ -1073,11 +1073,11 @@ class SolarCalendarXWeekTime(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(SolarCalendarXWeekTime)
+        return DM.orm_to_dict(SolarCalendarXWeekTime)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {
@@ -1104,11 +1104,11 @@ class LunarCalendarXWeekTime(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(LunarCalendarXWeekTime)
+        return DM.orm_to_dict(LunarCalendarXWeekTime)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {
@@ -1145,11 +1145,11 @@ class DayTime(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(DayTime)
+        return DM.orm_to_dict(DayTime)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"day_time_uid_pk": ["day_time_uid_pk"]}
@@ -1174,11 +1174,11 @@ class WeekTimeXDayTime(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(WeekTimeXDayTime)
+        return DM.orm_to_dict(WeekTimeXDayTime)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"week_time_x_day_time_uid_pk": ["week_time_x_day_time_uid_pk"]}
@@ -1231,11 +1231,11 @@ class CharSet(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(CharSet)
+        return DM.orm_to_dict(CharSet)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"char_set_uid_pk": ["char_set_uid_pk"]}
@@ -1263,11 +1263,11 @@ class CharMember(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(CharMember)
+        return DM.orm_to_dict(CharMember)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"char_member_uid_pk": ["char_member_uid_pk"]}
@@ -1295,11 +1295,11 @@ class LangFamily(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(LangFamily)
+        return DM.orm_to_dict(LangFamily)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"lang_family_uid_pk": ["lang_family_uid_pk"]}
@@ -1374,11 +1374,11 @@ class Language(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(Language)
+        return DM.orm_to_dict(Language)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"lang_uid_pk": ["lang_uid_pk"]}
@@ -1409,11 +1409,11 @@ class LangDialect(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(LangDialect)
+        return DM.orm_to_dict(LangDialect)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"dialect_uid_pk": ["dialect_uid_pk"]}
@@ -1448,11 +1448,11 @@ class GlossCommon(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(GlossCommon)
+        return DM.orm_to_dict(GlossCommon)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"gloss_common_uid_pk": ["gloss_common_uid_pk"]}
@@ -1478,11 +1478,11 @@ class Glossary(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(Glossary)
+        return DM.orm_to_dict(Glossary)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"glossary_uid_pk": ["glossary_uid_pk"]}
@@ -1560,11 +1560,11 @@ class Lake(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(Lake)
+        return DM.orm_to_dict(Lake)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"lake_uid_pk": ["lake_uid_pk"]}
@@ -1591,11 +1591,11 @@ class LakeXMap(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(LakeXMap)
+        return DM.orm_to_dict(LakeXMap)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"lake_x_map_pk": "lake_x_map_pk"}
@@ -1659,11 +1659,11 @@ class River(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(River)
+        return DM.orm_to_dict(River)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"river_uid_pk": "river_uid_pk"}
@@ -1694,11 +1694,11 @@ class RiverXMap(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(RiverXMap)
+        return DM.orm_to_dict(RiverXMap)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"river_x_map_uid_pk": "river_x_map_uid_pk"}
@@ -1735,11 +1735,11 @@ class OceanBody(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(OceanBody)
+        return DM.orm_to_dict(OceanBody)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"ocean_body_uid_pk": "ocean_body_uid_pk"}
@@ -1771,11 +1771,11 @@ class OceanBodyXMap(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(OceanBodyXMap)
+        return DM.orm_to_dict(OceanBodyXMap)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"ocean_body_x_map_uid_pk": "ocean_body_x_map_uid_pk"}
@@ -1799,11 +1799,11 @@ class OceanBodyXRiver(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(OceanBodyXRiver)
+        return DM.orm_to_dict(OceanBodyXRiver)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"ocean_body_x_river_uid_pk": "ocean_body_x_river_uid_pk"}
@@ -1832,11 +1832,11 @@ class LandBody(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(LandBody)
+        return DM.orm_to_dict(LandBody)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"land_body_uid_pk": "land_body_uid_pk"}
@@ -1858,11 +1858,11 @@ class LandBodyXMap(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(LandBodyXMap)
+        return DM.orm_to_dict(LandBodyXMap)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"land_body_x_map_uid_pk": "land_body_x_map_uid_pk"}
@@ -1889,11 +1889,11 @@ class LandBodyXLandBody(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(LandBodyXLandBody)
+        return DM.orm_to_dict(LandBodyXLandBody)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"land_body_x_land_body_uid_pk": "land_body_x_land_body_uid_pk"}
@@ -1919,11 +1919,11 @@ class LandBodyXOceanBody(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(LandBodyXOceanBody)
+        return DM.orm_to_dict(LandBodyXOceanBody)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"land_body_x_ocean_body_uid_pk": "land_body_x_ocean_body_uid_pk"}

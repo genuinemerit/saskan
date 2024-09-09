@@ -146,8 +146,7 @@ class ShellMethods(object):
             # shell=True means cmd param contains a regular cmd string
             # trunk-ignore(bandit/B602)
             shell = shl.Popen(
-                cmd, shell=True, stdin=shl.PIPE,
-                stdout=shl.PIPE, stderr=shl.STDOUT
+                cmd, shell=True, stdin=shl.PIPE, stdout=shl.PIPE, stderr=shl.STDOUT
             )
             cmd_result, _ = shell.communicate()
             if (

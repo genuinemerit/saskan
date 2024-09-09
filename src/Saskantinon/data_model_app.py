@@ -16,7 +16,7 @@ Saskan Data Management middleware.
 from pprint import pformat as pf  # noqa: F401
 from pprint import pprint as pp  # noqa: F401
 
-import data_model_tool as DMT
+import data_model as DM
 from data_structs import EntityType
 from method_files import FileMethods
 from method_shell import ShellMethods
@@ -41,11 +41,11 @@ class Backup(object):
 
     def to_dict(self) -> dict:
         """Convert attributes to OrderedDict."""
-        return DMT.orm_to_dict(Backup)
+        return DM.orm_to_dict(Backup)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"bkup_uid_pk": ["bkup_uid_pk"]}
@@ -79,11 +79,11 @@ class AppConfig(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(AppConfig)
+        return DM.orm_to_dict(AppConfig)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"config_uid_pk": ["config_uid_pk"]}
@@ -106,11 +106,11 @@ class Texts(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(Texts)
+        return DM.orm_to_dict(Texts)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"text_uid_pk": ["text_uid_pk"]}
@@ -145,11 +145,11 @@ class Frames(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(Frames)
+        return DM.orm_to_dict(Frames)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"frame_uid_pk": ["frame_uid_pk"]}
@@ -178,11 +178,11 @@ class MenuBars(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(MenuBars)
+        return DM.orm_to_dict(MenuBars)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"menu_bar_uid_pk": ["menu_bar_uid_pk"]}
@@ -208,11 +208,11 @@ class Menus(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(Menus)
+        return DM.orm_to_dict(Menus)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"menu_uid_pk": ["menu_uid_pk"]}
@@ -242,11 +242,11 @@ class MenuItems(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(MenuItems)
+        return DM.orm_to_dict(MenuItems)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"item_uid_pk": ["item_uid_pk"]}
@@ -277,11 +277,11 @@ class Windows(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(Windows)
+        return DM.orm_to_dict(Windows)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"win_uid_pk": ["win_uid_pk"]}
@@ -311,11 +311,11 @@ class Links(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(Links)
+        return DM.orm_to_dict(Links)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"link_uid_pk": ["link_uid_pk"]}
@@ -356,11 +356,11 @@ class ButtonSingle(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(ButtonSingle)
+        return DM.orm_to_dict(ButtonSingle)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"button_single_uid_pk": ["button_single_uid_pk"]}
@@ -390,11 +390,11 @@ class ButtonMulti(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(ButtonMulti)
+        return DM.orm_to_dict(ButtonMulti)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"button_multi_uid_pk": ["button_multi_uid_pk"]}
@@ -424,11 +424,11 @@ class ButtonItem(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DMT.orm_to_dict(ButtonItem)
+        return DM.orm_to_dict(ButtonItem)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DMT.orm_from_dict(self, p_dict, p_row)
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: dict = {"button_item_uid_pk": ["button_item_uid_pk"]}

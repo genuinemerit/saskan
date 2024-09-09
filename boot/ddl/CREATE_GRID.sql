@@ -1,14 +1,9 @@
 CREATE TABLE IF NOT EXISTS GRID (
 grid_uid_pk TEXT DEFAULT '',
+version_id TEXT DEFAULT '',
 grid_name TEXT DEFAULT '',
 row_cnt INTEGER DEFAULT 0,
 col_cnt INTEGER DEFAULT 0,
 z_up_cnt INTEGER DEFAULT 0,
 z_down_cnt INTEGER DEFAULT 0,
-width_px NUMERIC DEFAULT 0.0,
-height_px NUMERIC DEFAULT 0.0,
-width_km NUMERIC DEFAULT 0.0,
-height_km NUMERIC DEFAULT 0.0,
-z_up_m NUMERIC DEFAULT 0.0,
-z_down_m NUMERIC DEFAULT 0.0,
 PRIMARY KEY (grid_uid_pk));

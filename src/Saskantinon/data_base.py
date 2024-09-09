@@ -29,12 +29,14 @@ SM = ShellMethods()
 class DataBase(object):
     """Support Sqlite3 database setup, usage, maintenance."""
 
-    def __init__(self, p_db_cfg: dict):
+    def __init__(self, p_boot: dict):
         """Initialize DataBase object."""
-        self.SQL = p_db_cfg["sql"]
-        self.DB = p_db_cfg["main_db"]
-        self.DB_BKUP = p_db_cfg["bkup_db"]
-        self.db_conn = None  # type: ignore
+        self.DB = p_boot["db"]
+        self.DDL = p_boot["ddl"]
+        self.DML = p_boot["dml"]
+        self.SASKAN_DB = p_boot["saskan_db"]
+        self.SASKAN_BAK = p_boot["saskan_bak"]
+        self.db_conn = None
 
     # Generate SQL files from data models
     # ===========================================
@@ -232,7 +234,7 @@ class DataBase(object):
         sqlns[-1] = sqlns[-1][:-2]
 
         sql = f"CREATE TABLE IF NOT EXISTS {p_table_nm} " + f"(\n{''.join(sqlns)});\n"
-        FM.write_file(path.join(self.SQL, f"CREATE_{p_table_nm}.sql"), sql)
+        FM.write_file(path.join(self.DDL, f"CREATE_{p_table_nm}.sql"), sql)
 
         return col_names
 
@@ -245,7 +247,7 @@ class DataBase(object):
         - SQL file to [APP]/sql/DROP_[p_table_name].sql
         """
         sql = f"DROP TABLE IF EXISTS {p_table_name};\n"
-        file_path = path.join(self.SQL, f"DROP_{p_table_name}.sql")
+        file_path = path.join(self.DDL, f"DROP_{p_table_name}.sql")
         FM.write_file(file_path, sql)
 
     def generate_insert_sql(self, p_table_name: str, p_col_names: list):
@@ -262,7 +264,7 @@ class DataBase(object):
         sql = (
             f"INSERT INTO {p_table_name} (\n{columns}) " + f"VALUES ({placeholders});\n"
         )
-        file_path = path.join(self.SQL, f"INSERT_{p_table_name}.sql")
+        file_path = path.join(self.DML, f"INSERT_{p_table_name}.sql")
         FM.write_file(file_path, sql)
 
     def generate_select_all_sql(
@@ -286,7 +288,7 @@ class DataBase(object):
 
         sql += ";\n"
 
-        file_path = path.join(self.SQL, f"SELECT_ALL_{p_table_name}.sql")
+        file_path = path.join(self.DML, f"SELECT_ALL_{p_table_name}.sql")
         FM.write_file(file_path, sql)
 
     def generate_select_pk_sql(
@@ -315,7 +317,7 @@ class DataBase(object):
 
         sql += ";\n"
 
-        file_path = path.join(self.SQL, f"SELECT_BY_PK_{p_table_name}.sql")
+        file_path = path.join(self.DML, f"SELECT_BY_PK_{p_table_name}.sql")
         FM.write_file(file_path, sql)
 
     def generate_update_sql(
@@ -342,7 +344,7 @@ class DataBase(object):
             f"UPDATE {p_table_name} SET\n{set_columns}\n" + f"WHERE {pk_conditions};\n"
         )
 
-        file_path = path.join(self.SQL, f"UPDATE_{p_table_name}.sql")
+        file_path = path.join(self.DML, f"UPDATE_{p_table_name}.sql")
         FM.write_file(file_path, sql)
 
     def generate_delete_sql(self, p_table_name: str, p_constraints: dict):
@@ -359,7 +361,7 @@ class DataBase(object):
         """
         pk_conditions = " AND ".join([f"{col}=?" for col in p_constraints["PK"]])
         sql = f"DELETE FROM {p_table_name}\nWHERE {pk_conditions};\n"
-        file_path = path.join(self.SQL, f"DELETE_{p_table_name}.sql")
+        file_path = path.join(self.DDL, f"DELETE_{p_table_name}.sql")
         FM.write_file(file_path, sql)
 
     def generate_sql(self, p_data_model: object):
@@ -406,7 +408,7 @@ class DataBase(object):
             self.db_conn.execute("PRAGMA foreign_keys = OFF;")
 
     def disconnect_db(self):
-        """Drop DB connection to SASKAN_self."""
+        """Close cursors and drop DB connection to self object."""
         if hasattr(self, "db_conn") and self.db_conn is not None:
             try:
                 self.cur.close()
@@ -415,27 +417,27 @@ class DataBase(object):
                 pass
         self.db_conn = None
 
-    def connect_db(self, p_foreign_keys_on: bool, p_db_nm: str = "main"):
+    def connect_db(self, p_db_nm: str, p_foreign_keys_on: bool = True):
         """Open DB connection to SASKAN.db.
-        Set foreign key pragma. If doing a drop, set to OFF.
-        This will create a DB file at the specified location
+        Create a DB file at the specified location
           if one does not already exist.
+        Set foreign key pragma ON by default.
+        N.B. - If doing a DROP, set to OFF.
         :sets:
         - db_conn: the database connection
         - foreign_keys PRAGMA on or off
         - cur: cursor for the connection
         :args:
-        - p_foreign_keys_on (bool): If True, set foreign_keys to on
-        - p_db_nm (str): Name of DB to connect to. Default is'main'
+        - p_db_nm (str): Name of DB to connect to.
+            This should always be "SASKAN.db", but I am making it a
+            parameter in case I want to define another DB at some point.
+            May eventually want to be able to read from the backup or
+            archive databases too.
+        - p_foreign_keys_on (bool): default True
         """
         self.disconnect_db()
-        self.SASKAN_DB = (
-            self.DB
-            if p_db_nm == "arcv"
-            else self.DB_BKUP if p_db_nm == "bkup" else self.DB
-        )
         try:
-            self.db_conn = sq3.connect(self.SASKAN_DB)  # type: ignore
+            self.db_conn = sq3.connect(p_db_nm)
         except Exception as err:
             raise (err)
         self.__set_fk_pragma(p_foreign_keys_on)
@@ -443,7 +445,7 @@ class DataBase(object):
 
     # SQL Helpers
     # ===========================================
-    def get_sql_file(self, p_sql_nm: str) -> str:
+    def get_sql_file(self, p_sql_loc: str, p_sql_nm: str) -> str:
         """Read SQL from named file.
         :args:
         - p_sql_nm (str) Name of  SQL file in [APP]/sql
@@ -452,7 +454,7 @@ class DataBase(object):
         """
         sql_nm = p_sql_nm.replace(".sql", "").replace(".SQL", "")
         sql_nm = sql_nm.upper() + ".sql"
-        sql_path = path.join(self.SQL, sql_nm)
+        sql_path = path.join(p_sql_loc, sql_nm)
         SQL: str = FM.get_file(sql_path)
         if SQL == "":
             raise Exception(f"SQL file {sql_nm} is empty.")
@@ -512,7 +514,7 @@ class DataBase(object):
         - p_foreign_keys_on (bool): Set foreign key pragma ON or OFF.
         """
         result = None
-        self.connect_db(p_foreign_keys_on=True)
+        self.connect_db(self.SASKAN_DB, p_foreign_keys_on=True)
         sql = p_sql_code.strip()
         if sql.upper().startswith("SELECT"):
             if (
@@ -549,8 +551,8 @@ class DataBase(object):
         :returns:
         - (dict) Dict of lists, {col_nms: [data values]}
         """
-        self.connect_db(p_foreign_keys_on=True)
-        sql: str = self.get_sql_file(f"SELECT_ALL_{p_table_nm.upper()}")
+        self.connect_db(self.SASKAN_DB, p_foreign_keys_on=True)
+        sql: str = self.get_sql_file(self.DML, f"SELECT_ALL_{p_table_nm.upper()}")
         cols: list = self.get_db_columns(p_sql_select=sql)
         self.cur.execute(sql)
         data: list = [r for r in self.cur.fetchall()]
@@ -572,8 +574,8 @@ class DataBase(object):
         :returns:
         - (dict) Dict of lists, {col_nms: [data values]}
         """
-        self.connect_db(p_foreign_keys_on=True)
-        sql: str = self.get_sql_file(p_sql_nm)
+        self.connect_db(self.SASKAN_DB, p_foreign_keys_on=True)
+        sql: str = self.get_sql_file(self.DML, p_sql_nm)
         cols: list = self.get_db_columns(p_sql_select=sql)
         self.cur.execute(sql, p_pk_values)
         data: list = [r for r in self.cur.fetchall()]
@@ -584,9 +586,14 @@ class DataBase(object):
         self.disconnect_db()
         return result
 
-    def execute_dml(self, p_sql_list: list, p_foreign_keys_on: bool):
-        """Run one or more static SQL DROP, CREATE, DELETE, INSERT
-        or MODIFY scripts. No dynamic parameters.  SQL names must
+    def execute_ddl(self, p_sql_list: list, p_foreign_keys_on: bool):
+        """Run one or more static SQL DROP or CREATE script.
+        In my approach (for now), DELETEs are also DDL, but I have a
+        separate method for those.  Intention is to run deletes only as
+        a cleanup step.  Othewise, use UPDATE/INSERT, and in SELECTs omit
+        records marked as deleted.
+        # No dynamic parameters.
+        # SQL names must
         be passed in as a list, even if only one script. They are
         executed as one transaction. If anything fails, all are
         rolled back.  If it is a series of DROP statements, then
@@ -595,16 +602,16 @@ class DataBase(object):
         - p_sql_nm (str): Name of external SQL file
         - p_foreign_keys_on (bool): Set foreign key pragma ON or OFF.
         """
-        self.connect_db(p_foreign_keys_on)
+        self.connect_db(self.SASKAN_DB, p_foreign_keys_on)
         try:
             self.cur.execute("BEGIN")
             for p_sql_nm in p_sql_list:
-                sql = self.get_sql_file(p_sql_nm)
+                sql = self.get_sql_file(self.DDL, p_sql_nm)
                 self.cur.execute(sql)
-            self.db_conn.commit()  # type: ignore
+            self.db_conn.commit()
         except sq3.Error as e:
             # Rollback the transaction if any operation fails
-            self.db_conn.rollback()  # type: ignore
+            self.db_conn.rollback()
             print("Transaction failed:", e)
         finally:
             self.disconnect_db()
@@ -620,15 +627,15 @@ class DataBase(object):
         - p_sql_nm (str): Name of external SQL file
         - p_values (tuple): n-tuple of values to insert
         """
-        self.connect_db(p_foreign_keys_on=True)
-        SQL = self.get_sql_file(p_sql_nm)
+        self.connect_db(self.SASKAN_DB, p_foreign_keys_on=True)
+        SQL = self.get_sql_file(self.DML, p_sql_nm)
 
         # print("\nDataBase: execute_insert")
         # print(f"SQL: {SQL}")
         # print(f"p_values: {p_values}")
 
         self.cur.execute(SQL, p_values)
-        self.db_conn.commit()  # type: ignore
+        self.db_conn.commit()
         self.disconnect_db()
 
     def execute_update(self, p_sql_nm: str, p_key_val: str, p_values: tuple):
@@ -643,10 +650,10 @@ class DataBase(object):
         - p_key_val (str): Value of primary key to match on
         - p_values (tuple): n-tuple of values to update
         """
-        self.connect_db(p_foreign_keys_on=True)
-        SQL = self.get_sql_file(p_sql_nm)
+        self.connect_db(self.SASKAN_DB, p_foreign_keys_on=True)
+        SQL = self.get_sql_file(self.DML, p_sql_nm)
         self.cur.execute(SQL, p_values + (p_key_val,))
-        self.db_conn.commit()  # type: ignore
+        self.db_conn.commit()
         self.disconnect_db()
 
     def execute_delete(self, p_sql_nm: str, p_key_vals: list):
@@ -665,62 +672,80 @@ class DataBase(object):
         """
         if isinstance(p_key_vals, str):
             p_key_vals = [p_key_vals]
-        self.connect_db()
-        SQL = self.get_sql_file(p_sql_nm)
+        self.connect_db(self.SASKAN_DB, p_foreign_keys_on=True)
+        SQL = self.get_sql_file(self.DDL, p_sql_nm)
         self.cur.execute(SQL, p_key_vals)
         if self.db_conn is not None:
-            self.db_conn.commit()  # type: ignore
+            self.db_conn.commit()
         self.disconnect_db()
 
     # Backup, Archive and Restore
     # ===========================================
 
-    def backup_db(self):
-        """Copy main DB file to backup location."""
-        bkup_dttm = pendulum.now().format("YYYYMMDD_HHmmss")
-        self.execute_insert(
-            "INSERT_BACKUP",
-            (
-                FM.get_uid(),
-                f"Backup {bkup_dttm}",
-                bkup_dttm,
-                "backup",
-                self.DB,
-                self.DB_BKUP,
-            ),
-        )
-        shutil.copyfile(self.DB, self.DB_BKUP)
+    def backup_table_exists(self) -> bool:
+        """Verify that the BACKUP table exists.
+        """
+        self.connect_db(self.SASKAN_DB)
+        self.cur.execute("SELECT name FROM sqlite_master " +
+                         "WHERE type='table' AND name='BACKUP'")
+        table_exists = self.cur.fetchone() is not None
+        self.disconnect_db()
+        return table_exists
 
-    def archive_db(self):
-        """Copy main DB file to archive location."""
-        bkup_dttm = pendulum.now().format("YYYYMMDD_HHmmss")
-        file_nm = "SASKAN_" + bkup_dttm + ".arcv"
-        bkup_nm = path.join(self.SQL, file_nm)
-        self.execute_insert(
-            "INSERT_BACKUP",
-            (
-                FM.get_uid(),
-                f"Archive {bkup_nm}",
-                bkup_dttm,
-                "archive",
-                self.DB,
-                bkup_nm,
-            ),
-        )
-        shutil.copyfile(self.DB, bkup_nm)
+    def backup_db(self, p_db: str, p_bak: str):
+        """Copy specified main DB file to backup location.
+        If the main database exists but BACKUP table not created
+        yet then this will fail in the execute_insert() call.
+        """
+        if self.backup_table_exists():
+            bkup_dttm = pendulum.now().format("YYYYMMDD_HHmmss")
+            self.execute_insert(
+                "INSERT_BACKUP",
+                (
+                    SM.get_uid(),
+                    f"Backup {bkup_dttm}",
+                    bkup_dttm,
+                    "backup",
+                    p_db,
+                    p_bak,
+                ),
+            )
+        shutil.copyfile(p_db, p_bak)
+
+    def archive_db(self, p_db: str):
+        """Copy main main DB file to archive location."""
+        arcv_dttm = pendulum.now().format("YYYYMMDD_HHmmss")
+        arcv_nm = p_db.replace(".db", "_") + arcv_dttm + ".arcv"
+        if self.backup_table_exists():
+            self.execute_insert(
+                "INSERT_BACKUP",
+                (
+                    SM.get_uid(),
+                    f"Archive {arcv_dttm}",
+                    arcv_dttm,
+                    "archive",
+                    p_db,
+                    arcv_nm,
+                ),
+            )
+        shutil.copyfile(p_db, arcv_nm)
 
     def restore_db(self):
-        """Copy backup DB file to main location."""
-        bkup_dttm = pendulum.now().format("YYYYMMDD_HHmmss")
-        self.execute_insert(
-            "INSERT_BACKUP",
-            (
-                FM.get_uid(),
-                f"Restore {bkup_dttm}",
-                bkup_dttm,
-                "restore",
-                self.DB_BKUP,
-                self.DB,
-            ),
-        )
+        """Copy backup DB file to main location.
+        @DEV:
+        - Pass name of backup and main files to use.
+        """
+        if self.backup_table_exists():
+            bkup_dttm = pendulum.now().format("YYYYMMDD_HHmmss")
+            self.execute_insert(
+                "INSERT_BACKUP",
+                (
+                    SM.get_uid(),
+                    f"Restore {bkup_dttm}",
+                    bkup_dttm,
+                    "restore",
+                    self.DB_BKUP,
+                    self.DB,
+                ),
+            )
         shutil.copyfile(self.DB_BKUP, self.DB)

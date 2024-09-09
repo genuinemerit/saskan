@@ -3,12 +3,12 @@ galaxy_uid_pk TEXT DEFAULT '',
 galactic_cluster_uid_fk TEXT DEFAULT '',
 galaxy_name TEXT DEFAULT '',
 relative_size TEXT DEFAULT 'medium',
--- GROUP center_from_univ_center_kpc: <class 'io_data.Struct.CoordXYZ'>
+-- GROUP center_from_univ_center_kpc: <class 'data_structs.GroupStruct.CoordXYZ'>
 center_from_univ_center_kpc_x NUMERIC DEFAULT 0.0,
 center_from_univ_center_kpc_y NUMERIC DEFAULT 0.0,
 center_from_univ_center_kpc_z NUMERIC DEFAULT 0.0,
 halo_radius_pc NUMERIC DEFAULT 0.0,
--- GROUP boundary_pc: <class 'io_data.Struct.Game3DLocation'>
+-- GROUP boundary_pc: <class 'data_structs.GroupStruct.Game3DLoc'>
 boundary_pc_origin_x NUMERIC DEFAULT 0.0,
 boundary_pc_origin_y NUMERIC DEFAULT 0.0,
 boundary_pc_origin_z NUMERIC DEFAULT 0.0,
@@ -18,15 +18,15 @@ boundary_pc_depth_z NUMERIC DEFAULT 0.0,
 volume_gpc3 NUMERIC DEFAULT 0.0,
 mass_kg NUMERIC DEFAULT 0.0,
 bulge_shape TEXT DEFAULT 'ellipsoid',
--- GROUP bulge_center_from_center_ly: <class 'io_data.Struct.CoordXYZ'>
+-- GROUP bulge_center_from_center_ly: <class 'data_structs.GroupStruct.CoordXYZ'>
 bulge_center_from_center_ly_x NUMERIC DEFAULT 0.0,
 bulge_center_from_center_ly_y NUMERIC DEFAULT 0.0,
 bulge_center_from_center_ly_z NUMERIC DEFAULT 0.0,
--- GROUP bulge_dim_axes: <class 'io_data.Struct.AxesABC'>
+-- GROUP bulge_dim_axes: <class 'data_structs.GroupStruct.AxesABC'>
 bulge_dim_axes_a NUMERIC DEFAULT 0.0,
 bulge_dim_axes_b NUMERIC DEFAULT 0.0,
 bulge_dim_axes_c NUMERIC DEFAULT 0.0,
--- GROUP bulge_dim_rot: <class 'io_data.Struct.PitchYawRollAngle'>
+-- GROUP bulge_dim_rot: <class 'data_structs.GroupStruct.PitchYawRollAngle'>
 bulge_dim_rot_pitch NUMERIC DEFAULT 0.0,
 bulge_dim_rot_yaw NUMERIC DEFAULT 0.0,
 bulge_dim_rot_roll NUMERIC DEFAULT 0.0,
@@ -34,15 +34,15 @@ bulge_black_hole_mass_kg NUMERIC DEFAULT 0.0,
 bulge_volume_ly3 NUMERIC DEFAULT 0.0,
 bulge_total_mass_kg NUMERIC DEFAULT 0.0,
 star_field_shape TEXT DEFAULT 'ellipsoid',
--- GROUP star_field_dim_from_center_ly: <class 'io_data.Struct.CoordXYZ'>
+-- GROUP star_field_dim_from_center_ly: <class 'data_structs.GroupStruct.CoordXYZ'>
 star_field_dim_from_center_ly_x NUMERIC DEFAULT 0.0,
 star_field_dim_from_center_ly_y NUMERIC DEFAULT 0.0,
 star_field_dim_from_center_ly_z NUMERIC DEFAULT 0.0,
--- GROUP star_field_dim_axes: <class 'io_data.Struct.AxesABC'>
+-- GROUP star_field_dim_axes: <class 'data_structs.GroupStruct.AxesABC'>
 star_field_dim_axes_a NUMERIC DEFAULT 0.0,
 star_field_dim_axes_b NUMERIC DEFAULT 0.0,
 star_field_dim_axes_c NUMERIC DEFAULT 0.0,
--- GROUP star_field_dim_rot: <class 'io_data.Struct.PitchYawRollAngle'>
+-- GROUP star_field_dim_rot: <class 'data_structs.GroupStruct.PitchYawRollAngle'>
 star_field_dim_rot_pitch NUMERIC DEFAULT 0.0,
 star_field_dim_rot_yaw NUMERIC DEFAULT 0.0,
 star_field_dim_rot_roll NUMERIC DEFAULT 0.0,

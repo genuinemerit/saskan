@@ -4,7 +4,7 @@ galaxy_uid_fk TEXT DEFAULT '',
 star_system_name TEXT DEFAULT '',
 is_black_hole BOOLEAN DEFAULT 0,
 is_pulsar BOOLEAN DEFAULT 0,
--- GROUP boundary_pc: <class 'io_data.Struct.Game3DLocation'>
+-- GROUP boundary_pc: <class 'data_structs.GroupStruct.Game3DLoc'>
 boundary_pc_origin_x NUMERIC DEFAULT 0.0,
 boundary_pc_origin_y NUMERIC DEFAULT 0.0,
 boundary_pc_origin_z NUMERIC DEFAULT 0.0,
@@ -14,15 +14,15 @@ boundary_pc_depth_z NUMERIC DEFAULT 0.0,
 volume_pc3 NUMERIC DEFAULT 0.0,
 mass_kg NUMERIC DEFAULT 0.0,
 system_shape TEXT DEFAULT 'ellipsoid',
--- GROUP center_from_galaxy_center_pc: <class 'io_data.Struct.CoordXYZ'>
+-- GROUP center_from_galaxy_center_pc: <class 'data_structs.GroupStruct.CoordXYZ'>
 center_from_galaxy_center_pc_x NUMERIC DEFAULT 0.0,
 center_from_galaxy_center_pc_y NUMERIC DEFAULT 0.0,
 center_from_galaxy_center_pc_z NUMERIC DEFAULT 0.0,
--- GROUP system_dim_axes: <class 'io_data.Struct.AxesABC'>
+-- GROUP system_dim_axes: <class 'data_structs.GroupStruct.AxesABC'>
 system_dim_axes_a NUMERIC DEFAULT 0.0,
 system_dim_axes_b NUMERIC DEFAULT 0.0,
 system_dim_axes_c NUMERIC DEFAULT 0.0,
--- GROUP system_dim_rot: <class 'io_data.Struct.PitchYawRollAngle'>
+-- GROUP system_dim_rot: <class 'data_structs.GroupStruct.PitchYawRollAngle'>
 system_dim_rot_pitch NUMERIC DEFAULT 0.0,
 system_dim_rot_yaw NUMERIC DEFAULT 0.0,
 system_dim_rot_roll NUMERIC DEFAULT 0.0,

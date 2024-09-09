@@ -1,4 +1,4 @@
-SELECT item_uid_pk, menu_uid_fk, lang_uid_fk, version_id, item_id, item_order, item_name, help_text, enabled_default
+SELECT item_uid_pk, menu_uid_fk, lang_code, frame_id, version_id, item_id, item_order, item_name, key_binding, help_text, enabled_default
 FROM MENU_ITEMS
 WHERE item_uid_pk=?
-ORDER BY item_id ASC, item_name ASC;
+ORDER BY item_id ASC, lang_code ASC, item_name ASC;

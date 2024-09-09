@@ -1,4 +1,4 @@
-SELECT link_uid_pk, version_id, lang_uid_fk, link_catg, link_name, link_value
+SELECT link_uid_pk, version_id, lang_code, link_id, frame_id, link_protocol, mime_type, link_name, link_value, link_icon
 FROM LINKS
 WHERE link_uid_pk=?
-ORDER BY link_catg ASC, link_name ASC, version_id ASC;
+ORDER BY frame_id ASC, link_id ASC, lang_code ASC;

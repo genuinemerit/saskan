@@ -1,9 +1,9 @@
 """
 
-:module:    data_model_tool.py
+:module:    data_model.py
 :author:    GM (genuinemerit @ pm.me)
 
-Saskan Data Management middleware.
+Data Management middleware.
 """
 
 from collections import OrderedDict
@@ -90,7 +90,7 @@ def orm_from_dict(DM: object, p_dict: dict, p_row: int) -> dict:
 # - Create SQL files
 # - Create SQLITE tables
 # =======================================================
-class InitGameDB(object):
+class DataModel(object):
     """Methods to:
     - Create set of SQL files to manage the game database.
     - Boot the database by running the SQL files.
@@ -134,6 +134,7 @@ class InitGameDB(object):
         :args:
         - DB - current instance of the DB object.
         """
+        # data_model_app
         for model in [
             DMA.Backup,
             DMA.AppConfig,
@@ -149,6 +150,7 @@ class InitGameDB(object):
             DMA.ButtonItem,
         ]:
             DB.generate_sql(model)
+        # data_model_world
         for model in [
             DMW.Universe,
             DMW.ExternalUniv,
@@ -196,31 +198,34 @@ class InitGameDB(object):
         ]:
             DB.generate_sql(model)
 
-    def boot_db(
+    def create_db(
         self,
         DB: object,
-        p_backup_archive: bool = False,
+        p_backup: bool = True,
     ):
         """
         Drop and recreate empty all DB tables.
         This is a destructive operation.
-        - Backs up DB if it exists.
-        - Overlays .BAK copy of database.
-        Does not wipe out existing archived DB's.
-        - Logged records appear in .BAK, not in refreshed DB.
+        - Backs up and archives DB if it exists.
+        - Always makes a new .ARCV file.
+        - Overlays existing .BAK if it exists.
+        - Does not wipe out existing archived DB's.
+        - Logged records appear in .BAK, not in refreshed .DB
         :args:
         - DB - instantiation of the DataBase() Class.
-        - p_backup_archive: bool. If True, archive database.
+        - p_backup: bool. If True, backup and archive the .DB
 
-        See test/test_data_model_tool.py for examples of populating test data.
+        @DEV:
+        - See test/test_data_model_tool.py for examples of
+            populating test data.
         """
-        if p_backup_archive:
-            file_path = Path(DB.DB)
+        if p_backup:
+            file_path = Path(DB.SASKAN_DB)
             if file_path.exists():
-                DB.backup_db()
-                DB.archive_db()
+                DB.backup_db(DB.SASKAN_DB, DB.SASKAN_BAK)
+                DB.archive_db(DB.SASKAN_DB)
 
-        sql_list = [sql.name for sql in FM.scan_dir(DB.SQL, "DROP*")]
-        DB.execute_dml(sql_list, p_foreign_keys_on=False)
-        sql_list = [sql.name for sql in FM.scan_dir(DB.SQL, "CREATE*")]
-        DB.execute_dml(sql_list, p_foreign_keys_on=True)
+        sql_list = [sql.name for sql in FM.scan_dir(DB.DDL, "DROP*")]
+        DB.execute_ddl(sql_list, p_foreign_keys_on=False)
+        sql_list = [sql.name for sql in FM.scan_dir(DB.DDL, "CREATE*")]
+        DB.execute_ddl(sql_list, p_foreign_keys_on=True)

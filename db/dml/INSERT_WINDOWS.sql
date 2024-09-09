@@ -1,12 +1,9 @@
 INSERT INTO WINDOWS (
 win_uid_pk,
 frame_uid_fk,
-lang_uid_fk,
+frame_id,
+lang_code,
 version_id,
-win_name,
+win_id,
 win_title,
-win_x,
-win_y,
-win_w,
-win_h,
-win_margin) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+win_margin) VALUES (?, ?, ?, ?, ?, ?, ?, ?);
