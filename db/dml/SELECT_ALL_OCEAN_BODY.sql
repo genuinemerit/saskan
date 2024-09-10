@@ -16,6 +16,7 @@ body_surface_altitude_m,
 max_depth_m,
 avg_depth_m,
 ocean_hazards_json,
-ocean_features_json
+ocean_features_json,
+delete_dt
 FROM OCEAN_BODY
 ORDER BY ocean_body_uid_pk ASC;

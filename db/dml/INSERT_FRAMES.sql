@@ -1,6 +1,5 @@
 INSERT INTO FRAMES (
 frame_uid_pk,
-version_id,
 lang_code,
 frame_id,
 frame_title,
@@ -11,4 +10,5 @@ pg_hdr_x,
 pg_hdr_y,
 pg_hdr_w,
 pg_hdr_h,
-pg_hdr_txt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+pg_hdr_txt,
+delete_dt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);

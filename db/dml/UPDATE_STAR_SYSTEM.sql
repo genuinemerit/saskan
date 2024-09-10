@@ -35,5 +35,6 @@ outer_habitable_boundary_au=?,
 planetary_orbits_shape=?,
 orbital_stability=?,
 asteroid_belt_density=?,
-asteroid_belt_loc=?
+asteroid_belt_loc=?,
+delete_dt=?
 WHERE star_system_uid_pk=?;

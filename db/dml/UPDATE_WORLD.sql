@@ -22,5 +22,6 @@ biosphere=?,
 sentients=?,
 climate=?,
 tech_level=?,
-terrain=?
+terrain=?,
+delete_dt=?
 WHERE world_uid_pk=?;

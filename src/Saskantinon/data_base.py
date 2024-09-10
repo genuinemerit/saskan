@@ -29,13 +29,13 @@ SM = ShellMethods()
 class DataBase(object):
     """Support Sqlite3 database setup, usage, maintenance."""
 
-    def __init__(self, p_boot: dict):
+    def __init__(self, p_context: dict):
         """Initialize DataBase object."""
-        self.DB = p_boot["db"]
-        self.DDL = p_boot["ddl"]
-        self.DML = p_boot["dml"]
-        self.SASKAN_DB = p_boot["saskan_db"]
-        self.SASKAN_BAK = p_boot["saskan_bak"]
+        self.DB = p_context["db"]
+        self.DDL = p_context["ddl"]
+        self.DML = p_context["dml"]
+        self.SASKAN_DB = p_context["saskan_db"]
+        self.SASKAN_BAK = p_context["saskan_bak"]
         self.db_conn = None
 
     # Generate SQL files from data models
@@ -588,16 +588,11 @@ class DataBase(object):
 
     def execute_ddl(self, p_sql_list: list, p_foreign_keys_on: bool):
         """Run one or more static SQL DROP or CREATE script.
-        In my approach (for now), DELETEs are also DDL, but I have a
-        separate method for those.  Intention is to run deletes only as
-        a cleanup step.  Othewise, use UPDATE/INSERT, and in SELECTs omit
-        records marked as deleted.
-        # No dynamic parameters.
-        # SQL names must
-        be passed in as a list, even if only one script. They are
-        executed as one transaction. If anything fails, all are
-        rolled back.  If it is a series of DROP statements, then
-        set the p_foreign_keys_on to False.
+        DELETEs have a separate method.
+        N.B. - If DROP statements, set p_foreign_keys_on to False.
+        - SQL names must be passed in as a list, even if just one script.
+        - No dynamic parameters.
+        - Executed as one transaction. If anything fails, all roll back.
         :args:
         - p_sql_nm (str): Name of external SQL file
         - p_foreign_keys_on (bool): Set foreign key pragma ON or OFF.
@@ -612,7 +607,9 @@ class DataBase(object):
         except sq3.Error as e:
             # Rollback the transaction if any operation fails
             self.db_conn.rollback()
-            print("Transaction failed:", e)
+            print("Rolled back. Transaction failed:", e)
+            print(f"Processing {p_sql_nm}...")
+            pp(("sql code: ", sql))
         finally:
             self.disconnect_db()
 
@@ -683,11 +680,11 @@ class DataBase(object):
     # ===========================================
 
     def backup_table_exists(self) -> bool:
-        """Verify that the BACKUP table exists.
-        """
+        """Verify that the BACKUP table exists."""
         self.connect_db(self.SASKAN_DB)
-        self.cur.execute("SELECT name FROM sqlite_master " +
-                         "WHERE type='table' AND name='BACKUP'")
+        self.cur.execute(
+            "SELECT name FROM sqlite_master " + "WHERE type='table' AND name='BACKUP'"
+        )
         table_exists = self.cur.fetchone() is not None
         self.disconnect_db()
         return table_exists
@@ -708,6 +705,7 @@ class DataBase(object):
                     "backup",
                     p_db,
                     p_bak,
+                    "",
                 ),
             )
         shutil.copyfile(p_db, p_bak)
@@ -726,6 +724,7 @@ class DataBase(object):
                     "archive",
                     p_db,
                     arcv_nm,
+                    "",
                 ),
             )
         shutil.copyfile(p_db, arcv_nm)
@@ -746,6 +745,7 @@ class DataBase(object):
                     "restore",
                     self.DB_BKUP,
                     self.DB,
+                    "",
                 ),
             )
         shutil.copyfile(self.DB_BKUP, self.DB)

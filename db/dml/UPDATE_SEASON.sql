@@ -4,5 +4,6 @@ gloss_common_uid_fk=?,
 version_id=?,
 season_type=?,
 hemisphere_type=?,
-years_in_season=?
+years_in_season=?,
+delete_dt=?
 WHERE season_uid_pk=?;

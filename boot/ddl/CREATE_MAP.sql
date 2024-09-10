@@ -17,5 +17,6 @@ origin_3d_z NUMERIC DEFAULT 0.0,
 width_3d NUMERIC DEFAULT 0.0,
 height_3d NUMERIC DEFAULT 0.0,
 depth_3d NUMERIC DEFAULT 0.0,
+delete_dt TEXT DEFAULT '',
 CHECK (map_type IN ('geo', 'astro', 'underwater', 'underground', 'informational', 'political')),
 PRIMARY KEY (map_uid_pk));

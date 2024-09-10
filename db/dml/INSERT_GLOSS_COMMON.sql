@@ -4,4 +4,5 @@ dialect_uid_fk,
 gloss_type,
 gloss_name,
 gloss_value,
-gloss_uri) VALUES (?, ?, ?, ?, ?, ?);
+gloss_uri,
+delete_dt) VALUES (?, ?, ?, ?, ?, ?, ?);

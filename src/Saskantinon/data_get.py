@@ -6,11 +6,9 @@
 Saskan Data Management middleware.
 """
 
-from os import path
 from pprint import pformat as pf  # noqa: F401
 from pprint import pprint as pp  # noqa: F401
 
-from data_base import DataBase
 from method_files import FileMethods  # type: ignore
 from method_shell import ShellMethods  # type: ignore
 
@@ -34,27 +32,16 @@ class GetData(object):
         """
         pass
 
-    def get_db_config(self):
-        """
-        Get the database configuration data.
-        :returns:
-        - DB_CFG: dict of database configuration data
-        """
-        DB_CFG = FM.get_json_file(
-            path.join(SM.get_cwd_home(), "saskan/config/db_config.json")
-        )
-        return DB_CFG
-
     def _get_by_value(
-        self, p_table_nm: str, p_match: dict, DB_CFG: dict, p_first_only: bool = True
+        self, p_table_nm: str, p_match: dict, DB: object, p_first_only: bool = True
     ):
         """
-        Get data from the DB table by one or two specific values.
+        Get data from the DB table by selecting on one or two values.
         :args:
         - p_table_nm: name of the table to query
         - p_match: dict of col-name:value pairs to match (max of 2)
-        - DB_CFG: database configuration data
-        - p_first_only: return only the first row
+        - DB: instance of DataBase() class
+        - p_first_only: return only the first row that matches
         :returns:
         - rows: list of non-ordered dicts of data from the table, or [],
           or just one non-ordered dict if p_first_only is True
@@ -93,40 +80,17 @@ class GetData(object):
                         data: dict = {}
             return rows
 
-        from method_files import FileMethods
-
-        FM = FileMethods()
-        if FM.is_file_or_dir(DB_CFG["main_db"]):
-            DB = DataBase(DB_CFG)
-            data_rows = DB.execute_select_all(p_table_nm)
-            if len(p_match) == 1:
-                rows = _match_one_value()
-            elif len(p_match) == 2:
-                rows = _match_two_values()
-            else:
-                rows: None
-                print("WARN: Can only match on 1 or 2 values.")
+        data_rows = DB.execute_select_all(p_table_nm)
+        if len(p_match) == 1:
+            rows = _match_one_value()
+        elif len(p_match) == 2:
+            rows = _match_two_values()
+        else:
+            rows: None
+            print("WARN: Can only match on 1 or 2 values.")
         if p_first_only:
             rows = rows[0]
         return rows
-
-    def get_app_config(self, DB_CFG: dict):
-        """
-        Get data from the AppConfig table, filtering for
-          record that contains desired version id. If DB
-          does not exist, return None. Version ID is set
-          in the DB config metadata.
-        :args:
-        - DB_CFG : dict of DB config data
-        :returns:
-        - db row: unordered dict of data that was requested else None
-        @DEV:
-        - Eventually mod this into a generic 'get_by_version' method.
-        """
-        row = self._get_by_value(
-            "APP_CONFIG", {"version_id": DB_CFG["version"]}, DB_CFG
-        )
-        return row
 
     def get_text(self, p_lang_code: str, p_text_name: str, DB_CFG: dict):
         """
@@ -149,23 +113,27 @@ class GetData(object):
         p_tbl_nm: str,
         p_id_nm: str,
         p_id_val: str,
-        DB_CFG: dict,
+        DB: object,
         p_first_only: bool = True,
     ) -> dict:
         """
         Use this to retrieve all columns, rows from any table
         by matching on its `id` (as opposed to its `uid_pk`).
         @DEV:
-        - May eventually have to deal with multiple rows returned.
+        - Eventually need to,,
+            - deal with multiple rows returned
+            - handle delete_dt logic
         :args:
         - p_tbl_nm (str): table name
         - p_id_nm (str): name of id column
         - p_id_val (str): id value
-        - DB_CFG : dict of DB config data
+        - DB (object): instance of DataBase() class
         - p_first_only (bool): return only the first row
         :returns:
         - rows: list of non-ordered dicts of data from the table, or [],
           or just one non-ordered dict if p_first_only is True
+
+           p_table_nm: str, p_match: dict, DB: object, p_first_only: bool = True
         """
-        rows = self._get_by_value(p_tbl_nm, {p_id_nm: p_id_val}, DB_CFG, p_first_only)
+        rows = self._get_by_value(p_tbl_nm, {p_id_nm: p_id_val}, DB, p_first_only)
         return rows

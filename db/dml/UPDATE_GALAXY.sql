@@ -39,5 +39,6 @@ star_field_dim_rot_yaw=?,
 star_field_dim_rot_roll=?,
 star_field_vol_ly3=?,
 star_field_mass_kg=?,
-interstellar_mass_kg=?
+interstellar_mass_kg=?,
+delete_dt=?
 WHERE galaxy_uid_pk=?;

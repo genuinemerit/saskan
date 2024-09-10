@@ -12,7 +12,7 @@ from pprint import pformat as pf  # noqa: F401
 from pprint import pprint as pp  # noqa: F401
 
 import data_model_app as DMA
-import data_model_world as DMW
+import data_model_story as DMS
 from method_files import FileMethods
 from method_shell import ShellMethods
 
@@ -131,13 +131,21 @@ class DataModel(object):
 
     def create_sql(self, DB: object):
         """Pass data object to create SQL files.
+        Delete all SQL before creating new ones.
         :args:
         - DB - current instance of the DB object.
         """
+        # delete all *.sql in DB.DDL
+        ddl_sql = FM.scan_dir(DB.DDL, "*.sql")
+        for sql_file in ddl_sql:
+            FM.delete_file(sql_file)
+        # delete all *.sql in DB.DML
+        dml_sql = FM.scan_dir(DB.DML, "*.sql")
+        for sql_file in dml_sql:
+            FM.delete_file(sql_file)
         # data_model_app
         for model in [
             DMA.Backup,
-            DMA.AppConfig,
             DMA.Texts,
             DMA.Frames,
             DMA.MenuBars,
@@ -150,51 +158,52 @@ class DataModel(object):
             DMA.ButtonItem,
         ]:
             DB.generate_sql(model)
+
         # data_model_world
         for model in [
-            DMW.Universe,
-            DMW.ExternalUniv,
-            DMW.GalacticCluster,
-            DMW.Galaxy,
-            DMW.StarSystem,
-            DMW.World,
-            DMW.Moon,
-            DMW.Map,
-            DMW.MapXMap,
-            DMW.Grid,
-            DMW.GridXMap,
-            DMW.CharSet,
-            DMW.CharMember,
-            DMW.LangFamily,
-            DMW.Language,
-            DMW.LangDialect,
-            DMW.GlossCommon,
-            DMW.Glossary,
-            DMW.Lake,
-            DMW.LakeXMap,
-            DMW.River,
-            DMW.RiverXMap,
-            DMW.OceanBody,
-            DMW.OceanBodyXMap,
-            DMW.OceanBodyXRiver,
-            DMW.LandBody,
-            DMW.LandBodyXMap,
-            DMW.LandBodyXLandBody,
-            DMW.LandBodyXOceanBody,
-            DMW.SolarYear,
-            DMW.Season,
-            DMW.LunarYear,
-            DMW.LunarYearXMoon,
-            DMW.SolarCalendar,
-            DMW.LunarCalendar,
-            DMW.Month,
-            DMW.LunarCalendarXMonth,
-            DMW.SolarCalendarXMonth,
-            DMW.WeekTime,
-            DMW.LunarCalendarXWeekTime,
-            DMW.SolarCalendarXWeekTime,
-            DMW.DayTime,
-            DMW.WeekTimeXDayTime,
+            DMS.Universe,
+            DMS.ExternalUniv,
+            DMS.GalacticCluster,
+            DMS.Galaxy,
+            DMS.StarSystem,
+            DMS.World,
+            DMS.Moon,
+            DMS.Map,
+            DMS.MapXMap,
+            DMS.Grid,
+            DMS.GridXMap,
+            DMS.CharSet,
+            DMS.CharMember,
+            DMS.LangFamily,
+            DMS.Language,
+            DMS.LangDialect,
+            DMS.GlossCommon,
+            DMS.Glossary,
+            DMS.Lake,
+            DMS.LakeXMap,
+            DMS.River,
+            DMS.RiverXMap,
+            DMS.OceanBody,
+            DMS.OceanBodyXMap,
+            DMS.OceanBodyXRiver,
+            DMS.LandBody,
+            DMS.LandBodyXMap,
+            DMS.LandBodyXLandBody,
+            DMS.LandBodyXOceanBody,
+            DMS.SolarYear,
+            DMS.Season,
+            DMS.LunarYear,
+            DMS.LunarYearXMoon,
+            DMS.SolarCalendar,
+            DMS.LunarCalendar,
+            DMS.Month,
+            DMS.LunarCalendarXMonth,
+            DMS.SolarCalendarXMonth,
+            DMS.WeekTime,
+            DMS.LunarCalendarXWeekTime,
+            DMS.SolarCalendarXWeekTime,
+            DMS.DayTime,
+            DMS.WeekTimeXDayTime,
         ]:
             DB.generate_sql(model)
 
@@ -227,5 +236,6 @@ class DataModel(object):
 
         sql_list = [sql.name for sql in FM.scan_dir(DB.DDL, "DROP*")]
         DB.execute_ddl(sql_list, p_foreign_keys_on=False)
+
         sql_list = [sql.name for sql in FM.scan_dir(DB.DDL, "CREATE*")]
         DB.execute_ddl(sql_list, p_foreign_keys_on=True)

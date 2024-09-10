@@ -1,5 +1,4 @@
 SELECT button_single_uid_pk,
-version_id,
 button_type,
 button_name,
 button_icon,
@@ -10,6 +9,7 @@ x,
 y,
 enabled,
 help_text,
-action
+action,
+delete_dt
 FROM BUTTON_SINGLE
 ORDER BY button_name ASC;

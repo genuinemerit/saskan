@@ -14,6 +14,7 @@ seconds_in_minute,
 leap_year,
 leap_month,
 leap_days,
-leap_rule
+leap_rule,
+delete_dt
 FROM SOLAR_CALENDAR
 ORDER BY solar_calendar_id ASC, version_id ASC;

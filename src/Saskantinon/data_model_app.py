@@ -38,6 +38,7 @@ class Backup(object):
     bkup_type: str = ""
     file_from: str = ""
     file_to: str = ""
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert attributes to OrderedDict."""
@@ -53,43 +54,6 @@ class Backup(object):
         CK: dict = {"bkup_type": EntityType.BACKUP_TYPE}
 
 
-class AppConfig(object):
-    """Define the APP configuration values.
-    - app root, bin, and mem directories
-    - app directories
-        - cfg, data, img, py, db, sch
-    - may need to keep or dup some values for bootstrap
-    """
-
-    _tablename: str = "APP_CONFIG"
-    config_uid_pk: str = ""
-    version_id: str = ""
-    root_dir: str = ""
-    mem_dir: str = ""
-    cfg_dir: str = ""
-    dat_dir: str = ""
-    html_dir: str = ""
-    img_dir: str = ""
-    snd_dir: str = ""
-    py_dir: str = ""
-    db_dir: str = ""
-    log_dir: str = ""
-    mon_dir: str = ""
-    dbg_dir: str = ""
-
-    def to_dict(self) -> dict:
-        """Convert object to dict."""
-        return DM.orm_to_dict(AppConfig)
-
-    def from_dict(self, p_dict: dict, p_row: int) -> dict:
-        """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
-
-    class Constraints(object):
-        PK: dict = {"config_uid_pk": ["config_uid_pk"]}
-        ORDER: list = ["version_id ASC"]
-
-
 class Texts(object):
     """Define static text strings used in the app GUI.
     - Language code of the text, eg, 'en', 'de', 'fr'
@@ -103,6 +67,7 @@ class Texts(object):
     lang_code: str = ""
     text_name: str = ""
     text_value: str = ""
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -130,7 +95,6 @@ class Frames(object):
 
     _tablename: str = "FRAMES"
     frame_uid_pk: str = ""
-    version_id: str = ""
     lang_code: str = ""
     frame_id: str = ""
     frame_title: str = ""
@@ -142,6 +106,7 @@ class Frames(object):
     pg_hdr_w: float = 0.0
     pg_hdr_h: float = 0.0
     pg_hdr_txt: str = ""
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -154,7 +119,7 @@ class Frames(object):
     class Constraints(object):
         PK: dict = {"frame_uid_pk": ["frame_uid_pk"]}
         CK: dict = {"lang_code": EntityType.LANG_CODE}
-        ORDER: list = ["frame_id ASC", "version_id ASC"]
+        ORDER: list = ["frame_id ASC"]
 
 
 class MenuBars(object):
@@ -168,13 +133,12 @@ class MenuBars(object):
     _tablename: str = "MENU_BARS"
     menu_bar_uid_pk: str = ""
     frame_uid_fk: str = ""
-    lang_code: str = ""
-    version_id: str = ""
     frame_id: str = ""
     mbar_margin: float = 0.0
     mbar_h: float = 0.0
     mbar_x: float = 0.0
     mbar_y: float = 0.0
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -187,8 +151,7 @@ class MenuBars(object):
     class Constraints(object):
         PK: dict = {"menu_bar_uid_pk": ["menu_bar_uid_pk"]}
         FK: dict = {"frame_uid_fk": ("FRAMES", "frame_uid_pk")}
-        CK: dict = {"lang_code": EntityType.LANG_CODE}
-        ORDER: list = ["frame_id ASC", "version_id ASC"]
+        ORDER: list = ["frame_id ASC"]
 
 
 class Menus(object):
@@ -202,9 +165,9 @@ class Menus(object):
     menu_bar_uid_fk: str = ""
     frame_id: str = ""
     lang_code: str = ""
-    version_id: str = ""
     menu_id: str = ""
     menu_name: str = ""
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -232,13 +195,13 @@ class MenuItems(object):
     menu_uid_fk: str = ""
     lang_code: str = ""
     frame_id: str = ""
-    version_id: str = ""
     item_id: str = ""
     item_order: int = 0
     item_name: str = ""
     key_binding: str = ""
     help_text: str = ""
     enabled_default: bool = True
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -270,10 +233,10 @@ class Windows(object):
     frame_uid_fk: str = ""
     frame_id: str = ""
     lang_code: str = ""
-    version_id: str = ""
     win_id: str = ""
     win_title: str = ""
     win_margin: float = 0.0
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -287,7 +250,7 @@ class Windows(object):
         PK: dict = {"win_uid_pk": ["win_uid_pk"]}
         FK: dict = {"frame_uid_fk": ("FRAMES", "frame_uid_pk")}
         CK: dict = {"lang_code": EntityType.LANG_CODE}
-        ORDER: list = ["win_id ASC", "lang_code ASC", "version_id ASC"]
+        ORDER: list = ["win_id ASC", "lang_code ASC"]
 
 
 class Links(object):
@@ -299,7 +262,6 @@ class Links(object):
 
     _tablename: str = "LINKS"
     link_uid_pk: str = ""
-    version_id: str = ""
     lang_code: str = ""
     link_id: str = ""
     frame_id: str = ""
@@ -308,6 +270,7 @@ class Links(object):
     link_name: str = ""
     link_value: str = ""
     link_icon: str = ""
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -341,7 +304,6 @@ class ButtonSingle(object):
 
     _tablename: str = "BUTTON_SINGLE"
     button_single_uid_pk: str = ""
-    version_id: str = ""
     button_type: str = ""
     button_name: str = ""
     button_icon: str = ""
@@ -353,6 +315,7 @@ class ButtonSingle(object):
     enabled: bool = True
     help_text: str = ""
     action: str = ""
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -377,7 +340,6 @@ class ButtonMulti(object):
 
     _tablename: str = "BUTTON_MULTI"
     button_multi_uid_pk: str = ""
-    version_id: str = ""
     button_type: str = ""
     button_name: str = ""
     button_icon: str = ""
@@ -387,6 +349,7 @@ class ButtonMulti(object):
     y: float = 0.0
     enabled: bool = True
     help_text: str = ""
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -413,14 +376,14 @@ class ButtonItem(object):
 
     _tablename: str = "BUTTON_ITEM"
     button_item_uid_pk: str = ""
-    version_id: str = ""
-    button_multi_uid_pk: str = ""
+    button_multi_uid_fk: str = ""
     button_name: str = ""
     button_icon: str = ""
-    order: int = 0
-    enabled: bool = True
+    button_order: int = 0
+    button_action: str = ""
+    is_enabled: bool = True
     help_text: str = ""
-    action: str = ""
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""

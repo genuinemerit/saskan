@@ -6,4 +6,5 @@ version_id,
 days_in_month,
 months_number,
 is_leap_day_month,
-is_leap_month) VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+is_leap_month,
+delete_dt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);

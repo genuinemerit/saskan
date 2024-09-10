@@ -39,6 +39,7 @@ star_field_dim_rot_yaw,
 star_field_dim_rot_roll,
 star_field_vol_ly3,
 star_field_mass_kg,
-interstellar_mass_kg
+interstellar_mass_kg,
+delete_dt
 FROM GALAXY
 ORDER BY galaxy_name ASC;

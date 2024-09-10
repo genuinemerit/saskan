@@ -5,4 +5,5 @@ dialect_name,
 dialect_desc,
 divergence_factors,
 syncretic_factors,
-preservation_factors) VALUES (?, ?, ?, ?, ?, ?, ?);
+preservation_factors,
+delete_dt) VALUES (?, ?, ?, ?, ?, ?, ?, ?);

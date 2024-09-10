@@ -5,6 +5,7 @@ day_time_id,
 version_id,
 hours_in_day_time,
 day_time_number,
-is_leap_day_time
+is_leap_day_time,
+delete_dt
 FROM DAY_TIME
 ORDER BY day_time_id ASC, version_id ASC;

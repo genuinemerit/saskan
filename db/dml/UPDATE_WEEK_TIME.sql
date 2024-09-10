@@ -5,5 +5,6 @@ week_time_id=?,
 version_id=?,
 days_in_week_time=?,
 week_time_number=?,
-is_leap_week_time=?
+is_leap_week_time=?,
+delete_dt=?
 WHERE week_time_uid_pk=?;

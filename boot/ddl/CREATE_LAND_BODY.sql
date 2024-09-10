@@ -7,6 +7,7 @@ land_body_surface_area_m2 NUMERIC DEFAULT 0.0,
 land_body_surface_avg_altitude_m NUMERIC DEFAULT 0.0,
 max_altitude_m NUMERIC DEFAULT 0.0,
 min_altitude_m NUMERIC DEFAULT 0.0,
+delete_dt TEXT DEFAULT '',
 CHECK (land_body_type IN ('island', 'continent', 'sub-continent', 'region')),
 FOREIGN KEY (gloss_common_uid_fk) REFERENCES GLOSS_COMMON(gloss_common_uid_pk) ON DELETE CASCADE,
 PRIMARY KEY (land_body_uid_pk));

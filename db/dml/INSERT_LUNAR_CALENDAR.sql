@@ -6,4 +6,5 @@ lunar_calendar_id,
 lunar_calendar_desc,
 version_id,
 epoch_start_offset,
-days_in_month) VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+days_in_month,
+delete_dt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);

@@ -5,6 +5,7 @@ lang_desc,
 gramatics,
 lexicals,
 social_influences,
-word_formations
+word_formations,
+delete_dt
 FROM LANGUAGE
 ORDER BY lang_name ASC;

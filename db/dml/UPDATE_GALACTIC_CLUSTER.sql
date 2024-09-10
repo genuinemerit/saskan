@@ -28,5 +28,6 @@ baryonic_matter_kg=?,
 timing_pulsar_pulse_per_ms=?,
 timing_pulsar_loc_gly_x=?,
 timing_pulsar_loc_gly_y=?,
-timing_pulsar_loc_gly_z=?
+timing_pulsar_loc_gly_z=?,
+delete_dt=?
 WHERE galactic_cluster_uid_pk=?;

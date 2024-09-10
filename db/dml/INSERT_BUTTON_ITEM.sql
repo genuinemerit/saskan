@@ -1,10 +1,10 @@
 INSERT INTO BUTTON_ITEM (
 button_item_uid_pk,
-version_id,
-button_multi_uid_pk,
+button_multi_uid_fk,
 button_name,
 button_icon,
-order,
-enabled,
+button_order,
+button_action,
+is_enabled,
 help_text,
-action) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+delete_dt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);

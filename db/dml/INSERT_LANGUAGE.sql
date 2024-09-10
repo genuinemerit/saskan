@@ -6,4 +6,5 @@ lang_desc,
 gramatics,
 lexicals,
 social_influences,
-word_formations) VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+word_formations,
+delete_dt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);

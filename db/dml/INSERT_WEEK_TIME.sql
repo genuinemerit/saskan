@@ -6,4 +6,5 @@ week_time_id,
 version_id,
 days_in_week_time,
 week_time_number,
-is_leap_week_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+is_leap_week_time,
+delete_dt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);

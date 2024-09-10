@@ -4,4 +4,5 @@ bkup_name,
 bkup_dttm,
 bkup_type,
 file_from,
-file_to) VALUES (?, ?, ?, ?, ?, ?);
+file_to,
+delete_dt) VALUES (?, ?, ?, ?, ?, ?, ?);

@@ -15,6 +15,7 @@ origin_3d_y,
 origin_3d_z,
 width_3d,
 height_3d,
-depth_3d
+depth_3d,
+delete_dt
 FROM MAP
 ORDER BY map_name ASC;

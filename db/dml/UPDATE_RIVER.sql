@@ -15,5 +15,6 @@ river_nav_type=?,
 flora_and_fauna=?,
 water_quality=?,
 historical_events=?,
-current_conditions=?
+current_conditions=?,
+delete_dt=?
 WHERE river_uid_pk=?;

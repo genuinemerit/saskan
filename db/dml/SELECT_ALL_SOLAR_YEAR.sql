@@ -5,6 +5,7 @@ solar_year_key,
 version_id,
 solar_year_name,
 solar_year_desc,
-days_in_solar_year
+days_in_solar_year,
+delete_dt
 FROM SOLAR_YEAR
 ORDER BY solar_year_key ASC, version_id ASC;

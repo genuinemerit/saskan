@@ -5,6 +5,7 @@ land_body_type,
 land_body_surface_area_m2,
 land_body_surface_avg_altitude_m,
 max_altitude_m,
-min_altitude_m
+min_altitude_m,
+delete_dt
 FROM LAND_BODY
 ORDER BY land_body_uid_pk ASC;

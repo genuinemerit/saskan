@@ -1,2 +1,0 @@
-DELETE FROM APP_CONFIG
-WHERE config_uid_pk=?;

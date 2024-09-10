@@ -19,5 +19,6 @@ lake_usage=?,
 legends_or_myths=?,
 lake_history=?,
 conservation_status=?,
-current_conditions=?
+current_conditions=?,
+delete_dt=?
 WHERE lake_uid_pk=?;

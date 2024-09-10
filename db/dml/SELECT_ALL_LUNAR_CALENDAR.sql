@@ -5,6 +5,7 @@ lunar_calendar_id,
 lunar_calendar_desc,
 version_id,
 epoch_start_offset,
-days_in_month
+days_in_month,
+delete_dt
 FROM LUNAR_CALENDAR
 ORDER BY lunar_calendar_id ASC, version_id ASC;

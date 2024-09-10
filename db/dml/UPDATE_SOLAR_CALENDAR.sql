@@ -14,5 +14,6 @@ seconds_in_minute=?,
 leap_year=?,
 leap_month=?,
 leap_days=?,
-leap_rule=?
+leap_rule=?,
+delete_dt=?
 WHERE solar_calendar_uid_pk=?;

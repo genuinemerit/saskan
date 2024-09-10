@@ -10,5 +10,6 @@ orbit_direction=?,
 orbit_world_days=?,
 rotation_world_days=?,
 initial_velocity=?,
-angular_velocity=?
+angular_velocity=?,
+delete_dt=?
 WHERE moon_uid_pk=?;

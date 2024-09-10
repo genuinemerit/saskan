@@ -6,4 +6,5 @@ row_cnt INTEGER DEFAULT 0,
 col_cnt INTEGER DEFAULT 0,
 z_up_cnt INTEGER DEFAULT 0,
 z_down_cnt INTEGER DEFAULT 0,
+delete_dt TEXT DEFAULT '',
 PRIMARY KEY (grid_uid_pk));

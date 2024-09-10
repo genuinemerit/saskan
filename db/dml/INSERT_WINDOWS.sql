@@ -3,7 +3,7 @@ win_uid_pk,
 frame_uid_fk,
 frame_id,
 lang_code,
-version_id,
 win_id,
 win_title,
-win_margin) VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+win_margin,
+delete_dt) VALUES (?, ?, ?, ?, ?, ?, ?, ?);

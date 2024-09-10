@@ -15,5 +15,6 @@ origin_3d_y=?,
 origin_3d_z=?,
 width_3d=?,
 height_3d=?,
-depth_3d=?
+depth_3d=?,
+delete_dt=?
 WHERE map_uid_pk=?;

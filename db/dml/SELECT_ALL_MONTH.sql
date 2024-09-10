@@ -5,6 +5,7 @@ version_id,
 days_in_month,
 months_number,
 is_leap_day_month,
-is_leap_month
+is_leap_month,
+delete_dt
 FROM MONTH
 ORDER BY month_id ASC, version_id ASC;

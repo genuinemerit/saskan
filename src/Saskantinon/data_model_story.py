@@ -1,6 +1,6 @@
 """
 
-:module:    data_model_world.py
+:module:    data_model_story.py
 :author:    GM (genuinemerit @ pm.me)
 
 Saskan Data Management middleware.
@@ -80,6 +80,7 @@ class Map(object):
     width_3d: float = 0.0
     height_3d: float = 0.0
     depth_3d: float = 0.0
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -116,6 +117,7 @@ class MapXMap(object):
     map_uid_1_fk: str = ""
     map_uid_2_fk: str = ""
     touch_type: str = ""
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -167,6 +169,7 @@ class Grid(object):
     col_cnt: int = 0
     z_up_cnt: int = 0
     z_down_cnt: int = 0
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -191,6 +194,7 @@ class GridXMap(object):
     grid_x_map_uid_pk: str = ""
     grid_uid_fk: str = ""
     map_uid_fk: str = ""
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -230,6 +234,7 @@ class Universe(object):
     dark_energy_kg: float = 0.0
     dark_matter_kg: float = 0.0
     baryonic_matter_kg: float = 0.0
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -258,6 +263,7 @@ class ExternalUniv(object):
     dark_energy_kg: float = 0.0
     dark_matter_kg: float = 0.0
     baryonic_matter_kg: float = 0.0
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -307,6 +313,7 @@ class GalacticCluster(object):
     baryonic_matter_kg: float = 0.0
     timing_pulsar_pulse_per_ms: float = 0.0
     timing_pulsar_loc_gly: GroupStruct.CoordXYZ = GroupStruct.CoordXYZ()
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -380,6 +387,7 @@ class Galaxy(object):
     star_field_vol_ly3: float = 0.0
     star_field_mass_kg: float = 0.0
     interstellar_mass_kg: float = 0.0
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -531,6 +539,7 @@ class StarSystem(object):
     orbital_stability: str = "stable"
     asteroid_belt_density: str = "sparse"
     asteroid_belt_loc: str = "inner"
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -610,6 +619,7 @@ class World(object):
     climate: str = ""
     tech_level: str = ""
     terrain: str = ""
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -652,6 +662,7 @@ class Moon(object):
     rotation_world_days: float = 0.0
     initial_velocity: float = 0.0
     angular_velocity: float = 0.0
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -701,6 +712,7 @@ class SolarYear(object):
     solar_year_name: str = ""
     solar_year_desc: str = ""
     days_in_solar_year: float = 0.0
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -739,6 +751,7 @@ class Season(object):
     season_type: str = ""
     hemisphere_type: str = ""
     years_in_season: float = 0.0
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -788,6 +801,7 @@ class LunarYear(object):
     lunar_year_name: str = ""
     lunar_year_desc: str = ""
     days_in_lunar_year: float = 0.0
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -818,6 +832,7 @@ class LunarYearXMoon(object):
     lunar_year_x_moon_uid_pk: str = ""
     lunar_year_uid_fk: str = ""
     moon_uid_fk: str = ""
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -865,6 +880,7 @@ class SolarCalendar(object):
     leap_month: int = 0
     leap_days: int = 0
     leap_rule: str = "add_to_end_of_nth_month"
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -907,6 +923,7 @@ class LunarCalendar(object):
     version_id: str = ""
     epoch_start_offset: int = 0
     days_in_month: int = 0
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -942,6 +959,7 @@ class Month(object):
     months_number: int = 0
     is_leap_day_month: bool = False
     is_leap_month: bool = False
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -971,6 +989,7 @@ class SolarCalendarXMonth(object):
     solar_calendar_x_moon_uid_pk: str = ""
     solar_calendar_uid_fk: str = ""
     month_uid_fk: str = ""
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -1000,6 +1019,7 @@ class LunarCalendarXMonth(object):
     lunar_calendar_x_moon_uid_pk: str = ""
     lunar_calendar_uid_fk: str = ""
     month_uid_fk: str = ""
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -1038,6 +1058,7 @@ class WeekTime(object):
     days_in_week_time: int = 0
     week_time_number: int = 0
     is_leap_week_time: bool = False
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -1070,6 +1091,7 @@ class SolarCalendarXWeekTime(object):
     solar_calendar_x_week_time_uid_pk: str = ""
     solar_calendar_uid_fk: str = ""
     week_time_uid_fk: str = ""
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -1101,6 +1123,7 @@ class LunarCalendarXWeekTime(object):
     lunar_calendar_x_week_time_uid_pk: str = ""
     lunar_calendar_uid_fk: str = ""
     week_time_uid_fk: str = ""
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -1142,6 +1165,7 @@ class DayTime(object):
     hours_in_day_time: int = 0
     day_time_number: int = 0
     is_leap_day_time: bool = False
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -1171,6 +1195,7 @@ class WeekTimeXDayTime(object):
     week_time_x_day_time_uid_pk: str = ""
     week_time_uid_fk: str = ""
     day_time_uid_fk: str = ""
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -1228,6 +1253,7 @@ class CharSet(object):
     char_set_name: str = ""
     char_set_type: str = "alphabet"
     char_set_desc: str = ""
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -1260,6 +1286,7 @@ class CharMember(object):
     char_member_name: str = ""
     char_member_uri: str = ""
     char_member_desc: str = ""
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -1292,6 +1319,7 @@ class LangFamily(object):
     lang_family_desc: str = ""
     phonetics: str = ""
     cultural_influences: str = ""
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -1371,6 +1399,7 @@ class Language(object):
     lexicals: str = ""
     social_influences: str = ""
     word_formations: str = ""
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -1406,6 +1435,7 @@ class LangDialect(object):
     divergence_factors: str = ""
     syncretic_factors: str = ""
     preservation_factors: str = ""
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -1445,6 +1475,7 @@ class GlossCommon(object):
     gloss_name: str = ""
     gloss_value: str = ""
     gloss_uri: str = ""
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -1475,6 +1506,7 @@ class Glossary(object):
     gloss_name: str = ""
     gloss_value: str = ""
     gloss_uri: str = ""
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -1557,6 +1589,7 @@ class Lake(object):
     lake_history: str = ""
     conservation_status: str = ""
     current_conditions: str = ""
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -1588,6 +1621,7 @@ class LakeXMap(object):
     lake_x_map_pk: str = ""
     lake_uid_fk: str = ""
     map_uid_fk: str = ""
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -1656,6 +1690,7 @@ class River(object):
     water_quality: str = ""
     historical_events: str = ""
     current_conditions: str = ""
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -1691,6 +1726,7 @@ class RiverXMap(object):
     river_x_map_uid_pk: str = ""
     river_uid_fk: str = ""
     map_uid_fk: str = ""
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -1732,6 +1768,7 @@ class OceanBody(object):
     avg_depth_m: float = 0.0
     ocean_hazards_json: str = ""
     ocean_features_json: str = ""
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -1768,6 +1805,7 @@ class OceanBodyXMap(object):
     ocean_body_x_map_uid_pk: str = ""
     ocean_body_uid_fk: str = ""
     map_uid_fk: str = ""
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -1796,6 +1834,7 @@ class OceanBodyXRiver(object):
     ocean_body_x_river_uid_pk: str = ""
     ocean_body_uid_fk: str = ""
     river_uid_fk: str = ""
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -1829,6 +1868,7 @@ class LandBody(object):
     land_body_surface_avg_altitude_m: float = 0.0
     max_altitude_m: float = 0.0
     min_altitude_m: float = 0.0
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -1855,6 +1895,7 @@ class LandBodyXMap(object):
     land_body_x_map_uid_pk: str = ""
     land_body_uid_fk: str = ""
     map_uid_fk: str = ""
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -1886,6 +1927,7 @@ class LandBodyXLandBody(object):
     land_body_1_uid_fk: str = ""
     land_body_2_uid_fk: str = ""
     land_land_relation_type: str = ""
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
@@ -1916,6 +1958,7 @@ class LandBodyXOceanBody(object):
     land_body_uid_fk: str = ""
     ocean_body_uid_fk: str = ""
     land_ocean_relation_type: str = ""
+    delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""

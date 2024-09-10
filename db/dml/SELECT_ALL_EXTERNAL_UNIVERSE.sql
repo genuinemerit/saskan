@@ -4,6 +4,7 @@ external_univ_name,
 mass_kg,
 dark_energy_kg,
 dark_matter_kg,
-baryonic_matter_kg
+baryonic_matter_kg,
+delete_dt
 FROM EXTERNAL_UNIVERSE
 ORDER BY external_univ_name ASC;

@@ -10,4 +10,5 @@ total_mass_kg NUMERIC DEFAULT 0.0,
 dark_energy_kg NUMERIC DEFAULT 0.0,
 dark_matter_kg NUMERIC DEFAULT 0.0,
 baryonic_matter_kg NUMERIC DEFAULT 0.0,
+delete_dt TEXT DEFAULT '',
 PRIMARY KEY (univ_uid_pk));

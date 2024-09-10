@@ -10,6 +10,7 @@ orbit_direction,
 orbit_world_days,
 rotation_world_days,
 initial_velocity,
-angular_velocity
+angular_velocity,
+delete_dt
 FROM MOON
 ORDER BY moon_name ASC;

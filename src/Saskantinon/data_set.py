@@ -7,12 +7,11 @@ Saskan Data Management middleware.
 """
 
 from collections import OrderedDict
-from os import path
 from pprint import pformat as pf  # noqa: F401
 from pprint import pprint as pp  # noqa: F401
 
 import data_model_app as DMA
-import data_model_world as DMW
+import data_model_story as DMS
 from data_base import DataBase
 from data_get import GetData
 from method_files import FileMethods
@@ -22,19 +21,15 @@ GD = GetData()
 SHM = ShellMethods()
 FLM = FileMethods()
 
-APC = DMA.AppConfig()
-TXT = DMA.Texts()
-FRM = DMA.Frames()
-MNB = DMA.MenuBars()
 MNU = DMA.Menus()
 MNI = DMA.MenuItems()
 WIN = DMA.Windows()
 LNK = DMA.Links()
 
-MAP = DMW.Map()
-MXM = DMW.MapXMap()
-GRID = DMW.Grid()
-GXM = DMW.GridXMap()
+MAP = DMS.Map()
+MXM = DMS.MapXMap()
+GRID = DMS.Grid()
+GXM = DMS.GridXMap()
 
 
 class SetData(object):
@@ -45,96 +40,47 @@ class SetData(object):
     this module will support:
     1. Hard-coded set-up methods (no inputs)
     2. Read inputs as call parameters
-    3. Read from files
+    3. Read from files <-- preferrred, JSON files in boot/config
     4. Read inputs from terminal
-    Not much point to this class, but it's here for now.
     """
 
     def __init__(self):
         """
-        Initialize a new instance of the GetData class.
+        Initialize a new instance of the SetData class.
         """
         self.MAP_UID: dict = {}
         self.GRID_UID: dict = {}
 
-    def _prep_set(
-        self, MODEL: object, DB_CFG: dict, p_config_path: str = None
-    ) -> tuple:
+    def _prep_set(self, DATA_MODEL: object, p_context: dict) -> tuple:
         """
         Prep SQL and config templates for selected table.
         :args:
-        - MODEL: object - instance of data model class
-        - DB_CFG: dict of DB config values
-        - p_config_path: full path to config file or None
+        - MODEL: object - instance of a data model class
+        - p_context: dict of static context values
+        N.B. - config data for MENUS, MENU_BARS and MENU_ITEMS in menus.json
+        :returns: ((tuple) DB class instance, INSERT SQL, table_data,
+                           ordered dict of columns for selected model)
         """
-        DB = DataBase(DB_CFG)
-        sql = f"INSERT_{MODEL._tablename}"
-        config = FLM.get_json_file(p_config_path) if p_config_path is not None else None
-        cols = OrderedDict(MODEL.to_dict()[MODEL._tablename])
-        return (DB, sql, config, cols)
+        insert_sql = f"INSERT_{DATA_MODEL._tablename}"
+        model_name = DATA_MODEL._tablename.lower()
+        config_name = "menus" if "menu" in model_name else model_name
+        config_path = p_context['cfg'][config_name]
+        table_data = FLM.get_json_file(config_path)
+        table_cols = OrderedDict(DATA_MODEL.to_dict()[DATA_MODEL._tablename])
+        return (DataBase(p_context), insert_sql, table_data, table_cols)
 
-    def set_app_config(self, DB_CFG: dict):
+    def set_frames(self, p_frame_id: str, p_context: dict):
         """
-        Set data on the AppConfig table using hard-coded values.
-        Note: This will fail if the SQL file is not already in place.
-        :args:
-        - DB_CFG: dict of DB config values
-        """
-        DB, sql, config, cols = self._prep_set(APC, DB_CFG)
-        cols["config_uid_pk"] = SHM.get_uid()
-        cols["version_id"] = "0.1"
-        cols["root_dir"] = "/home/dave/saskan"
-        cols["mem_dir"] = "/dev/shm"
-        cols["cfg_dir"] = "config"
-        cols["dat_dir"] = "data"
-        cols["html_dir"] = "web"
-        cols["img_dir"] = "images"
-        cols["snd_dir"] = "sounds"
-        cols["py_dir"] = "python"
-        cols["db_dir"] = "sql"
-        cols["log_dir"] = "log"
-        cols["mon_dir"] = "monitor"
-        cols["dbg_dir"] = "debug"
-        DB.execute_insert(sql, tuple(cols.values()))
-        print("* APP_CONFIG record initialized.")
-
-    def get_config_path(self, BOOT: object, p_config_nm: str):
-        """Return path to specified config file."""
-        return path.join(BOOT["git_source"], "config", f"{p_config_nm}.json")
-
-    def set_texts(self, BOOT: dict, DB_CFG: dict):
-        """
-        Get the config text file that matches the requested
-        language. Use as input to populate TEXTS table.
-        :args:
-        - BOOT: dict of boot values
-        - DB_CFG: dict of DB config values
-        """
-        config_p = self.get_config_path(BOOT, f"texts_{BOOT['language']}")
-        DB, sql, config, cols = self._prep_set(TXT, DB_CFG, config_p)
-        for tx_name, tx_value in config.items():
-            cols["text_uid_pk"] = SHM.get_uid()
-            cols["lang_code"] = BOOT["language"]
-            cols["text_name"] = tx_name
-            cols["text_value"] = tx_value
-            DB.execute_insert(sql, tuple(cols.values()))
-        print("* TEXTS table initialized.")
-
-    def set_frames(self, p_frame_id: str, BOOT: dict, DB_CFG: dict):
-        """
-        Get the schema file for frames. Generate FRAMES data.
+        Get config json for frames. Populate FRAMES table.
         :args:
         - p_frame_id: str - name of app, e.g. 'saskan' or 'admin'
-        - BOOT: dict of boot values
-        - DB_CFG: dict of DB config values
+        - p_context: dict of context values
         """
-        config_p = self.get_config_path(BOOT, "frames")
-        DB, sql, config, cols = self._prep_set(FRM, DB_CFG, config_p)
+        DB, sql, config, cols = self._prep_set(DMA.Frames(), p_context)
         for frame_id, v in {f: v for f, v in config.items() if f == p_frame_id}.items():
             cols["frame_uid_pk"] = SHM.get_uid()
             cols["frame_id"] = frame_id
-            cols["version_id"] = BOOT["db_version"]
-            cols["lang_code"] = BOOT["language"]
+            cols["lang_code"] = p_context["lang"]
             cols["frame_title"] = v["title"]
             cols["frame_desc"] = v["desc"]
             cols["frame_w"] = v["frame_w"]
@@ -145,26 +91,41 @@ class SetData(object):
             cols["pg_hdr_h"] = v["pg_hdr_h"]
             cols["pg_hdr_txt"] = v["pg_hdr_text"]
             DB.execute_insert(sql, tuple(cols.values()))
-        print(f"* FRAMES table initialized for {p_frame_id}.")
+        print(f"* FRAMES table initialized for `{p_frame_id}` app.")
 
-    def set_menu_bars(self, p_frame_id: str, BOOT: dict, DB_CFG: dict):
+    def set_texts(self, p_context: dict):
         """
-        Get the config file for menus. Generate MENU_BARS data.
+        Get the config text file that matches the requested
+        language. Use as input to populate TEXTS table.
+        N.B. - Texts are in (American) English by default.
+        All items on the TEXTS table have a language-code and a
+         generic "text_name" attribute.
+        :args:
+        - p_context: dict of context values
+        """
+        DB, sql, config, cols = self._prep_set(DMA.Texts(), p_context)
+        for tx_name, tx_value in config.items():
+            cols["text_uid_pk"] = SHM.get_uid()
+            cols["lang_code"] = p_context["lang"]
+            cols["text_name"] = tx_name
+            cols["text_value"] = tx_value
+            DB.execute_insert(sql, tuple(cols.values()))
+        print("* TEXTS table initialized.")
+
+    def set_menu_bars(self, p_frame_id: str, p_context: dict):
+        """
+        Get the data for menus. Populate MENU_BARS table.
         :args:
         - p_frame_id: str - name of app, e.g. 'saskan' or 'admin'
-        - BOOT: dict of boot values
-        - DB_CFG: dict of DB config values
-        Should fail if FK to FRAMES is not found..
+        - p_context: dict of context values
+        Fail if FK to FRAMES is not found.
         """
-        config_p = self.get_config_path(BOOT, "menus")
-        DB, sql, config, cols = self._prep_set(MNB, DB_CFG, config_p)
+        DB, sql, config, cols = self._prep_set(DMA.MenuBars(), p_context)
         for frame_id, v in {f: v for f, v in config.items() if f == p_frame_id}.items():
             cols["menu_bar_uid_pk"] = SHM.get_uid()
 
-            data = GD.get_by_id("FRAMES", "frame_id", frame_id, DB_CFG)
+            data = GD.get_by_id("FRAMES", "frame_id", frame_id, DB)
             cols["frame_uid_fk"] = data["frame_uid_pk"]
-            cols["lang_code"] = data["lang_code"]
-            cols["version_id"] = BOOT["db_version"]
             cols["frame_id"] = frame_id
 
             mb_v = v["menu_bar"]
@@ -172,12 +133,16 @@ class SetData(object):
             cols["mbar_h"] = mb_v["h"]
             cols["mbar_x"] = mb_v["x"]
             cols["mbar_y"] = mb_v["y"]
+
+            pp((p_frame_id, sql, cols))
+
             DB.execute_insert(sql, tuple(cols.values()))
         print(f"* MENU_BARS table initialized for {p_frame_id}.")
 
     def set_menus(self, p_frame_id: str, BOOT: dict, DB_CFG: dict):
         """
         Get the config file for menus. Generate MENUS data.
+        N.B. - All menus are in American English by default.
         :args:
         - p_frame_id: str - name of app, e.g. 'saskan' or 'admin'
         - BOOT: dict of boot values
@@ -205,6 +170,7 @@ class SetData(object):
         """
         Get the config file for menu items.
         Generate MENU_ITEMS data.
+        N.B. - All menus items are in American English by default.
         :args:
         - p_frame_id: str - name of app, e.g. 'saskan' or 'admin'
         - BOOT: dict of boot values

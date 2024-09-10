@@ -36,6 +36,7 @@ timing_pulsar_pulse_per_ms NUMERIC DEFAULT 0.0,
 timing_pulsar_loc_gly_x NUMERIC DEFAULT 0.0,
 timing_pulsar_loc_gly_y NUMERIC DEFAULT 0.0,
 timing_pulsar_loc_gly_z NUMERIC DEFAULT 0.0,
+delete_dt TEXT DEFAULT '',
 CHECK (cluster_shape IN ('ellipsoid', 'spherical')),
 FOREIGN KEY (univ_uid_fk) REFERENCES UNIVERSE(univ_uid_pk) ON DELETE CASCADE,
 PRIMARY KEY (galactic_cluster_uid_pk));

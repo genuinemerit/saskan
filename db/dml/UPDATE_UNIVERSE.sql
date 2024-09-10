@@ -8,5 +8,6 @@ expansion_rate_kmpsec_per_mpc=?,
 total_mass_kg=?,
 dark_energy_kg=?,
 dark_matter_kg=?,
-baryonic_matter_kg=?
+baryonic_matter_kg=?,
+delete_dt=?
 WHERE univ_uid_pk=?;

@@ -22,6 +22,7 @@ biosphere,
 sentients,
 climate,
 tech_level,
-terrain
+terrain,
+delete_dt
 FROM WORLD
 ORDER BY world_name ASC;
