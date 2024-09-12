@@ -21,70 +21,51 @@ SM = ShellMethods()
 # =============================================================
 # Abstract Maps and Grids
 # =============================================================
-class Map(object):
+class _Map(object):
     """
-    Map is a rectangle (2D) or box (3D). It provides basic
-    geographical information.
+    N.B. -
+    Though inheritance is an interesting concept and may be useful in
+    other area of the app, it is not useful in the data model section
+    because it is difficult to extract attributes from an __init__ method
+    and attributes defined in the "global" section of a class do not get
+    inherited. I could fool around with more homegrown "internal" attributes
+    like the _tablename, and use that to name the parent class, which I
+    could then pull in in the data_base constructor, but that would be
+    pretty messy I think and probably not worth the trouble. Easier and
+    cleaner just to define separate classes, I think, for each shape.
+    This means more Association tables too, but in this case I think being
+    more explicit is probably better.
 
-    This structure holds templates of maps that lay over a grid.
-    For example, a map_name associated with provinces is distinct
-    from one that identifieds regions.  Maps might defeine a similar
-    type of info (say, counties) but at distinct levels of granularity.
+    A Map structure provides basic geo or astro shape and size templates.
 
-    A map is associated with other tables providing more detailed info,
-    such as:
-        - geography (continents, regions, mountains, hills, rivers,
-            lakes, seas, oceans, etc.)
-        - political boundaries (countries, provinces, states, counties, etc.)
-        - roads, paths, trails, waterways, bodies of water, etc.
-        - cities, towns, villages, neighborhoods, etc.
-        - other points of interest (ruins, temples, etc.)
-        - natural resources (mines, quarries, etc.)
-        - demographics (population density, etc.)
+    For example, a map_name associated with provinces as distinct
+    from one that identifies regions.  Or a solar system vs. a galaxy.
 
-    - Maps can contain other maps, overlap with other maps, border
-      other maps, provide layers of information, or provide geo-layers
-      associated with other maps. These relationships are handled in
-      the MapXMap table.
-    - 2D maps are defined in terms of degrees of latitude and longitude and
-      meters of altitude.
-    - The units for 3D maps are up to interpretation and require additional
-      overlays of info to identify their measurement.
-
-    @DEV:
-    - See how difficult it is to work with the group structures.
-    - Makes more sense to keep DB clean and separate.
-    - For example, want to store computed values in the "DSP" object,
-      but not in the database. So I would want to have height/width
-      in the DSP object, but not in the DB model.
-    - May want to provide circular dimensions for 3D maps
-    - Might make sense to have separate tables for 2D and 3D maps.
+    This abtract root class is inherited by 3 sub-classes associated with
+    3 shapes: rectangle, box, sphere.
+    6 types (can be of any shape):
+        "geo", "astro", "underwater", "underground", "info", "political"
     """
 
-    _tablename: str = "MAP"
-    map_uid_pk: str = ""
-    version_id: str = ""
-    map_name: str = ""
-    map_type: str = ""
-    unit_of_measure: str = ""
-    origin_2d_lat: float = 0.0
-    origin_2d_lon: float = 0.0
-    width_e_w_2d: float = 0.0
-    height_n_s_2d: float = 0.0
-    avg_alt_m: float = 0.0
-    min_alt_m: float = 0.0
-    max_alt_m: float = 0.0
-    origin_3d_x: float = 0.0
-    origin_3d_y: float = 0.0
-    origin_3d_z: float = 0.0
-    width_3d: float = 0.0
-    height_3d: float = 0.0
-    depth_3d: float = 0.0
-    delete_dt: str = ""
+    _tablename: str = "_MAP"
+
+    def __init__(
+        self,
+        p_map_uid_pk: str = "",
+        p_map_shape: str = "",
+        p_map_type: str = "",
+        p_map_name: str = "",
+        p_map_desc: str = "",
+    ):
+        self.map_uid_pk: str = p_map_uid_pk
+        self.map_shape: str = p_map_shape
+        self.map_type: str = p_map_type
+        self.map_name: str = p_map_name
+        self.map_desc: str = p_map_desc
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(Map)
+        return DM.orm_to_dict(_Map)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
@@ -92,15 +73,93 @@ class Map(object):
 
     class Constraints(object):
         PK: dict = {"map_uid_pk": ["map_uid_pk"]}
-        CK: dict = {
-            "map_type": EntityType.MAP_TYPE,
-            "unit_of_measure": EntityType.MEASURE_TYPE,
-        }
-        CK: dict = {"map_type": EntityType.MAP_TYPE}
-        GROUP: dict = {
-            "map_geo_2d": GroupStruct.GameGeo,
-            "map_geo_3d": GroupStruct.Game3DLoc,
-        }
+        CK: dict = {"map_shape": EntityType.MAP_SHAPE, "map_type": EntityType.MAP_TYPE}
+        ORDER: list = ["map_name ASC"]
+
+
+class MapRect(_Map):
+    """
+    Map is a rectangle (2d). Typically used for geographic maps.
+    Units are in degrees latitude and degrees longitude.
+    NW and SE corners are provided. NE and SW corners are computed.
+    Can contain, overlap, border other Map_Rect structures.
+        See MAP_X_MAP table.
+    Can be associated with granular Grid data tables, such as:
+    - geography (continents, regions, mountains, hills, rivers,
+        lakes, seas, oceans, etc.)
+    - political boundaries (countries, provinces, states, counties, etc.)
+    - roads, paths, trails, waterways, bodies of water, etc.
+    - cities, towns, villages, neighborhoods, etc.
+    - other points of interest (ruins, temples, etc.)
+    - natural resources (mines, quarries, etc.)
+    - demographics (population density, etc.)
+        See GRID_X_MAP table.
+    """
+
+    _tablename: str = "MAP_RECT"
+
+    def __init__(
+        self,
+        p_north_west_lat: float = 0.0,
+        p_north_west_lon: float = 0.0,
+        p_south_east_lat: float = 0.0,
+        p_south_east_lon: float = 0.0,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+        self.north_west_lat: float = p_north_west_lat
+        self.north_west_lon: float = p_north_west_lon
+        self.south_east_lat: float = p_south_east_lat
+        self.south_east_lon: float = p_south_east_lon
+
+
+class MapBox(MapRect):
+    """
+    Map is a box (3D). Typically used for geographic or city/building maps.
+    x, y units are in degrees latitude and degrees longitude.
+    z units are in meters and are provided in two directions: up and down.
+    They should reflect the maximum meters to be traveled in each direction.
+    Can contain, overlap, border other Map_Rect structures.
+        See MAP_X_MAP table.
+    Can be associated with granular Grid data tables.
+        See GRID_X_MAP table.
+    """
+
+    _tablename: str = "MAP_BOX"
+
+    def __init__(self, p_up_m: float = 0.0, p_down_m: float = 0.0, **kwargs):
+        super().__init__(**kwargs)
+        self.up_m: float = p_up_m
+        self.down_m: float = p_down_m
+
+
+class MapSphere(MapRect):
+    """
+    Map is a sphere (3D). Typically used for astronomical maps.
+    May also be useful for defining floating islands, undersea regions, etc.
+    - Units may vary quite a lot, from meters to parsec.
+    Can contain, overlap, border other Map_Sphere structures.
+    Can be associated with granular Grid data tables.
+    - In this case, the associated Grid is wrapped around the center of the sphere.
+    The sphere is considered to reside within the constraints of the parent
+    Map_Rect structure. In this case, the units are overidden, though. So instead
+    of assuming latitude, longitude, and altitude, the units might be all meters,
+    nautical miles, parsecs, or light years.
+
+    @DEV:
+    - May want to see if we can tweak this class to support ellipsoids too.
+    """
+
+    _tablename: str = "MAP_SPHERE"
+
+    def __init__(self, p_unit_of_measure: str = "", p_radius: float = 0.0, **kwargs):
+        super().__init__(**kwargs)
+        self.unit_of_measure: str = p_unit_of_measure
+        self.radius: float = p_radius
+
+    class Constraints(object):
+        PK: dict = {"map_uid_pk": ["map_uid_pk"]}
+        CK: dict = {"unit_of_measure": EntityType.MEASURE_TYPE}
         ORDER: list = ["map_name ASC"]
 
 
@@ -130,45 +189,46 @@ class MapXMap(object):
     class Constraints(object):
         PK: dict = {"map_x_map_uid_pk": ["map_x_map_uid_pk"]}
         FK: dict = {
-            "map_uid_1_fk": ("MAP", "map_uid_pk"),
-            "map_uid_2_fk": ("MAP", "map_uid_pk"),
+            "map_uid_1_fk": ("_MAP", "map_uid_pk"),
+            "map_uid_2_fk": ("_MAP", "map_uid_pk"),
         }
         CK: dict = {"touch_type": EntityType.MAP_TOUCH_TYPE}
 
 
 class Grid(object):
     """
-    The Grid structure defines the dimensions of a Map for
-    rendering, drawing and referencing purposes. A rectangular grid.
-    It is effectively a kind of spreadsheet laid over a map.
+    The Grid structure defines dimensions of a Map for story-telling
+    rendering, drawing and referencing purposes. A grid is a rectangle,
+    a kind of spreadsheet laid over a Map structure. Rather than geo
+    dimensions, it is a grid of data cells, rows, and columns
 
-    Grid size: (r, c) - how many cells, rows, columns
-    Cell dimension: (w, h, z) - define size of a cell in PyGame px.
-
-    Dimensions may be further mapped to km, m, or whatever is
-    needed for a given scenario, but that is not tracked in the structure.
-    Think of w and h as east-west, north-south.
-    The z is up-down, for altitude, depth, or elevation measures. It is
-    more like a layer of cake, or a 3rd dimension to the spreadsheet.
+    Mapping of grids to Pygame pixels or to story-based dimensions
+    like km, m and so on is handled elsewhere
+    row_cnt --> north-south
+    col_cnt --> east-west
+    z_up_cnt --> up-down, elevation, altitude
+    z_down_cnt --> up-down, elevation, depth
     The z layer implies another complete set of the r/c, indexed as a
-    layer 'above' or 'below' the primary grid.
+    layer 'above' or 'below' the primary (zero'th) grid.
 
-    @DEV:
-    Assignment of scale to a grid needs to be handled in some rational
-    manner, but I don't want to hard code it into this table. Maybe an
-    entity-type field, or more specifically, one for w/h and another for z.
-    The actual size of the grid and its cells is determined by
-    rendering software, not by the data model.
+    Assignment of main scale (km, m, etc.) to use for a Grid is defined
+    for each direction, but actual values should be computed, not hard-coded.
+    Actual Pygame px size of grid and cells is set by rendering code,
+    not by the data model.
+
+    Association to Maps is handled in GRID_X_MAP table.
     """
 
     _tablename: str = "GRID"
     grid_uid_pk: str = ""
     version_id: str = ""
     grid_name: str = ""
+    rc_units: str = ""
+    z_units: str = ""
     row_cnt: int = 0
     col_cnt: int = 0
-    z_up_cnt: int = 0
-    z_down_cnt: int = 0
+    up_cnt: int = 0
+    down_cnt: int = 0
     delete_dt: str = ""
 
     def to_dict(self) -> dict:
@@ -180,7 +240,12 @@ class Grid(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"grid_uid_pk": ["grid_uid_pk"]}
+        PK: dict = ({"grid_uid_pk": ["grid_uid_pk"]},)
+        CK: dict = {
+            "touch_type": EntityType.MAP_TOUCH_TYPE,
+            "rc_units": EntityType.MEASURE_TYPE,
+            "z_units": EntityType.MEASURE_TYPE,
+        }
         ORDER: list = ["grid_name ASC"]
 
 
@@ -208,7 +273,7 @@ class GridXMap(object):
         PK: dict = {"grid_x_map_uid_pk": ["grid_x_map_uid_pk"]}
         FK: dict = {
             "grid_uid_fk": ("GRID", "grid_uid_pk"),
-            "map_uid_fk": ("MAP", "map_uid_pk"),
+            "map_uid_fk": ("_MAP", "map_uid_pk"),
         }
 
 

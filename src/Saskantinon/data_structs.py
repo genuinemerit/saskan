@@ -565,12 +565,17 @@ class EntityType(object):
         "layers_above",
         "layers_below",
     ]
+    MAP_SHAPE = [
+        "rectangle",
+        "box",
+        "sphere"
+    ]
     MAP_TYPE = [
         "geo",
         "astro",
         "underwater",
         "underground",
-        "informational",
+        "info",
         "political",
     ]
     MEASURE_TYPE = [

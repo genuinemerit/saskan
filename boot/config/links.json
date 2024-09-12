@@ -1,23 +1,45 @@
 {
-"saskan": {
-        "lang_code": "en",
+    "admin": {
         "links": {
             "pg_help": {
                 "protocol": "https",
                 "mime_type": "text/html",
                 "name": "Pygame Docs",
                 "value": "www.pygame.org/docs/",
-                "icon": null},
-            "game_help": {
-                "protocol": "https",
-                "mime_type": "text/html",
-                "name": "Saskantinon Game Docs",
-                "value": "github.com/genuinemerit/saskan-wiki/wiki/Game",
-                "icon": null},
+                "icon": null
+            },
             "project_help": {
                 "protocol": "https",
                 "mime_type": "text/html",
                 "name": "Saskantinon Development Docs",
                 "value": "github.com/genuinemerit/saskan-wiki/wiki",
-                "icon": null}}}
+                "icon": null
+            },
+            "project_github": {
+                "protocol": "https",
+                "mime_type": "text/html",
+                "name": "saskan-app GitHub",
+                "value": "%git%",
+                "icon": null
+            }
+        }
+    },
+    "saskan": {
+        "links": {
+            "game_help": {
+                "protocol": "https",
+                "mime_type": "text/html",
+                "name": "Saskantinon Game Docs",
+                "value": "github.com/genuinemerit/saskan-wiki/wiki/Game",
+                "icon": null
+            },
+            "saskan_wiki": {
+                "protocol": "https",
+                "mime_type": "text/html",
+                "name": "Saskantinon Wiki",
+                "value": "%wiki%",
+                "icon": null
+            }
+        }
+    }
 }

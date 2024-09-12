@@ -382,8 +382,19 @@ class DataBase(object):
             if not k.startswith("_")
             and k not in ("to_dict", "from_dict", "Constraints")
         }
-
         col_names = self.generate_create_sql(table_name, constraints, model)
+
+        if "MAP" in table_name:
+            print(f"\ngenerate_sql() for {table_name}")
+            pp(("p_data_model:", p_data_model))
+            pp(("p_data_model.__dict__:", p_data_model.__dict__))
+            pp(("p_data_model.__init__:", p_data_model.__init__))
+            pp(("p_data_model.__dict__.items():", p_data_model.__dict__.items()))
+            pp(("p_data_model.__init__.items():", p_data_model.__init__.items()))
+            pp(("constraints:", constraints))
+            pp(("model: ", model))
+            pp(("col_names: ", col_names))
+
         self.generate_drop_sql(table_name)
         self.generate_insert_sql(table_name, col_names)
         self.generate_select_all_sql(table_name, constraints, col_names)
@@ -607,8 +618,8 @@ class DataBase(object):
         except sq3.Error as e:
             # Rollback the transaction if any operation fails
             self.db_conn.rollback()
-            print("Rolled back. Transaction failed:", e)
-            print(f"Processing {p_sql_nm}...")
+            print("Rolled back.", e)
+            print(f"Transaction failed on processing of:  {p_sql_nm}...")
             pp(("sql code: ", sql))
         finally:
             self.disconnect_db()

@@ -21,12 +21,9 @@ GD = GetData()
 SHM = ShellMethods()
 FLM = FileMethods()
 
-MNU = DMA.Menus()
-MNI = DMA.MenuItems()
-WIN = DMA.Windows()
-LNK = DMA.Links()
-
-MAP = DMS.Map()
+MAP_R = DMS.MapRect()
+MAP_B = DMS.MapBox()
+MAP_S = DMS.MapSphere()
 MXM = DMS.MapXMap()
 GRID = DMS.Grid()
 GXM = DMS.GridXMap()
@@ -69,6 +66,26 @@ class SetData(object):
         table_cols = OrderedDict(DATA_MODEL.to_dict()[DATA_MODEL._tablename])
         return (DataBase(p_context), insert_sql, table_data, table_cols)
 
+    # App Scaffolding Tables
+
+    def set_texts(self, p_context: dict):
+        """
+        Get the config text file that matches the requested
+        language. Use as input to populate TEXTS table.
+        N.B. - Texts are in (American) English by default.
+        All items on the TEXTS table have a language-code and a
+         generic "text_name" attribute.
+        :args:
+        - p_context: dict of context values
+        """
+        DB, sql, config, cols = self._prep_set(DMA.Texts(), p_context)
+        for tx_name, tx_value in config.items():
+            cols["text_uid_pk"] = SHM.get_uid()
+            cols["lang_code"] = p_context["lang"]
+            cols["text_name"] = tx_name
+            cols["text_value"] = tx_value
+            DB.execute_insert(sql, tuple(cols.values()))
+
     def set_frames(self, p_frame_id: str, p_context: dict):
         """
         Get config json for frames. Populate FRAMES table.
@@ -91,26 +108,6 @@ class SetData(object):
             cols["pg_hdr_h"] = v["pg_hdr_h"]
             cols["pg_hdr_txt"] = v["pg_hdr_text"]
             DB.execute_insert(sql, tuple(cols.values()))
-        print(f"* FRAMES table initialized for `{p_frame_id}` app.")
-
-    def set_texts(self, p_context: dict):
-        """
-        Get the config text file that matches the requested
-        language. Use as input to populate TEXTS table.
-        N.B. - Texts are in (American) English by default.
-        All items on the TEXTS table have a language-code and a
-         generic "text_name" attribute.
-        :args:
-        - p_context: dict of context values
-        """
-        DB, sql, config, cols = self._prep_set(DMA.Texts(), p_context)
-        for tx_name, tx_value in config.items():
-            cols["text_uid_pk"] = SHM.get_uid()
-            cols["lang_code"] = p_context["lang"]
-            cols["text_name"] = tx_name
-            cols["text_value"] = tx_value
-            DB.execute_insert(sql, tuple(cols.values()))
-        print("* TEXTS table initialized.")
 
     def set_menu_bars(self, p_frame_id: str, p_context: dict):
         """
@@ -133,30 +130,23 @@ class SetData(object):
             cols["mbar_h"] = mb_v["h"]
             cols["mbar_x"] = mb_v["x"]
             cols["mbar_y"] = mb_v["y"]
-
-            pp((p_frame_id, sql, cols))
-
             DB.execute_insert(sql, tuple(cols.values()))
-        print(f"* MENU_BARS table initialized for {p_frame_id}.")
 
-    def set_menus(self, p_frame_id: str, BOOT: dict, DB_CFG: dict):
+    def set_menus(self, p_frame_id: str, p_context: dict):
         """
         Get the config file for menus. Generate MENUS data.
         N.B. - All menus are in American English by default.
         :args:
         - p_frame_id: str - name of app, e.g. 'saskan' or 'admin'
-        - BOOT: dict of boot values
-        - DB_CFG: dict of DB config values
-        Should fail if FK to MENU_BARS is not found.
+        - p_context: dict of context values
+        Fail if FK to MENU_BARS is not found.
         """
-        config_p = self.get_config_path(BOOT, "menus")
-        DB, sql, config, cols = self._prep_set(MNU, DB_CFG, config_p)
+        DB, sql, config, cols = self._prep_set(DMA.Menus(), p_context)
         for frame_id, v in {f: v for f, v in config.items() if f == p_frame_id}.items():
 
-            data = GD.get_by_id("MENU_BARS", "frame_id", frame_id, DB_CFG)
+            data = GD.get_by_id("MENU_BARS", "frame_id", frame_id, DB)
             cols["menu_bar_uid_fk"] = data["menu_bar_uid_pk"]
-            cols["lang_code"] = data["lang_code"]
-            cols["version_id"] = BOOT["db_version"]
+            cols["lang_code"] = p_context["lang"]
             cols["frame_id"] = frame_id
 
             for mnu_id, val in v["menus"].items():
@@ -164,27 +154,23 @@ class SetData(object):
                 cols["menu_id"] = mnu_id
                 cols["menu_name"] = val["name"]
                 DB.execute_insert(sql, tuple(cols.values()))
-        print(f"* MENUS table initialized for {p_frame_id}.")
 
-    def set_menu_items(self, p_frame_id: str, BOOT: dict, DB_CFG: dict):
+    def set_menu_items(self, p_frame_id: str, p_context: dict):
         """
         Get the config file for menu items.
         Generate MENU_ITEMS data.
         N.B. - All menus items are in American English by default.
         :args:
         - p_frame_id: str - name of app, e.g. 'saskan' or 'admin'
-        - BOOT: dict of boot values
-        - DB_CFG: dict of DB config values
-        Should fail if FK to MENUS is not found.
+        - p_context: dict of context values
+        Fail if FK to MENUS is not found.
         """
-        config_p = self.get_config_path(BOOT, "menus")
-        DB, sql, config, cols = self._prep_set(MNI, DB_CFG, config_p)
+        DB, sql, config, cols = self._prep_set(DMA.MenuItems(), p_context)
         for frame_id, v in {f: v for f, v in config.items() if f == p_frame_id}.items():
             for mnu_id, val in v["menus"].items():
-                data = GD.get_by_id("MENUS", "menu_id", mnu_id, DB_CFG)
+                data = GD.get_by_id("MENUS", "menu_id", mnu_id, DB)
                 cols["menu_uid_fk"] = data["menu_uid_pk"]
-                cols["lang_code"] = data["lang_code"]
-                cols["version_id"] = BOOT["db_version"]
+                cols["lang_code"] = p_context["lang"]
                 cols["frame_id"] = frame_id
                 order = 0
                 for mnu_itm_id, mi_v in val["items"].items():
@@ -199,61 +185,59 @@ class SetData(object):
                     )
                     order += 1
                     DB.execute_insert(sql, tuple(cols.values()))
-        print(f"* MENU_ITEMS table initialized for {p_frame_id}.")
 
-    def set_windows(self, p_frame_id: str, BOOT: dict, DB_CFG: dict):
+    def set_windows(self, p_frame_id: str, p_context: dict):
         """
         Get the config file for windows. Generate WINDOWS data.
         :args:
         - p_frame_id: str - name of app, e.g. 'saskan' or 'admin'
-        - BOOT: dict of boot values
-        - DB_CFG: dict of DB config values
-        Should fail if FK to MENUS is not found.
+        - p_context: dict of context values
+        Fail if FK to FRAMES is not found.
         """
-        config_p = self.get_config_path(BOOT, "windows")
-        DB, sql, config, cols = self._prep_set(WIN, DB_CFG, config_p)
+        DB, sql, config, cols = self._prep_set(DMA.Windows(), p_context)
         for frame_id, v in {f: v for f, v in config.items() if f == p_frame_id}.items():
-            data = GD.get_by_id("FRAMES", "frame_id", frame_id, DB_CFG)
+            data = GD.get_by_id("FRAMES", "frame_id", frame_id, DB)
             cols["frame_uid_fk"] = data["frame_uid_pk"]
             cols["frame_id"] = frame_id
-            cols["version_id"] = BOOT["db_version"]
             for win_id, val in v.items():
                 cols["win_uid_pk"] = SHM.get_uid()
-                cols["lang_code"] = val["lang_code"]
+                cols["lang_code"] = p_context["lang"]
                 cols["win_id"] = win_id
                 cols["win_title"] = val["title"]
                 cols["win_margin"] = val["margin"]
                 DB.execute_insert(sql, tuple(cols.values()))
-        print(f"* WINDOWS table initialized for {p_frame_id}.")
 
-    def set_links(self, p_frame_id: str, BOOT: dict, DB_CFG: dict):
+    def set_links(self, p_frame_id: str, p_context: dict):
         """
         Get the config file for links. Generate LINKS data.
         :args:
         - p_frame_id: str - name of app, e.g. 'saskan' or 'admin'
-        - BOOT: dict of boot values
-        - DB_CFG: dict of DB config values
+        - p_context: dict of context values
         """
-        config_p = self.get_config_path(BOOT, "links")
-        DB, sql, config, cols = self._prep_set(LNK, DB_CFG, config_p)
+        DB, sql, config, cols = self._prep_set(DMA.Links(), p_context)
         for frame_id, v in {f: v for f, v in config.items() if f == p_frame_id}.items():
             cols["frame_id"] = frame_id
-            cols["version_id"] = "0.1"
-            cols["lang_code"] = v["lang_code"]
+            cols["lang_code"] = p_context["lang"]
             for lnk_id, val in v["links"].items():
                 cols["link_uid_pk"] = SHM.get_uid()
                 cols["link_id"] = lnk_id
                 cols["link_protocol"] = val["protocol"]
                 cols["mime_type"] = val["mime_type"]
                 cols["link_name"] = val["name"]
-                cols["link_value"] = val["value"]
+                # Make this a generic function if it gets repeated
+                if "%" in val["value"]:
+                    cfg = val["value"].split("%")[1]
+                    cols["link_value"] = p_context[cfg]
+                else:
+                    cols["link_value"] = val["value"]
                 cols["link_icon"] = val["icon"]
                 DB.execute_insert(sql, tuple(cols.values()))
-        print("* LINKS table initialized.")
+
+    # Story-related Tables
 
     def set_maps(self, DB_CFG: dict):
         """Define a variety of maps for game use."""
-        DB, sql, config, cols = self._prep_set(MAP, DB_CFG)
+        DB, sql, config, cols = self._prep_set(DMS._Map(), DB_CFG)
         cols["map_uid_pk"] = SHM.get_uid()
         cols["version_id"] = "0.1"
         cols["map_name"] = "Saskan Lands Regions"

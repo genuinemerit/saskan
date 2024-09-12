@@ -60,11 +60,11 @@ class BootSaskan(object):
             "db": "db",
             "ddl": "boot/ddl",
             "dml": "db/dml",
-            "git": "https://github.com/genuinemerit/saskan-app/",
+            "git": "github.com/genuinemerit/saskan-app/",
             "lang": "en",
             "saskan_db": "db/SASKAN.db",
             "saskan_bak": "db/SASKAN.bak",
-            "wiki": "https://github.com/genuinemerit/saskan-wiki/",
+            "wiki": "github.com/genuinemerit/saskan-wiki/",
         }
         for cfg in ["frames", "links", "menus", "texts",
                     "widgets", "windows"]:
@@ -89,17 +89,21 @@ class BootSaskan(object):
         Populate database tables for GUI, API's, etc.
         :write:  /db/SASKAN.db
         """
-        SD.set_frames("saskan", self.CONTEXT)
-        SD.set_frames("admin", self.CONTEXT)
         SD.set_texts(self.CONTEXT)
-        SD.set_menu_bars("saskan", self.CONTEXT)
-        SD.set_menu_bars("admin", self.CONTEXT)
-        """
-        SD.set_menus(frame_id, self.CONTEXT, self.DB_CFG)
-        SD.set_menu_items(frame_id, self.CONTEXT, self.DB_CFG)
-        SD.set_windows(frame_id, self.CONTEXT, self.DB_CFG)
-        SD.set_links(frame_id, self.CONTEXT, self.DB_CFG)
-        """
+        print("TEXTS populated.")
+        for frame_id in ["saskan", "admin"]:
+            SD.set_frames(frame_id, self.CONTEXT)
+            print(f"FRAMES populated for `{frame_id}` app.")
+            SD.set_menu_bars(frame_id, self.CONTEXT)
+            print(f"MENU_BARS populated for `{frame_id}` app.")
+            SD.set_menus(frame_id, self.CONTEXT)
+            print(f"MENUS populated for `{frame_id}` app.")
+            SD.set_menu_items(frame_id, self.CONTEXT)
+            print(f"MENU_ITEMS populated for `{frame_id}` app.")
+            SD.set_windows(frame_id, self.CONTEXT)
+            print(f"WINDOWS populated for `{frame_id}` app.")
+            SD.set_links(frame_id, self.CONTEXT)
+            print(f"LINKS populated for `{frame_id}` app.")
         print("App data populated.")
 
     def boot_story_data(self):
