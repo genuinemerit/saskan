@@ -21,13 +21,6 @@ GD = GetData()
 SHM = ShellMethods()
 FLM = FileMethods()
 
-MAP_R = DMS.MapRect()
-MAP_B = DMS.MapBox()
-MAP_S = DMS.MapSphere()
-MXM = DMS.MapXMap()
-GRID = DMS.Grid()
-GXM = DMS.GridXMap()
-
 
 class SetData(object):
     """
@@ -61,8 +54,8 @@ class SetData(object):
         insert_sql = f"INSERT_{DATA_MODEL._tablename}"
         model_name = DATA_MODEL._tablename.lower()
         config_name = "menus" if "menu" in model_name else model_name
-        config_path = p_context['cfg'][config_name]
-        table_data = FLM.get_json_file(config_path)
+        config_path = p_context['cfg'][config_name] if config_name in p_context['cfg'] else ""
+        table_data = FLM.get_json_file(config_path) if config_path else {}
         table_cols = OrderedDict(DATA_MODEL.to_dict()[DATA_MODEL._tablename])
         return (DataBase(p_context), insert_sql, table_data, table_cols)
 
@@ -235,36 +228,37 @@ class SetData(object):
 
     # Story-related Tables
 
-    def set_maps(self, DB_CFG: dict):
-        """Define a variety of maps for game use."""
-        DB, sql, config, cols = self._prep_set(DMS._Map(), DB_CFG)
-        cols["map_uid_pk"] = SHM.get_uid()
-        cols["version_id"] = "0.1"
-        cols["map_name"] = "Saskan Lands Regions"
+    def set_maps(self, p_context: dict):
+        """Define a variety of maps for game use.
+        :args:
+        - p_context: dict of context values"""
+        DB, sql, _, cols = self._prep_set(DMS.MapRect(), p_context)
+        cols["map_rect_uid_pk"] = SHM.get_uid()
+        cols["map_shape"] = "rectangle"
         cols["map_type"] = "political"
-        cols["unit_of_measure"] = "KM"
-        cols["origin_2d_lat"] = 39.7392
-        cols["origin_2d_lon"] = -104.9902
-        cols["width_e_w_2d"] = 1800.0
-        cols["height_n_s_2d"] = 1350.0
-        cols["avg_alt_m"] = 452.0
-        cols["min_alt_m"] = 1.0
-        cols["max_alt_m"] = 2875.0
-        cols["origin_3d_x"] = 0
-        cols["origin_3d_y"] = 0
-        cols["origin_3d_z"] = 0
-        cols["width_3d"] = 0
-        cols["height_3d"] = 0
-        cols["depth_3d"] = 0
+        cols["map_name"] = "Saskan Lands Political Regions"
+        cols["map_desc"] = "Borders and names of the regions and provinces of Saskantinon."
+        cols["north_lat"] = 39.7392
+        cols["west_lon"] = -104.9902
+        cols["south_lat"] = 23.5696
+        cols["east_lon"] = -86.335
+        cols["delete_dt"] = ""
         DB.execute_insert(sql, tuple(cols.values()))
-        self.MAP_UID[cols["map_name"]] = cols["map_uid_pk"]
+        # Save UIDs for later use
+        self.MAP_UID[cols["map_name"]] = cols["map_rect_uid_pk"]
+        # ... add more maps here
         print("* MAP records initialized.")
 
-    def set_grids(self, DB_CFG: dict):
+    def set_grids(self, p_context: dict):
         """Define a variety of grids for game use.
-        Identify Map association/s for each grid.
+        Identify Map association/s for each grid
+        :args:
+        - p_context: dict of context values.
+        @DEV:
+        - Modify to match the data model.
+        - Add more grids as needed.
         """
-        DB, sql, config, cols = self._prep_set(GRID, DB_CFG)
+        DB, sql, _, cols = self._prep_set(DMS.Grid(), p_context)
         cols["grid_uid_pk"] = SHM.get_uid()
         cols["version_id"] = "0.1"
         cols["grid_name"] = "30r_40c"
@@ -275,7 +269,7 @@ class SetData(object):
         DB.execute_insert(sql, tuple(cols.values()))
         self.GRID_UID[cols["grid_name"]] = cols["grid_uid_pk"]
 
-        DB, sql, config, cols = self._prep_set(GXM, DB_CFG)
+        DB, sql, _, cols = self._prep_set(DMS.GridXMap(), p_context)
         cols["grid_x_map_uid_pk"] = SHM.get_uid()
         cols["grid_uid_fk"] = self.GRID_UID["30r_40c"]
         cols["map_uid_fk"] = self.MAP_UID["Saskan Lands Regions"]

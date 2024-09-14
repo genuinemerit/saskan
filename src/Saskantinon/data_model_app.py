@@ -49,7 +49,7 @@ class Backup(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"bkup_uid_pk": ["bkup_uid_pk"]}
+        PK: str = "bkup_uid_pk"
         ORDER: list = ["bkup_dttm DESC", "bkup_name ASC"]
         CK: dict = {"bkup_type": EntityType.BACKUP_TYPE}
 
@@ -78,7 +78,7 @@ class Texts(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"text_uid_pk": ["text_uid_pk"]}
+        PK: str = "text_uid_pk"
         CK: dict = {"lang_code": EntityType.LANG_CODE}
         ORDER: list = ["text_name ASC", "lang_code ASC"]
 
@@ -117,7 +117,7 @@ class Frames(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"frame_uid_pk": ["frame_uid_pk"]}
+        PK: str = "frame_uid_pk"
         CK: dict = {"lang_code": EntityType.LANG_CODE}
         ORDER: list = ["frame_id ASC"]
 
@@ -149,7 +149,7 @@ class MenuBars(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"menu_bar_uid_pk": ["menu_bar_uid_pk"]}
+        PK: str = "menu_bar_uid_pk"
         FK: dict = {"frame_uid_fk": ("FRAMES", "frame_uid_pk")}
         ORDER: list = ["frame_id ASC"]
 
@@ -178,7 +178,7 @@ class Menus(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"menu_uid_pk": ["menu_uid_pk"]}
+        PK: str = "menu_uid_pk"
         FK: dict = {"menu_bar_uid_fk": ("MENU_BARS", "menu_bar_uid_pk")}
         CK: dict = {"lang_code": EntityType.LANG_CODE}
         ORDER: list = ["menu_id ASC", "lang_code ASC", "menu_name ASC"]
@@ -212,7 +212,7 @@ class MenuItems(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"item_uid_pk": ["item_uid_pk"]}
+        PK: str = "item_uid_pk"
         FK: dict = {"menu_uid_fk": ("MENUS", "menu_uid_pk")}
         CK: dict = {"lang_code": EntityType.LANG_CODE}
         ORDER: list = ["item_id ASC", "lang_code ASC", "item_name ASC"]
@@ -220,12 +220,6 @@ class MenuItems(object):
 
 class Windows(object):
     """Define the values for screens within the game.
-    - Window UID PK - unique for window
-    - Version ID
-    - Window category: admin, game, etc.
-    - Window name
-    - Window title
-    - x, y, w, h, margin
     """
 
     _tablename: str = "WINDOWS"
@@ -247,7 +241,7 @@ class Windows(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"win_uid_pk": ["win_uid_pk"]}
+        PK: str = "win_uid_pk"
         FK: dict = {"frame_uid_fk": ("FRAMES", "frame_uid_pk")}
         CK: dict = {"lang_code": EntityType.LANG_CODE}
         ORDER: list = ["win_id ASC", "lang_code ASC"]
@@ -281,7 +275,7 @@ class Links(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"link_uid_pk": ["link_uid_pk"]}
+        PK: str = "link_uid_pk"
         CK: dict = {
             "link_protocol": EntityType.LINK_PROTOCOL,
             "lang_code": EntityType.LANG_CODE,
@@ -326,7 +320,7 @@ class ButtonSingle(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"button_single_uid_pk": ["button_single_uid_pk"]}
+        PK: str = "button_single_uid_pk"
         FK: dict = {
             "frame_uid_fk": ("FRAMES", "frame_uid_pk"),
             "window_uid_fk": ("WINDOWS", "window_uid_pk"),
@@ -360,7 +354,7 @@ class ButtonMulti(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"button_multi_uid_pk": ["button_multi_uid_pk"]}
+        PK: str = "button_multi_uid_pk"
         FK: dict = {
             "frame_uid_fk": ("FRAMES", "frame_uid_pk"),
             "window_uid_fk": ("WINDOWS", "window_uid_pk"),
@@ -394,6 +388,6 @@ class ButtonItem(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"button_item_uid_pk": ["button_item_uid_pk"]}
+        PK: str = "button_item_uid_pk"
         FK: dict = {"button_multi_uid_fk": ("BUTTON_MULTI", "button_multi_uid_pk")}
         ORDER: list = ["button_name ASC"]

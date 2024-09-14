@@ -1,0 +1,2 @@
+DELETE FROM LUNAR_YEAR
+WHERE l=? AND u=? AND n=? AND a=? AND r=? AND _=? AND y=? AND e=? AND a=? AND r=? AND _=? AND u=? AND i=? AND d=? AND _=? AND p=? AND k=?;

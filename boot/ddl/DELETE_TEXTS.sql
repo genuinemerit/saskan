@@ -1,2 +1,2 @@
 DELETE FROM TEXTS
-WHERE text_uid_pk=?;
+WHERE t=? AND e=? AND x=? AND t=? AND _=? AND u=? AND i=? AND d=? AND _=? AND p=? AND k=?;

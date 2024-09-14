@@ -1,0 +1,2 @@
+DELETE FROM GRID_INFO
+WHERE g=? AND r=? AND i=? AND d=? AND _=? AND i=? AND n=? AND f=? AND o=? AND _=? AND u=? AND i=? AND d=? AND _=? AND p=? AND k=?;

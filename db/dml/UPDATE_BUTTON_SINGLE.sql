@@ -11,4 +11,4 @@ enabled=?,
 help_text=?,
 action=?,
 delete_dt=?
-WHERE button_single_uid_pk=?;
+WHERE b=? AND u=? AND t=? AND t=? AND o=? AND n=? AND _=? AND s=? AND i=? AND n=? AND g=? AND l=? AND e=? AND _=? AND u=? AND i=? AND d=? AND _=? AND p=? AND k=?;

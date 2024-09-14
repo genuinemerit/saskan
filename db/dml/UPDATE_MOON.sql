@@ -12,4 +12,4 @@ rotation_world_days=?,
 initial_velocity=?,
 angular_velocity=?,
 delete_dt=?
-WHERE moon_uid_pk=?;
+WHERE m=? AND o=? AND o=? AND n=? AND _=? AND u=? AND i=? AND d=? AND _=? AND p=? AND k=?;

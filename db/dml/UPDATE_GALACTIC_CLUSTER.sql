@@ -30,4 +30,4 @@ timing_pulsar_loc_gly_x=?,
 timing_pulsar_loc_gly_y=?,
 timing_pulsar_loc_gly_z=?,
 delete_dt=?
-WHERE galactic_cluster_uid_pk=?;
+WHERE g=? AND a=? AND l=? AND a=? AND c=? AND t=? AND i=? AND c=? AND _=? AND c=? AND l=? AND u=? AND s=? AND t=? AND e=? AND r=? AND _=? AND u=? AND i=? AND d=? AND _=? AND p=? AND k=?;

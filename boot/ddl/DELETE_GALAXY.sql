@@ -1,2 +1,2 @@
 DELETE FROM GALAXY
-WHERE galaxy_uid_pk=?;
+WHERE g=? AND a=? AND l=? AND a=? AND x=? AND y=? AND _=? AND u=? AND i=? AND d=? AND _=? AND p=? AND k=?;

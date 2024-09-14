@@ -10,4 +10,4 @@ dark_energy_kg=?,
 dark_matter_kg=?,
 baryonic_matter_kg=?,
 delete_dt=?
-WHERE univ_uid_pk=?;
+WHERE u=? AND n=? AND i=? AND v=? AND _=? AND u=? AND i=? AND d=? AND _=? AND p=? AND k=?;

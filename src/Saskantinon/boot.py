@@ -45,7 +45,7 @@ class BootSaskan(object):
     def boot_saskan(self):
         self.boot_database()
         self.boot_app_data()
-        # self.boot_story_data()
+        self.boot_story_data()
 
     def boot_context(self):
         """
@@ -74,15 +74,15 @@ class BootSaskan(object):
 
     def boot_database(self):
         """
-        Create SQL files and SQLite3 database.
+        Create SQL files and SQLite3 database and tables.
         :write:  /boot/ddl/*.sql and /db/dml/*.sql
         :writes: /db/SASKAN.db and /db/SASKAN.bak
         """
         DM = DataModel()
-        DM.create_db(self.DB)
-        print("Database (backed up and re-)created.")
         DM.create_sql(self.DB)
         print("SQL files (re-)generated.")
+        DM.create_db(self.DB)
+        print("Database (backed up and re-)created.")
 
     def boot_app_data(self):
         """
@@ -111,8 +111,10 @@ class BootSaskan(object):
         Populate database tables for game, story, world-building.
         :write:  /db/SASKAN.db
         """
-        SD.set_maps(self.DB_CFG)
-        SD.set_grids(self.DB_CFG)
+        SD.set_maps(self.CONTEXT)
+        print("MAPS populated.")
+        # SD.set_grids(self.CONTEXT)
+        print("GRIDS populated.")
         print("Story data populated.")
 
 

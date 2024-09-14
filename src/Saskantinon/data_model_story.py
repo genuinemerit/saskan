@@ -21,69 +21,11 @@ SM = ShellMethods()
 # =============================================================
 # Abstract Maps and Grids
 # =============================================================
-class _Map(object):
-    """
-    N.B. -
-    Though inheritance is an interesting concept and may be useful in
-    other area of the app, it is not useful in the data model section
-    because it is difficult to extract attributes from an __init__ method
-    and attributes defined in the "global" section of a class do not get
-    inherited. I could fool around with more homegrown "internal" attributes
-    like the _tablename, and use that to name the parent class, which I
-    could then pull in in the data_base constructor, but that would be
-    pretty messy I think and probably not worth the trouble. Easier and
-    cleaner just to define separate classes, I think, for each shape.
-    This means more Association tables too, but in this case I think being
-    more explicit is probably better.
-
-    A Map structure provides basic geo or astro shape and size templates.
-
-    For example, a map_name associated with provinces as distinct
-    from one that identifies regions.  Or a solar system vs. a galaxy.
-
-    This abtract root class is inherited by 3 sub-classes associated with
-    3 shapes: rectangle, box, sphere.
-    6 types (can be of any shape):
-        "geo", "astro", "underwater", "underground", "info", "political"
-    """
-
-    _tablename: str = "_MAP"
-
-    def __init__(
-        self,
-        p_map_uid_pk: str = "",
-        p_map_shape: str = "",
-        p_map_type: str = "",
-        p_map_name: str = "",
-        p_map_desc: str = "",
-    ):
-        self.map_uid_pk: str = p_map_uid_pk
-        self.map_shape: str = p_map_shape
-        self.map_type: str = p_map_type
-        self.map_name: str = p_map_name
-        self.map_desc: str = p_map_desc
-
-    def to_dict(self) -> dict:
-        """Convert object to dict."""
-        return DM.orm_to_dict(_Map)
-
-    def from_dict(self, p_dict: dict, p_row: int) -> dict:
-        """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
-
-    class Constraints(object):
-        PK: dict = {"map_uid_pk": ["map_uid_pk"]}
-        CK: dict = {"map_shape": EntityType.MAP_SHAPE, "map_type": EntityType.MAP_TYPE}
-        ORDER: list = ["map_name ASC"]
-
-
-class MapRect(_Map):
+class MapRect(object):
     """
     Map is a rectangle (2d). Typically used for geographic maps.
-    Units are in degrees latitude and degrees longitude.
-    NW and SE corners are provided. NE and SW corners are computed.
+    Rectangle units are in degrees latitude and degrees longitude.
     Can contain, overlap, border other Map_Rect structures.
-        See MAP_X_MAP table.
     Can be associated with granular Grid data tables, such as:
     - geography (continents, regions, mountains, hills, rivers,
         lakes, seas, oceans, etc.)
@@ -93,24 +35,36 @@ class MapRect(_Map):
     - other points of interest (ruins, temples, etc.)
     - natural resources (mines, quarries, etc.)
     - demographics (population density, etc.)
-        See GRID_X_MAP table.
+    3 shapes: rectangle, box, sphere.
+    6 types (can be of any shape):
+        "geo", "astro", "underwater", "underground", "info", "political"
     """
 
     _tablename: str = "MAP_RECT"
+    map_rect_uid_pk: str = ""
+    map_shape: str = ""
+    map_type: str = ""
+    map_name: str = ""
+    map_desc: str = ""
+    north_lat: float = 0.0
+    south_lat: float = 0.0
+    east_lon: float = 0.0
+    west_lon: float = 0.0
+    delete_dt: str = ""
 
-    def __init__(
-        self,
-        p_north_west_lat: float = 0.0,
-        p_north_west_lon: float = 0.0,
-        p_south_east_lat: float = 0.0,
-        p_south_east_lon: float = 0.0,
-        **kwargs,
-    ):
-        super().__init__(**kwargs)
-        self.north_west_lat: float = p_north_west_lat
-        self.north_west_lon: float = p_north_west_lon
-        self.south_east_lat: float = p_south_east_lat
-        self.south_east_lon: float = p_south_east_lon
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return DM.orm_to_dict(MapRect)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return DM.orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: str = "map_rect_uid_pk"
+        CK: dict = {"map_shape": EntityType.MAP_SHAPE,
+                    "map_type": EntityType.MAP_TYPE}
+        ORDER: list = ["map_name ASC"]
 
 
 class MapBox(MapRect):
@@ -118,19 +72,38 @@ class MapBox(MapRect):
     Map is a box (3D). Typically used for geographic or city/building maps.
     x, y units are in degrees latitude and degrees longitude.
     z units are in meters and are provided in two directions: up and down.
-    They should reflect the maximum meters to be traveled in each direction.
+    They should reflect the maximum meters in each direction.
     Can contain, overlap, border other Map_Rect structures.
-        See MAP_X_MAP table.
     Can be associated with granular Grid data tables.
-        See GRID_X_MAP table.
     """
 
     _tablename: str = "MAP_BOX"
+    map_box_uid_pk: str = ""
+    map_shape: str = ""
+    map_type: str = ""
+    map_name: str = ""
+    map_desc: str = ""
+    north_lat: float = 0.0
+    south_lat: float = 0.0
+    east_lon: float = 0.0
+    west_lon: float = 0.0
+    up_m: float = 0.0
+    down_m: float = 0.0
+    delete_dt: str = ""
 
-    def __init__(self, p_up_m: float = 0.0, p_down_m: float = 0.0, **kwargs):
-        super().__init__(**kwargs)
-        self.up_m: float = p_up_m
-        self.down_m: float = p_down_m
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return DM.orm_to_dict(MapBox)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return DM.orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: str = "map_box_uid_pk"
+        CK: dict = {"map_shape": EntityType.MAP_SHAPE,
+                    "map_type": EntityType.MAP_TYPE}
+        ORDER: list = ["map_name ASC"]
 
 
 class MapSphere(MapRect):
@@ -139,36 +112,59 @@ class MapSphere(MapRect):
     May also be useful for defining floating islands, undersea regions, etc.
     - Units may vary quite a lot, from meters to parsec.
     Can contain, overlap, border other Map_Sphere structures.
-    Can be associated with granular Grid data tables.
-    - In this case, the associated Grid is wrapped around the center of the sphere.
-    The sphere is considered to reside within the constraints of the parent
-    Map_Rect structure. In this case, the units are overidden, though. So instead
-    of assuming latitude, longitude, and altitude, the units might be all meters,
-    nautical miles, parsecs, or light years.
+    The sphere is considered to reside within the constraints of a parent
+    Map_Rect structure. The point of origin is the center of the sphere.
+    For geo-maps, it is expressed at latitudinal and longitudinal coordinates,
+    plus a positive or negative z value. For astro-maps, the origin is in
+    whatever coordinate system is used for the map. Likely that is defined
+    within the Grid data.
 
     @DEV:
-    - May want to see if we can tweak this class to support ellipsoids too.
+    - See if we can tweak this class to support ellipsoids.
+    - Should just be matter of providing a second set of axes.
+    - Would probably want to make it a separate class, to be consistent.
     """
 
     _tablename: str = "MAP_SPHERE"
+    map_sphere_uid_pk: str = ""
+    map_shape: str = ""
+    map_type: str = ""
+    map_name: str = ""
+    map_desc: str = ""
+    origin_lat: float = 0.0
+    origin_lon: float = 0.0
+    z_value: float = 0.0
+    unit_of_measure: str = ""
+    sphere_radius: float = 0.0
+    delete_dt: str = ""
 
-    def __init__(self, p_unit_of_measure: str = "", p_radius: float = 0.0, **kwargs):
-        super().__init__(**kwargs)
-        self.unit_of_measure: str = p_unit_of_measure
-        self.radius: float = p_radius
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return DM.orm_to_dict(MapSphere)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"map_uid_pk": ["map_uid_pk"]}
-        CK: dict = {"unit_of_measure": EntityType.MEASURE_TYPE}
+        PK: str = "map_sphere_uid_pk"
+        CK: dict = {
+            "map_shape": EntityType.MAP_SHAPE,
+            "map_type": EntityType.MAP_TYPE,
+            "unit_of_measure": EntityType.MEASURE_TYPE,
+        }
         ORDER: list = ["map_name ASC"]
 
 
 class MapXMap(object):
     """
     Associative keys --
-    - MAPs (n) <--> MAPs (n)
+    - MAP_* (n) <--> MAP_* (n)
     The "touch type" reads in direction 1-->2.
     For example, 1-contains-2, 1-is_contained_by-2, etc.
+    In this case, the FK rule is not enforced, only managed.
+    This is so we can use this structure for any type of map,
+    and even mix different types.
     """
 
     _tablename: str = "MAP_X_MAP"
@@ -187,48 +183,39 @@ class MapXMap(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"map_x_map_uid_pk": ["map_x_map_uid_pk"]}
-        FK: dict = {
-            "map_uid_1_fk": ("_MAP", "map_uid_pk"),
-            "map_uid_2_fk": ("_MAP", "map_uid_pk"),
-        }
+        PK: str = "map_x_map_uid_pk"
         CK: dict = {"touch_type": EntityType.MAP_TOUCH_TYPE}
 
 
 class Grid(object):
     """
     The Grid structure defines dimensions of a Map for story-telling
-    rendering, drawing and referencing purposes. A grid is a rectangle,
-    a kind of spreadsheet laid over a Map structure. Rather than geo
-    dimensions, it is a grid of data cells, rows, and columns
+    rendering, drawing and referencing purposes. It defines a matrix,
+    a kind of 3D spreadsheet laid over a Map structure. Rather than geo
+    dimensions, a grid of data cells, rows, and columns.
 
-    Mapping of grids to Pygame pixels or to story-based dimensions
-    like km, m and so on is handled elsewhere
-    row_cnt --> north-south
-    col_cnt --> east-west
-    z_up_cnt --> up-down, elevation, altitude
-    z_down_cnt --> up-down, elevation, depth
-    The z layer implies another complete set of the r/c, indexed as a
-    layer 'above' or 'below' the primary (zero'th) grid.
+    The Grid itself only defines the dimensions of the matrix; it does
+    not store data in the cells. If a Grid or Grid cell needs to be mapped
+    to Pygame pixel or some story-telling or mapping dimension like km, that
+    is handled algorithmically.
 
-    Assignment of main scale (km, m, etc.) to use for a Grid is defined
-    for each direction, but actual values should be computed, not hard-coded.
-    Actual Pygame px size of grid and cells is set by rendering code,
-    not by the data model.
+    Dimensions are defined as x=col=east-west, y=row=north-south and
+    zu=up-from-zeroth-row, zd=down-from-zeroth-row. The cnt is the number
+    of rows, cols or z-layers. So if only layer, then zu and zd = 0.
 
-    Association to Maps is handled in GRID_X_MAP table.
+    Grid Cells are identified in the GridCell table, which holds an FK to
+    the Grid table.  Values for each cell are stored in the GridCellValue table.
+
+    Grids are always associated with one or more MAP_* tables.
     """
 
     _tablename: str = "GRID"
     grid_uid_pk: str = ""
-    version_id: str = ""
     grid_name: str = ""
-    rc_units: str = ""
-    z_units: str = ""
-    row_cnt: int = 0
-    col_cnt: int = 0
-    up_cnt: int = 0
-    down_cnt: int = 0
+    x_col_cnt: int = 0
+    y_row_cnt: int = 0
+    z_up_cnt: int = 0
+    z_down_cnt: int = 0
     delete_dt: str = ""
 
     def to_dict(self) -> dict:
@@ -240,19 +227,91 @@ class Grid(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = ({"grid_uid_pk": ["grid_uid_pk"]},)
-        CK: dict = {
-            "touch_type": EntityType.MAP_TOUCH_TYPE,
-            "rc_units": EntityType.MEASURE_TYPE,
-            "z_units": EntityType.MEASURE_TYPE,
-        }
+        PK: str = "grid_uid_pk"
         ORDER: list = ["grid_name ASC"]
+
+
+class GridCell(object):
+    """
+    The GridCell structure defines a given data cell within a Grid.
+    The grid_cell_name is an optional descriptive name for a cell.
+    The grid_cell-id is its x/y/z location in the Grid matrix,
+    where a postive z is up and negative z is down. x and y locations
+    are zero-based and begin in the "lower-left" or "south-west" or
+    "front-left" corner of the Grid. In the ID field, the values are
+    stored in the form of a python tuple, .e.g. (3, 4, -2)
+    Each individual index is stored as an integer.
+
+    There can be zero to many name:value type of data associated
+    with a given grid. Fairly open-ended. Those values are defined
+    in the GridCellValue table, which holds an FK to the GridCell.
+
+    """
+
+    _tablename: str = "GRID_CELL"
+    grid_cell_uid_pk: str = ""
+    grid_uid_fk: str = ""
+    grid_cell_name: str = ""
+    grid_cell_id: str = ""
+    x_row_ix: int = 0
+    y_col_ix: int = 0
+    z_up_down_ix: int = 0
+    delete_dt: str = ""
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return DM.orm_to_dict(GridCell)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return DM.orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: str = "grid_cell_uid_pk"
+        FK: dict = {"grid_uid_fk": ("GRID", "grid_uid_pk")}
+        ORDER: list = ["grid_name ASC"]
+
+
+class GridInfo(object):
+    """
+    The GridInfo structure holds information that belongs
+    to a given cell within a grid.
+    The ID is short descriptive tag for the cell value.
+    The Type identifies the data type of the value.
+    The Name is a suitable label for the value.
+    The Value is the actual value, which may be a URL.
+    """
+
+    _tablename: str = "GRID_INFO"
+    grid_info_uid_pk: str = ""
+    grid_cell_uid_fk: str = ""
+    grid_info_id: str = ""
+    grid_info_data_type: str = ""
+    grid_info_name: str = ""
+    grid_info_value: str = ""
+    delete_dt: str = ""
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return DM.orm_to_dict(GridInfo)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return DM.orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: str = "grid_info_uid_pk"
+        FK: dict = {"grid_cell_uid_fk": ("GRID_CELL", "grid_cell_uid_pk")}
+        ORDER: list = ["grid_cell_val_name ASC"]
 
 
 class GridXMap(object):
     """
     Associative keys --
     - GRIDs (n) <--> MAPs (n)
+    FK field is indexed for the Grid association,
+    but the Map FK is handled algorithmically so that this
+    can be used on multiple types of MAP_* tables.
     """
 
     _tablename: str = "GRID_X_MAP"
@@ -270,11 +329,8 @@ class GridXMap(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"grid_x_map_uid_pk": ["grid_x_map_uid_pk"]}
-        FK: dict = {
-            "grid_uid_fk": ("GRID", "grid_uid_pk"),
-            "map_uid_fk": ("_MAP", "map_uid_pk"),
-        }
+        PK: str = "grid_x_map_uid_pk"
+        FK: dict = {"grid_uid_fk": ("GRID", "grid_uid_pk")}
 
 
 # =============================================================
@@ -310,7 +366,7 @@ class Universe(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"univ_uid_pk": ["univ_uid_pk"]}
+        PK: str = "univ_uid_pk"
         ORDER: list = ["univ_name ASC"]
 
 
@@ -339,7 +395,7 @@ class ExternalUniv(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"external_univ_uid_pk": ["external_univ_uid_pk"]}
+        PK: str = "external_univ_uid_pk"
         FK: dict = {"univ_uid_fk": ("UNIVERSE", "univ_uid_pk")}
         ORDER: list = ["external_univ_name ASC"]
 
@@ -389,7 +445,7 @@ class GalacticCluster(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"galactic_cluster_uid_pk": ["galactic_cluster_uid_pk"]}
+        PK: str = "galactic_cluster_uid_pk"
         FK: dict = {"univ_uid_fk": ("UNIVERSE", "univ_uid_pk")}
         CK: dict = {"cluster_shape": EntityType.CLUSTER_SHAPE}
         GROUP: dict = {
@@ -463,7 +519,7 @@ class Galaxy(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"galaxy_uid_pk": ["galaxy_uid_pk"]}
+        PK: str = "galaxy_uid_pk"
         FK: dict = {
             "galactic_cluster_uid_fk": ("GALACTIC_CLUSTER", "galactic_cluster_uid_pk")
         }
@@ -615,7 +671,7 @@ class StarSystem(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"star_system_uid_pk": ["star_system_uid_pk"]}
+        PK: str = "star_system_uid_pk"
         FK: dict = {"galaxy_uid_fk": ("GALAXY", "galaxy_uid_pk")}
         CK: dict = {
             "relative_size": EntityType.RELATIVE_SIZE,
@@ -695,7 +751,7 @@ class World(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"world_uid_pk": ["world_uid_pk"]}
+        PK: str = "world_uid_pk"
         FK: dict = {"star_system_uid_fk": ("STAR_SYSTEM", "star_system_uid_pk")}
         CK: dict = {
             "world_type": EntityType.WORLD_TYPE,
@@ -738,7 +794,7 @@ class Moon(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"moon_uid_pk": ["moon_uid_pk"]}
+        PK: str = "moon_uid_pk"
         FK: dict = {"world_uid_fk": ("WORLD", "world_uid_pk")}
         CK: dict = {
             "rotation_direction": EntityType.ASTRO_DIRECTION,
@@ -788,7 +844,7 @@ class SolarYear(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"solar_year_uid_pk": ["solar_year_uid_pk"]}
+        PK: str = "solar_year_uid_pk"
         FK: dict = {
             "world_uid_fk": ("WORLD", "world_uid_pk"),
             "lang_uid_fk": ("LANGUAGE", "lang_uid_pk"),
@@ -827,7 +883,7 @@ class Season(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"season_uid_pk": ["season_uid_pk"]}
+        PK: str = "season_uid_pk"
         FK: dict = {
             "solar_year_uid_fk": ("SOLAR_YEAR", "solar_year_uid_pk"),
             "gloss_common_uid_fk": ("GLOSS_COMMON", "gloss_common_uid_pk"),
@@ -877,7 +933,7 @@ class LunarYear(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"lunar_year_uid_pk": ["lunar_year_uid_pk"]}
+        PK: str = "lunar_year_uid_pk"
         FK: dict = {
             "world_uid_fk": ("WORLD", "world_uid_pk"),
             "lang_uid_fk": ("LANGUAGE", "lang_uid_pk"),
@@ -908,7 +964,7 @@ class LunarYearXMoon(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"lunar_year_x_moon_uid_pk": ["lunar_year_x_moon_uid_pk"]}
+        PK: str = "lunar_year_x_moon_uid_pk"
         FK: dict = {
             "lunar_year_uid_fk": ("LUNAR_YEAR", "lunar_year_uid_pk"),
             "moon_uid_fk": ("MOON", "moon_uid_pk"),
@@ -956,7 +1012,7 @@ class SolarCalendar(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"solar_calendar_uid_pk": ["solar_calendar_uid_pk"]}
+        PK: str = "solar_calendar_uid_pk"
         FK: dict = {
             "solar_year_uid_fk": ("SOLAR_YEAR", "solar_year_uid_pk"),
             "year_name_gloss_common_uid_fk": ("GLOSS_COMMON", "gloss_common_uid_pk"),
@@ -999,7 +1055,7 @@ class LunarCalendar(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"lunar_calendar_uid_pk": ["lunar_calendar_uid_pk"]}
+        PK: str = "lunar_calendar_uid_pk"
         FK: dict = {
             "lunar_year_uid_fk": ("LUNAR_YEAR", "lunar_year_uid_pk"),
             "year_name_gloss_common_uid_fk": ("GLOSS_COMMON", "gloss_common_uid_pk"),
@@ -1035,7 +1091,7 @@ class Month(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"month_uid_pk": ["month_uid_pk"]}
+        PK: str = "month_uid_pk"
         FK: dict = {
             "month_name_gloss_common_uid_fk": ("GLOSS_COMMON", "gloss_common_uid_pk")
         }
@@ -1065,7 +1121,7 @@ class SolarCalendarXMonth(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"solar_calendar_x_moon_uid_pk": ["solar_calendar_x_moon_uid_pk"]}
+        PK: str = "solar_calendar_x_moon_uid_pk"
         FK: dict = {
             "solar_calendar_uid_fk": ("SOLAR_CALENDAR", "solar_calendar_uid_pk"),
             "month_uid_fk": ("MONTH", "month_uid_pk"),
@@ -1095,7 +1151,7 @@ class LunarCalendarXMonth(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"lunar_calendar_x_moon_uid_pk": ["lunar_calendar_x_moon_uid_pk"]}
+        PK: str = "lunar_calendar_x_moon_uid_pk"
         FK: dict = {
             "lunar_calendar_uid_fk": ("LUNAR_CALENDAR", "lunar_calendar_uid_pk"),
             "month_uid_fk": ("MONTH", "month_uid_pk"),
@@ -1134,7 +1190,7 @@ class WeekTime(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"week_time_uid_pk": ["week_time_uid_pk"]}
+        PK: str = "week_time_uid_pk"
         FK: dict = {
             "week_time_name_gloss_common_uid_fk": (
                 "GLOSS_COMMON",
@@ -1167,9 +1223,7 @@ class SolarCalendarXWeekTime(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {
-            "solar_calendar_x_week_time_uid_pk": ["solar_calendar_x_week_time_uid_pk"]
-        }
+        PK: str = "solar_calendar_x_week_time_uid_pk"
         FK: dict = {
             "solar_calendar_uid_fk": ("SOLAR_CALENDAR", "solar_calendar_uid_pk"),
             "week_time_uid_fk": ("WEEK_TIME", "week_time_uid_pk"),
@@ -1199,9 +1253,7 @@ class LunarCalendarXWeekTime(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {
-            "lunar_calendar_x_week_time_uid_pk": ["lunar_calendar_x_week_time_uid_pk"]
-        }
+        PK: str = "lunar_calendar_x_week_time_uid_pk"
         FK: dict = {
             "lunar_calendar_uid_fk": ("LUNAR_CALENDAR", "lunar_calendar_uid_pk"),
             "week_time_uid_fk": ("WEEK_TIME", "week_time_uid_pk"),
@@ -1241,7 +1293,7 @@ class DayTime(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"day_time_uid_pk": ["day_time_uid_pk"]}
+        PK: str = "day_time_uid_pk"
         FK: dict = {
             "day_time_name_gloss_common_uid_fk": ("GLOSS_COMMON", "gloss_common_uid_pk")
         }
@@ -1271,7 +1323,7 @@ class WeekTimeXDayTime(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"week_time_x_day_time_uid_pk": ["week_time_x_day_time_uid_pk"]}
+        PK: str = "week_time_x_day_time_uid_pk"
         FK: dict = {
             "week_time_uid_fk": ("WEEK_TIME", "week_time_uid_pk"),
             "day_time_uid_fk": ("DAY_TIME", "day_time_uid_pk"),
@@ -1329,7 +1381,7 @@ class CharSet(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"char_set_uid_pk": ["char_set_uid_pk"]}
+        PK: str = "char_set_uid_pk"
         CK: dict = {"char_set_type": EntityType.CHAR_SET_TYPE}
         ORDER: list = ["char_set_name ASC"]
 
@@ -1362,7 +1414,7 @@ class CharMember(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"char_member_uid_pk": ["char_member_uid_pk"]}
+        PK: str = "char_member_uid_pk"
         FK: dict = {"char_set_uid_fk": ("CHAR_SET", "char_set_uid_pk")}
         ORDER: list = ["char_member_name ASC"]
 
@@ -1395,7 +1447,7 @@ class LangFamily(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"lang_family_uid_pk": ["lang_family_uid_pk"]}
+        PK: str = "lang_family_uid_pk"
         FK: dict = {"char_set_uid_fk": ("CHAR_SET", "char_set_uid_pk")}
         ORDER: list = ["lang_family_name ASC"]
 
@@ -1475,7 +1527,7 @@ class Language(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"lang_uid_pk": ["lang_uid_pk"]}
+        PK: str = "lang_uid_pk"
         FK: dict = {"lang_family_uid_fk": ("LANG_FAMILY", "lang_family_uid_pk")}
         ORDER: list = ["lang_name ASC"]
 
@@ -1511,7 +1563,7 @@ class LangDialect(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"dialect_uid_pk": ["dialect_uid_pk"]}
+        PK: str = "dialect_uid_pk"
         FK: dict = {"lang_uid_fk": ("LANGUAGE", "lang_uid_pk")}
         ORDER: list = ["dialect_name ASC"]
 
@@ -1551,7 +1603,7 @@ class GlossCommon(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"gloss_common_uid_pk": ["gloss_common_uid_pk"]}
+        PK: str = "gloss_common_uid_pk"
         FK: dict = {"dialect_uid_fk": ("LANG_DIALECT", "dialect_uid_pk")}
         CK: dict = {"gloss_type": EntityType.GLOSS_TYPE}
         ORDER: list = ["gloss_name ASC"]
@@ -1582,7 +1634,7 @@ class Glossary(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"glossary_uid_pk": ["glossary_uid_pk"]}
+        PK: str = "glossary_uid_pk"
         FK: dict = {
             "gloss_common_uid_fk": ("GLOSS_COMMON", "gloss_common_uid_pk"),
             "dialect_uid_fk": ("LANG_DIALECT", "dialect_uid_pk"),
@@ -1665,7 +1717,7 @@ class Lake(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"lake_uid_pk": ["lake_uid_pk"]}
+        PK: str = "lake_uid_pk"
         FK: dict = {"gloss_common_uid_fk": ("GLOSS_COMMON", "gloss_common_uid_pk")}
         JSON: list = ["lake_shoreline_points_json"]
         CK: dict = {
@@ -1697,7 +1749,7 @@ class LakeXMap(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"lake_x_map_pk": "lake_x_map_pk"}
+        PK: str = "lake_x_map_pk"
         FK: dict = {
             "lake_uid_fk": ("LAKE", "lake_uid_pk"),
             "map_uid_fk": ("MAP", "map_uid_pk"),
@@ -1766,7 +1818,7 @@ class River(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"river_uid_pk": "river_uid_pk"}
+        PK: str = "river_uid_pk"
         FK: dict = {"gloss_common_uid_fk": ("GLOSS_COMMON", "gloss_common_uid_pk")}
         CK: dict = {
             "river_type": EntityType.RIVER_TYPE,
@@ -1802,7 +1854,7 @@ class RiverXMap(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"river_x_map_uid_pk": "river_x_map_uid_pk"}
+        PK: str = "river_x_map_uid_pk"
         FK: dict = {
             "river_uid_fk": ("RIVER", "river_uid_pk"),
             "map_uid_fk": ("MAP", "map_uid_pk"),
@@ -1844,7 +1896,7 @@ class OceanBody(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"ocean_body_uid_pk": "ocean_body_uid_pk"}
+        PK: str = "ocean_body_uid_pk"
         FK: dict = {"gloss_common_uid_fk": ("GLOSS_COMMON", "gloss_common_uid_pk")}
         CK: dict = {
             "ocean_body_type": EntityType.OCEAN_BODY_TYPE,
@@ -1881,7 +1933,7 @@ class OceanBodyXMap(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"ocean_body_x_map_uid_pk": "ocean_body_x_map_uid_pk"}
+        PK: str = "ocean_body_x_map_uid_pk"
         FK: dict = {
             "ocean_body_uid_fk": ("OCEAN_BODY", "ocean_body_uid_pk"),
             "map_uid_fk": ("MAP", "map_uid_pk"),
@@ -1910,7 +1962,7 @@ class OceanBodyXRiver(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"ocean_body_x_river_uid_pk": "ocean_body_x_river_uid_pk"}
+        PK: str = "ocean_body_x_river_uid_pk"
         FK: dict = {
             "ocean_body_uid_fk": ("OCEAN_BODY", "ocean_body_uid_pk"),
             "river_uid_fk": ("RIVER", "river_uid_pk"),
@@ -1944,7 +1996,7 @@ class LandBody(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"land_body_uid_pk": "land_body_uid_pk"}
+        PK: str = "land_body_uid_pk"
         FK: dict = {"gloss_common_uid_fk": ("GLOSS_COMMON", "gloss_common_uid_pk")}
         CK: dict = {"land_body_type": EntityType.LAND_BODY_TYPE}
         ORDER: list = ["land_body_uid_pk ASC"]
@@ -1971,7 +2023,7 @@ class LandBodyXMap(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"land_body_x_map_uid_pk": "land_body_x_map_uid_pk"}
+        PK: str = "land_body_x_map_uid_pk"
         FK: dict = {
             "land_body_uid_fk": ("LAND_BODY", "land_body_uid_pk"),
             "map_uid_fk": ("MAP", "map_uid_pk"),
@@ -2003,7 +2055,7 @@ class LandBodyXLandBody(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"land_body_x_land_body_uid_pk": "land_body_x_land_body_uid_pk"}
+        PK: str = "land_body_x_land_body_uid_pk"
         FK: dict = {
             "land_body_1_uid_fk": ("LAND_BODY", "land_body_uid_pk"),
             "land_body_2_uid_fk": ("LAND_BODY", "land_body_uid_pk"),
@@ -2034,7 +2086,7 @@ class LandBodyXOceanBody(object):
         return DM.orm_from_dict(self, p_dict, p_row)
 
     class Constraints(object):
-        PK: dict = {"land_body_x_ocean_body_uid_pk": "land_body_x_ocean_body_uid_pk"}
+        PK: str = "land_body_x_ocean_body_uid_pk"
         FK: dict = {
             "land_body_uid_fk": ("LAND_BODY", "land_body_uid_pk"),
             "ocean_body_uid_fk": ("OCEAN_BODY", "ocean_body_uid_pk"),

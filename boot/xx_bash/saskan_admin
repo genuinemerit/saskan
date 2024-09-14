@@ -1,9 +1,0 @@
-#!/usr/bin/bash
-
-# App launcher for Saskantinon Admin Tools
-# Be sure to chmod u=rwx,g=rx,o=rx
-# The installer script modifies this with the correct path
-
-cd ~APP_DIR~
-python3 ~APP_DIR~/saskan_admin.py
-

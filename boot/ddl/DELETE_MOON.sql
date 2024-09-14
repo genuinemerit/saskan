@@ -1,2 +1,2 @@
 DELETE FROM MOON
-WHERE moon_uid_pk=?;
+WHERE m=? AND o=? AND o=? AND n=? AND _=? AND u=? AND i=? AND d=? AND _=? AND p=? AND k=?;

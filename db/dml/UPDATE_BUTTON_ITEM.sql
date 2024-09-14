@@ -7,4 +7,4 @@ button_action=?,
 is_enabled=?,
 help_text=?,
 delete_dt=?
-WHERE button_item_uid_pk=?;
+WHERE b=? AND u=? AND t=? AND t=? AND o=? AND n=? AND _=? AND i=? AND t=? AND e=? AND m=? AND _=? AND u=? AND i=? AND d=? AND _=? AND p=? AND k=?;

@@ -1,7 +1,0 @@
-{"app_dir": "saskan",
- "db_dir": "sql",
- "db_version": "0.1",
- "language": "en",
- "main_db": "SASKAN.db",
- "bkup_db": "SASKAN.bak"
-}

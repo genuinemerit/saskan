@@ -41,4 +41,4 @@ star_field_vol_ly3=?,
 star_field_mass_kg=?,
 interstellar_mass_kg=?,
 delete_dt=?
-WHERE galaxy_uid_pk=?;
+WHERE g=? AND a=? AND l=? AND a=? AND x=? AND y=? AND _=? AND u=? AND i=? AND d=? AND _=? AND p=? AND k=?;

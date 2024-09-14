@@ -154,26 +154,22 @@ class DataBase(object):
             )
         return sql
 
-    def set_sql_primary_key(self, p_constraints: dict) -> str:
+    def set_sql_primary_key(self, p_pk_uid: str = "") -> str:
         """
         Generate SQL PRIMARY KEY code from a data model.
-        It is possible to create a composite PK, but know that a
-        single Key is generated. This can create problems when
-        creating a Foreign Key relationship.  Best to use UIDs instead
-        and just have single column = UID = PK.
+        Although it is possible to create a Primary Key from composited
+        values in SQLITE, a single Key value is actually generated. This
+        can create confusion when trying to create a Foreign Key relationship
+        to a table with such a key. So this app uses UIDs exclusively as PKs
+        and the data model and this SQL generator expects a single value as
+        PK.
         :args:
-        @DEV:
-        - Kind of a kludge here, where we accept composities, but
-          only select the first one in the list for the PK. Probably
-          cleaner to just say, "single-column PK's only".
-        - p_constraints (dict) Dict of constraints for the table
+        - p_pk_uid (str) Name of the PK/UID field for this table.
         :returns:
         - (str) One or more lines of SQL code
         """
-        primary_key = p_constraints.get("PK")
-        if primary_key:
-            uid_pk = list(primary_key.keys())[0]
-            sql = f"PRIMARY KEY ({uid_pk}),\n"
+        if p_pk_uid not in ("", None):
+            sql = f"PRIMARY KEY ({p_pk_uid}),\n"
         else:
             sql = ""
         return sql
@@ -230,7 +226,7 @@ class DataBase(object):
 
         sqlns.append(self.set_sql_check_constraints(p_constraints))
         sqlns.append(self.set_sql_foreign_keys(p_constraints))
-        sqlns.append(self.set_sql_primary_key(p_constraints))
+        sqlns.append(self.set_sql_primary_key(p_constraints["PK"]))
         sqlns[-1] = sqlns[-1][:-2]
 
         sql = f"CREATE TABLE IF NOT EXISTS {p_table_nm} " + f"(\n{''.join(sqlns)});\n"
@@ -383,18 +379,6 @@ class DataBase(object):
             and k not in ("to_dict", "from_dict", "Constraints")
         }
         col_names = self.generate_create_sql(table_name, constraints, model)
-
-        if "MAP" in table_name:
-            print(f"\ngenerate_sql() for {table_name}")
-            pp(("p_data_model:", p_data_model))
-            pp(("p_data_model.__dict__:", p_data_model.__dict__))
-            pp(("p_data_model.__init__:", p_data_model.__init__))
-            pp(("p_data_model.__dict__.items():", p_data_model.__dict__.items()))
-            pp(("p_data_model.__init__.items():", p_data_model.__init__.items()))
-            pp(("constraints:", constraints))
-            pp(("model: ", model))
-            pp(("col_names: ", col_names))
-
         self.generate_drop_sql(table_name)
         self.generate_insert_sql(table_name, col_names)
         self.generate_select_all_sql(table_name, constraints, col_names)
@@ -637,12 +621,12 @@ class DataBase(object):
         """
         self.connect_db(self.SASKAN_DB, p_foreign_keys_on=True)
         SQL = self.get_sql_file(self.DML, p_sql_nm)
-
-        # print("\nDataBase: execute_insert")
-        # print(f"SQL: {SQL}")
-        # print(f"p_values: {p_values}")
-
-        self.cur.execute(SQL, p_values)
+        try:
+            self.cur.execute(SQL, p_values)
+        except sq3.Error as e:
+            print("Error in execute_insert:", e)
+            print(f"SQL: {SQL}")
+            print(f"p_values: {p_values}")
         self.db_conn.commit()
         self.disconnect_db()
 

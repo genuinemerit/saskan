@@ -37,4 +37,4 @@ orbital_stability=?,
 asteroid_belt_density=?,
 asteroid_belt_loc=?,
 delete_dt=?
-WHERE star_system_uid_pk=?;
+WHERE s=? AND t=? AND a=? AND r=? AND _=? AND s=? AND y=? AND s=? AND t=? AND e=? AND m=? AND _=? AND u=? AND i=? AND d=? AND _=? AND p=? AND k=?;

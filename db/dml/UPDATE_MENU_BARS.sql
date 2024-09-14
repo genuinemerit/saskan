@@ -6,4 +6,4 @@ mbar_h=?,
 mbar_x=?,
 mbar_y=?,
 delete_dt=?
-WHERE menu_bar_uid_pk=?;
+WHERE m=? AND e=? AND n=? AND u=? AND _=? AND b=? AND a=? AND r=? AND _=? AND u=? AND i=? AND d=? AND _=? AND p=? AND k=?;

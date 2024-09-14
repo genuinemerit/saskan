@@ -1,0 +1,2 @@
+DELETE FROM CHAR_MEMBER
+WHERE c=? AND h=? AND a=? AND r=? AND _=? AND m=? AND e=? AND m=? AND b=? AND e=? AND r=? AND _=? AND u=? AND i=? AND d=? AND _=? AND p=? AND k=?;

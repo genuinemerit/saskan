@@ -1,0 +1,2 @@
+DELETE FROM GRID
+WHERE g=? AND r=? AND i=? AND d=? AND _=? AND u=? AND i=? AND d=? AND _=? AND p=? AND k=?;

@@ -11,4 +11,4 @@ pg_hdr_w=?,
 pg_hdr_h=?,
 pg_hdr_txt=?,
 delete_dt=?
-WHERE frame_uid_pk=?;
+WHERE f=? AND r=? AND a=? AND m=? AND e=? AND _=? AND u=? AND i=? AND d=? AND _=? AND p=? AND k=?;

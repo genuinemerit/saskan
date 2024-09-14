@@ -1,2 +1,2 @@
 DELETE FROM BACKUP
-WHERE bkup_uid_pk=?;
+WHERE b=? AND k=? AND u=? AND p=? AND _=? AND u=? AND i=? AND d=? AND _=? AND p=? AND k=?;

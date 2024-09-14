@@ -5,4 +5,4 @@ lang_code=?,
 menu_id=?,
 menu_name=?,
 delete_dt=?
-WHERE menu_uid_pk=?;
+WHERE m=? AND e=? AND n=? AND u=? AND _=? AND u=? AND i=? AND d=? AND _=? AND p=? AND k=?;

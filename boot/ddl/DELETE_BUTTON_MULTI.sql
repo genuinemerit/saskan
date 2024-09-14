@@ -1,2 +1,2 @@
 DELETE FROM BUTTON_MULTI
-WHERE button_multi_uid_pk=?;
+WHERE b=? AND u=? AND t=? AND t=? AND o=? AND n=? AND _=? AND m=? AND u=? AND l=? AND t=? AND i=? AND _=? AND u=? AND i=? AND d=? AND _=? AND p=? AND k=?;
