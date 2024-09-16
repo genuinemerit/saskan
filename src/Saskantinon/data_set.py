@@ -5,6 +5,8 @@
 
 Saskan Data Management middleware.
 """
+import random
+import secrets
 
 from collections import OrderedDict
 from pprint import pformat as pf  # noqa: F401
@@ -14,6 +16,7 @@ import data_model_app as DMA
 import data_model_story as DMS
 from data_base import DataBase
 from data_get import GetData
+from data_structs import EntityType
 from method_files import FileMethods
 from method_shell import ShellMethods
 
@@ -228,8 +231,8 @@ class SetData(object):
 
     # Story-related Tables
 
-    def set_maps(self, p_context: dict):
-        """Define a variety of maps for game use.
+    def set_rect_maps(self, p_context: dict):
+        """Define a rectangular map for game use.
         :args:
         - p_context: dict of context values"""
         DB, sql, _, cols = self._prep_set(DMS.MapRect(), p_context)
@@ -246,32 +249,101 @@ class SetData(object):
         DB.execute_insert(sql, tuple(cols.values()))
         # Save UIDs for later use
         self.MAP_UID[cols["map_name"]] = cols["map_rect_uid_pk"]
-        # ... add more maps here
-        print("* MAP records initialized.")
+
+    def set_box_maps(self, p_context: dict):
+        """Define a box map for game use.
+        :args:
+        - p_context: dict of context values"""
+        DB, sql, _, cols = self._prep_set(DMS.MapBox(), p_context)
+        cols["map_box_uid_pk"] = SHM.get_uid()
+        cols["map_shape"] = "box"
+        cols["map_type"] = "geo"
+        cols["map_name"] = "Saskan Lands Geography"
+        cols["map_desc"] = "Elevation, mountains, hills, lakes, rivers, and streams."
+        cols["north_lat"] = 39.7392
+        cols["west_lon"] = -104.9902
+        cols["south_lat"] = 23.5696
+        cols["east_lon"] = -86.335
+        cols["up_m"] = 4400.0
+        cols["down_m"] = 4300.0
+        cols["delete_dt"] = ""
+        DB.execute_insert(sql, tuple(cols.values()))
+        # Save UIDs for later use
+        self.MAP_UID[cols["map_name"]] = cols["map_box_uid_pk"]
+
+    def set_sphere_maps(self, p_context: dict):
+        """Define a box map for game use.
+        :args:
+        - p_context: dict of context values"""
+        DB, sql, _, cols = self._prep_set(DMS.MapSphere(), p_context)
+        cols["map_sphere_uid_pk"] = SHM.get_uid()
+        cols["map_shape"] = "sphere"
+        cols["map_type"] = "geo"
+        cols["map_name"] = "Gavor-Havorra Planetary Map"
+        cols["map_desc"] = "Continets, oceans, and land masses of Gavor-Havorra."
+        cols["origin_lat"] = 0.0
+        cols["origin_lon"] = 0.0
+        cols["z_value"] = 0.0
+        cols["unit_of_measure"] = "KM"
+        cols["sphere_radius"] = 6371.0
+        cols["delete_dt"] = ""
+        DB.execute_insert(sql, tuple(cols.values()))
+        # Save UIDs for later use
+        self.MAP_UID[cols["map_name"]] = cols["map_sphere_uid_pk"]
 
     def set_grids(self, p_context: dict):
-        """Define a variety of grids for game use.
-        Identify Map association/s for each grid
+        """Define a Grids for game use.
         :args:
         - p_context: dict of context values.
-        @DEV:
-        - Modify to match the data model.
-        - Add more grids as needed.
         """
         DB, sql, _, cols = self._prep_set(DMS.Grid(), p_context)
         cols["grid_uid_pk"] = SHM.get_uid()
-        cols["version_id"] = "0.1"
-        cols["grid_name"] = "30r_40c"
-        cols["row_cnt"] = 30
-        cols["col_cnt"] = 40
-        cols["z_up_cnt"] = 0
-        cols["z_down_cnt"] = 0
+        cols["grid_name"] = "30x_40y_30zu_30zd"
+        cols["x_col_cnt"] = 30
+        cols["y_row_cnt"] = 40
+        cols["z_up_cnt"] = 30
+        cols["z_down_cnt"] = 30
+        cols["delete_dt"] = ""
         DB.execute_insert(sql, tuple(cols.values()))
         self.GRID_UID[cols["grid_name"]] = cols["grid_uid_pk"]
 
-        DB, sql, _, cols = self._prep_set(DMS.GridXMap(), p_context)
-        cols["grid_x_map_uid_pk"] = SHM.get_uid()
-        cols["grid_uid_fk"] = self.GRID_UID["30r_40c"]
-        cols["map_uid_fk"] = self.MAP_UID["Saskan Lands Regions"]
-        DB.execute_insert(sql, tuple(cols.values()))
-        print("* GRID and GRID_X_MAP records initialized.")
+    def set_grid_cells(self, p_context: dict):
+        """Define a set of Grid Cells for game use.
+        :args:
+        - p_context: dict of context values.
+        """
+        DB, sql, _, cols = self._prep_set(DMS.GridCell(), p_context)
+        for grid_name in self.GRID_UID:
+            grid = GD.get_by_id("GRID", "grid_uid_pk", self.GRID_UID[grid_name], DB)
+            for n in range(1, 11):
+                cols["grid_cell_uid_pk"] = SHM.get_uid()
+                cols["grid_uid_fk"] = grid["grid_uid_pk"]
+                cols["grid_cell_name"] = f"Test Cell {n}"
+                cols["x_col_ix"] = random.randint(0, grid["x_col_cnt"] - 1)
+                cols["y_row_ix"] = random.randint(0, grid["y_row_cnt"] - 1)
+                cols["z_up_down_ix"] = random.randint((grid["z_down_cnt"] - 1) * -1,
+                                                      grid["z_up_cnt"] - 1)
+                cols["grid_cell_id"] = (f"{cols['x_col_ix']}x_" +
+                                        f"{cols['y_row_ix']}y_" +
+                                        f"{cols['z_up_down_ix']}z")
+                cols["delete_dt"] = ""
+                DB.execute_insert(sql, tuple(cols.values()))
+
+    def set_grid_infos(self, p_context: dict):
+        """Define a set of Grid Info records for game use.
+        :args:
+        - p_context: dict of context values.
+        """
+        DB, sql, _, cols = self._prep_set(DMS.GridInfo(), p_context)
+        cells = DB.execute_select_all("GRID_CELL")
+        for n in range(0, len(cells["grid_cell_uid_pk"])):
+            cols["grid_info_uid_pk"] = SHM.get_uid()
+            cols["grid_cell_uid_fk"] = cells["grid_cell_uid_pk"][n]
+            cols["grid_info_id"] = f"Test Info ID {n}"
+            cols["grid_info_data_type"] = random.choice(EntityType.DATA_TYPE)
+            cols["grid_info_name"] = f"Test Info Name {n}"
+            cols["grid_info_value"] = random.randint(1, 1000)\
+                if cols["grid_info_data_type"] in ("INT", "FLOAT")\
+                else secrets.token_bytes(10)
+            cols["delete_dt"] = ""
+            DB.execute_insert(sql, tuple(cols.values()))

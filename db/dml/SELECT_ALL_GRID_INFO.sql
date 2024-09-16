@@ -6,4 +6,4 @@ grid_info_name,
 grid_info_value,
 delete_dt
 FROM GRID_INFO
-ORDER BY grid_cell_val_name ASC;
+ORDER BY grid_info_name ASC;

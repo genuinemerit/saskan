@@ -36,7 +36,13 @@ class GetData(object):
         self, p_table_nm: str, p_match: dict, DB: object, p_first_only: bool = True
     ):
         """
+        "PRIVATE" method to get data from the DB table by selecting on one or two values.
+
         Get data from the DB table by selecting on one or two values.
+        For example, if matching on uid_pk, just pass the one value.
+        In cases where more than one record might be matched, default is to
+          return only the first one. If multiple records are expected, then
+          set p_first_only to False.
         :args:
         - p_table_nm: name of the table to query
         - p_match: dict of col-name:value pairs to match (max of 2)
@@ -94,8 +100,8 @@ class GetData(object):
 
     def get_text(self, p_lang_code: str, p_text_name: str, DB_CFG: dict):
         """
-        Get data from the Texts table, filtering for
-          text name and language code.
+        Specialized method to get text data from the Texts table,
+        filtering for text name and language code.
         :args:
         - p_lang_code (str): language code
         - p_text_name (str): text name
@@ -117,10 +123,12 @@ class GetData(object):
         p_first_only: bool = True,
     ) -> dict:
         """
-        Use this to retrieve all columns, rows from any table
-        by matching on its `id` (as opposed to its `uid_pk`).
+        "PUBLIC" method to get data from the DB table by matching on name:value.
+        Use this to retrieve columns, rows from any table
+        by matching on any column, including its `uid_pk`.
         @DEV:
-        - Eventually need to,,
+        - See additional notes in the _get_by_value() method
+        - Will need to:
             - deal with multiple rows returned
             - handle delete_dt logic
         :args:

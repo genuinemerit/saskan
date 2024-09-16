@@ -513,6 +513,7 @@ class EntityType(object):
         "tar",
         "gz",
     ]
+    DATA_TYPE = ["TEXT", "INT", "FLOAT", "JSON", "BLOB"]
     FREQUENCY = ["rare", "occasional", "frequent"]
     GLOSS_TYPE = [
         "word",

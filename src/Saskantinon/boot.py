@@ -111,9 +111,13 @@ class BootSaskan(object):
         Populate database tables for game, story, world-building.
         :write:  /db/SASKAN.db
         """
-        SD.set_maps(self.CONTEXT)
+        SD.set_rect_maps(self.CONTEXT)
+        SD.set_box_maps(self.CONTEXT)
+        SD.set_sphere_maps(self.CONTEXT)
         print("MAPS populated.")
-        # SD.set_grids(self.CONTEXT)
+        SD.set_grids(self.CONTEXT)
+        SD.set_grid_cells(self.CONTEXT)
+        SD.set_grid_infos(self.CONTEXT)
         print("GRIDS populated.")
         print("Story data populated.")
 

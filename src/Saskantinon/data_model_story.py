@@ -252,10 +252,10 @@ class GridCell(object):
     grid_cell_uid_pk: str = ""
     grid_uid_fk: str = ""
     grid_cell_name: str = ""
-    grid_cell_id: str = ""
-    x_row_ix: int = 0
-    y_col_ix: int = 0
+    x_col_ix: int = 0
+    y_row_ix: int = 0
     z_up_down_ix: int = 0
+    grid_cell_id: str = ""
     delete_dt: str = ""
 
     def to_dict(self) -> dict:
@@ -269,7 +269,7 @@ class GridCell(object):
     class Constraints(object):
         PK: str = "grid_cell_uid_pk"
         FK: dict = {"grid_uid_fk": ("GRID", "grid_uid_pk")}
-        ORDER: list = ["grid_name ASC"]
+        ORDER: list = ["grid_cell_name ASC"]
 
 
 class GridInfo(object):
@@ -302,7 +302,8 @@ class GridInfo(object):
     class Constraints(object):
         PK: str = "grid_info_uid_pk"
         FK: dict = {"grid_cell_uid_fk": ("GRID_CELL", "grid_cell_uid_pk")}
-        ORDER: list = ["grid_cell_val_name ASC"]
+        CK: dict = {"grid_info_data_type": EntityType.DATA_TYPE}
+        ORDER: list = ["grid_info_name ASC"]
 
 
 class GridXMap(object):
