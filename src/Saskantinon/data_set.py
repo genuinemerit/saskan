@@ -41,7 +41,6 @@ class SetData(object):
         """
         Initialize a new instance of the SetData class.
         """
-        self.MAP_UID: dict = {}
         self.GRID_UID: dict = {}
 
     def _prep_set(self, DATA_MODEL: object, p_context: dict) -> tuple:
@@ -247,8 +246,6 @@ class SetData(object):
         cols["east_lon"] = -86.335
         cols["delete_dt"] = ""
         DB.execute_insert(sql, tuple(cols.values()))
-        # Save UIDs for later use
-        self.MAP_UID[cols["map_name"]] = cols["map_rect_uid_pk"]
 
     def set_box_maps(self, p_context: dict):
         """Define a box map for game use.
@@ -268,8 +265,6 @@ class SetData(object):
         cols["down_m"] = 4300.0
         cols["delete_dt"] = ""
         DB.execute_insert(sql, tuple(cols.values()))
-        # Save UIDs for later use
-        self.MAP_UID[cols["map_name"]] = cols["map_box_uid_pk"]
 
     def set_sphere_maps(self, p_context: dict):
         """Define a box map for game use.
@@ -288,8 +283,6 @@ class SetData(object):
         cols["sphere_radius"] = 6371.0
         cols["delete_dt"] = ""
         DB.execute_insert(sql, tuple(cols.values()))
-        # Save UIDs for later use
-        self.MAP_UID[cols["map_name"]] = cols["map_sphere_uid_pk"]
 
     def set_grids(self, p_context: dict):
         """Define a Grids for game use.
@@ -313,6 +306,7 @@ class SetData(object):
         - p_context: dict of context values.
         """
         DB, sql, _, cols = self._prep_set(DMS.GridCell(), p_context)
+        # Read records to get UID for GRID instead of storing them
         for grid_name in self.GRID_UID:
             grid = GD.get_by_id("GRID", "grid_uid_pk", self.GRID_UID[grid_name], DB)
             for n in range(1, 11):
@@ -347,3 +341,29 @@ class SetData(object):
                 else secrets.token_bytes(10)
             cols["delete_dt"] = ""
             DB.execute_insert(sql, tuple(cols.values()))
+
+    def set_map_x_maps(self, p_context: dict):
+        """Define a set of Map_x_Map records for game use.
+        :args:
+        - p_context: dict of context values.
+        """
+        DB, sql, _, cols = self._prep_set(DMS.MapXMap(), p_context)
+        rects = DB.execute_select_all("MAP_RECT")
+        boxes = DB.execute_select_all("MAP_BOX")
+        spheres = DB.execute_select_all("MAP_SPHERE")
+        for r in range(0, len(rects["map_rect_uid_pk"])):
+            for b in range(0, len(boxes["map_box_uid_pk"])):
+                cols["map_x_map_uid_pk"] = SHM.get_uid()
+                cols["map_uid_1_fk"] = rects["map_rect_uid_pk"][r]
+                cols["map_uid_2_fk"] = boxes["map_box_uid_pk"][b]
+                cols["touch_type"] = random.choice(EntityType.MAP_TOUCH_TYPE)
+                cols["delete_dt"] = ""
+                DB.execute_insert(sql, tuple(cols.values()))
+        for b in range(0, len(boxes["map_box_uid_pk"])):
+            for s in range(0, len(spheres["map_sphere_uid_pk"])):
+                cols["map_x_map_uid_pk"] = SHM.get_uid()
+                cols["map_uid_1_fk"] = boxes["map_box_uid_pk"][b]
+                cols["map_uid_2_fk"] = spheres["map_sphere_uid_pk"][s]
+                cols["touch_type"] = random.choice(EntityType.MAP_TOUCH_TYPE)
+                cols["delete_dt"] = ""
+                DB.execute_insert(sql, tuple(cols.values()))

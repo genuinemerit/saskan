@@ -109,6 +109,7 @@ class BootSaskan(object):
     def boot_story_data(self):
         """
         Populate database tables for game, story, world-building.
+        N.B. - For now this includes some meaningless test data.
         :write:  /db/SASKAN.db
         """
         SD.set_rect_maps(self.CONTEXT)
@@ -119,6 +120,9 @@ class BootSaskan(object):
         SD.set_grid_cells(self.CONTEXT)
         SD.set_grid_infos(self.CONTEXT)
         print("GRIDS populated.")
+        SD.set_map_x_maps(self.CONTEXT)
+        # SD.set_grid_x_maps(self.CONTEXT)
+        print("MAP_X_MAP and GRID_X_MAP populated.")
         print("Story data populated.")
 
 

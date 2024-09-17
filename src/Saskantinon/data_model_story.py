@@ -156,37 +156,6 @@ class MapSphere(MapRect):
         ORDER: list = ["map_name ASC"]
 
 
-class MapXMap(object):
-    """
-    Associative keys --
-    - MAP_* (n) <--> MAP_* (n)
-    The "touch type" reads in direction 1-->2.
-    For example, 1-contains-2, 1-is_contained_by-2, etc.
-    In this case, the FK rule is not enforced, only managed.
-    This is so we can use this structure for any type of map,
-    and even mix different types.
-    """
-
-    _tablename: str = "MAP_X_MAP"
-    map_x_map_uid_pk: str = ""
-    map_uid_1_fk: str = ""
-    map_uid_2_fk: str = ""
-    touch_type: str = ""
-    delete_dt: str = ""
-
-    def to_dict(self) -> dict:
-        """Convert object to dict."""
-        return DM.orm_to_dict(MapXMap)
-
-    def from_dict(self, p_dict: dict, p_row: int) -> dict:
-        """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
-
-    class Constraints(object):
-        PK: str = "map_x_map_uid_pk"
-        CK: dict = {"touch_type": EntityType.MAP_TOUCH_TYPE}
-
-
 class Grid(object):
     """
     The Grid structure defines dimensions of a Map for story-telling
@@ -304,6 +273,37 @@ class GridInfo(object):
         FK: dict = {"grid_cell_uid_fk": ("GRID_CELL", "grid_cell_uid_pk")}
         CK: dict = {"grid_info_data_type": EntityType.DATA_TYPE}
         ORDER: list = ["grid_info_name ASC"]
+
+
+class MapXMap(object):
+    """
+    Associative keys --
+    - MAP_* (n) <--> MAP_* (n)
+    The "touch type" reads in direction 1-->2.
+    For example, 1-contains-2, 1-is_contained_by-2, etc.
+    In this case, the FK rule is not enforced, only managed.
+    This is so we can use this structure for any type of map,
+    and even mix different types.
+    """
+
+    _tablename: str = "MAP_X_MAP"
+    map_x_map_uid_pk: str = ""
+    map_uid_1_fk: str = ""
+    map_uid_2_fk: str = ""
+    touch_type: str = ""
+    delete_dt: str = ""
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return DM.orm_to_dict(MapXMap)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return DM.orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: str = "map_x_map_uid_pk"
+        CK: dict = {"touch_type": EntityType.MAP_TOUCH_TYPE}
 
 
 class GridXMap(object):
