@@ -121,8 +121,9 @@ class BootSaskan(object):
         SD.set_grid_infos(self.CONTEXT)
         print("GRIDS populated.")
         SD.set_map_x_maps(self.CONTEXT)
-        # SD.set_grid_x_maps(self.CONTEXT)
+        SD.set_grid_x_maps(self.CONTEXT)
         print("MAP_X_MAP and GRID_X_MAP populated.")
+        SD.set_char_sets(self.CONTEXT)
         print("Story data populated.")
 
 

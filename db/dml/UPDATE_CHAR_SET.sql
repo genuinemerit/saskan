@@ -1,5 +1,5 @@
 UPDATE CHAR_SET SET
-char_set_name=?,
+font_name=?,
 char_set_type=?,
 char_set_desc=?,
 delete_dt=?

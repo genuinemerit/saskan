@@ -335,6 +335,330 @@ class GridXMap(object):
 
 
 # =============================================================
+# Semantics and Languages
+# =============================================================
+class CharSet(object):
+    """
+    Description of a set of characters used in a language.
+    Provide to the name of a font. We'll define where fonts
+    gets stored in the app tree elsewhere, like the boot
+    configuration. The font name is generic. It may encompass
+    multiple types of font files, e.g, tff, otf, dfont, etc.
+
+    A character set is a set of characters, also called glyphs.
+    In the game context, they are associated with game languages,
+    which may be of the following types with respect to how they
+    use glyphs:
+    - alphabet
+    - abjad
+    - abugida
+    - syllabary
+    - ideogram
+
+    An alphabet represents consonants and vowels each
+    separately as individual letters.
+
+    An abjad represents consonants only as distinct letters;
+    vowels are represented as diacritics. In some cases, the
+    vowels may be omitted entirely, and are implied from
+    context.
+
+    An abugida represents consonants as separate letters, but
+    the glyph used also implies a “default” vowel, and deletion
+    or change of vowel is represented with modifications of the
+    glyph, in a fashion similar to diacritics, but not the same.
+
+    A syllabary represents a syllable of the language - usually
+    but not invariably in the form CV (consonant followed by
+    vowel) - as a single glyph; there is no necessary
+    relationship between glyphs that carry the same consonant,
+    or the same vowel.
+
+    Ideograms use a single - often complex - glyph to represent
+    a word or concept. In some languages, the ideogram may
+    actually be compound, with one portion signalling the
+    pronunciation, and another portion signalling the meaning.
+    """
+
+    _tablename: str = "CHAR_SET"
+    char_set_uid_pk: str = ""
+    font_name: str = ""
+    char_set_type: str = "alphabet"
+    char_set_desc: str = ""
+    delete_dt: str = ""
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return DM.orm_to_dict(CharSet)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return DM.orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: str = "char_set_uid_pk"
+        CK: dict = {"char_set_type": EntityType.CHAR_SET_TYPE}
+        ORDER: list = ["font_name ASC"]
+
+
+class CharMember(object):
+    """
+    Describe individual characters in a character set.
+    Where the character is not represented in Unicode, a reference
+    to a picture of the characteris stored, along with name and
+    description.
+    Member types are defined by the type of writing system
+    (character set) they belong to. Further categorizations
+    are possible for numerics, punctuation, and so on.
+    """
+
+    _tablename: str = "CHAR_MEMBER"
+    char_member_uid_pk: str = ""
+    char_set_uid_fk: str = ""
+    char_member_name: str = ""
+    char_member_uri: str = ""
+    char_member_desc: str = ""
+    delete_dt: str = ""
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return DM.orm_to_dict(CharMember)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return DM.orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: str = "char_member_uid_pk"
+        FK: dict = {"char_set_uid_fk": ("CHAR_SET", "char_set_uid_pk")}
+        ORDER: list = ["char_member_name ASC"]
+
+
+class LangFamily(object):
+    """
+    Describe basic features of a language family, without getting too
+    complicated.
+    - desc: overview
+    - phonetics: how the language sounds, e.g. guttural, nasal, etc.
+    - cultural influences: e.g. from other languages, or from
+      historical events, migration patterns, etc.
+    """
+
+    _tablename: str = "LANG_FAMILY"
+    lang_family_uid_pk: str = ""
+    char_set_uid_fk: str = ""
+    lang_family_name: str = ""
+    lang_family_desc: str = ""
+    phonetics: str = ""
+    cultural_influences: str = ""
+    delete_dt: str = ""
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return DM.orm_to_dict(LangFamily)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return DM.orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: str = "lang_family_uid_pk"
+        FK: dict = {"char_set_uid_fk": ("CHAR_SET", "char_set_uid_pk")}
+        ORDER: list = ["lang_family_name ASC"]
+
+
+class Language(object):
+    """
+        Describe basic features of a language, without getting too
+        complicated.
+        - desc: overiew
+        - gramatics: how phrases are generally structured,
+            e.g. subject-verb-object
+        - lexicals: major sources of lexicon, for example, lots of
+            words relating to the sea, or to the sky, or to the
+            land, or to the stars, or to the gods, etc.
+        - social influences: e.g. from other languages, or from
+            class, trade, migration patterns, etc.
+        - word formations:  how words are generally structured,
+            e.g. single-syllable-only, consonant-vowel-consonant,
+            multiples by prefix, etc.
+        More possible features:
+    /*
+    lang_object structure:
+    {"glossary":
+        {"phrase": "definition", ...},
+     "lexicon":
+        {"word": "definition", ...},
+     "grammar":
+        # the entire structure of a language, includes most of the
+        following,
+        # as well as things like rules for making plurals, etc.
+        {"rule": "explanation", ...},
+     "phonology":
+       # distribtution of phonemes (sounds) in a language
+        {"rule": "explanation", ...},
+     "morphology":
+       # how words are constructed from morphemes (smallest units
+       of meaning)
+        {"rule": "explanation", ...},
+     "syntax":
+        # how words are combined into phrases and sentences
+        {"rule": "explanation", ...},
+     "semantics":
+        {"rule": "explanation", ...},
+     "pragmatics":
+       # how context affects meaning, for example, intention,
+       social status, etc.
+        {"rule": "explanation", ...},
+     "orthography":
+       # how a language is written, for example, alphabet,
+       syllabary, etc.
+        {"rule": "explanation", ...},
+        {"letter": "pronunciation", ...},
+     "phonotactics":
+        # how sounds are combined into syllables and words
+         {"rule": "explanation", ...},
+        {"rule": "explanation", ...},
+    */
+    """
+
+    _tablename: str = "LANGUAGE"
+    lang_uid_pk: str = ""
+    lang_family_uid_fk: str = ""
+    lang_name: str = ""
+    lang_desc: str = ""
+    gramatics: str = ""
+    lexicals: str = ""
+    social_influences: str = ""
+    word_formations: str = ""
+    delete_dt: str = ""
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return DM.orm_to_dict(Language)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return DM.orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: str = "lang_uid_pk"
+        FK: dict = {"lang_family_uid_fk": ("LANG_FAMILY", "lang_family_uid_pk")}
+        ORDER: list = ["lang_name ASC"]
+
+
+class LangDialect(object):
+    """
+    Describe basic features of a dialect, without getting too
+    complicated.
+    - divergence_factors: how the dialect differs from the
+      main language, e.g. pronunciation, vocabulary, etc.
+    - syncretic_factors: how the dialect is similar to or borrows
+      from neighboring languages, e.g. pronunciation, vocabulary, ..
+    - preservation_factors: how the dialect preserves old features
+      of the main language which are no longer standard
+    """
+
+    _tablename: str = "LANG_DIALECT"
+    dialect_uid_pk: str = ""
+    lang_uid_fk: str = ""
+    dialect_name: str = ""
+    dialect_desc: str = ""
+    divergence_factors: str = ""
+    syncretic_factors: str = ""
+    preservation_factors: str = ""
+    delete_dt: str = ""
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return DM.orm_to_dict(LangDialect)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return DM.orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: str = "dialect_uid_pk"
+        FK: dict = {"lang_uid_fk": ("LANGUAGE", "lang_uid_pk")}
+        ORDER: list = ["dialect_name ASC"]
+
+
+class GlossCommon(object):
+    """
+    The common glossary is in the "common" language, e.g. English.
+    It serves as the 'Rosetta Stone' for all other languages, first
+    for in-game ones. It can also be used for real world languages, or
+    as the top-level 'parent' for a cascade of info; for example, when
+    there are multiple types of glossary items associated with a subject.
+    The primary key of a GlossCommon row is the FK reference for related
+    Glossary items. In other words, many(Glossary) --> 1(GlossCommon).
+    - gloss_name (required): either a single word, or title for a longer entry
+    - gloss type (required): a word, phrase, weblink, graphic, data, software
+    - gloss_value (optional): the definition of the word, phrase, etc. or a
+      longer glossary entry, for example, describing a feature of the game
+    - gloss_uri (optional): a URI for the glossary entry, a web page,
+      a local file or external software/plug-in, a sound file, etc.
+    """
+
+    _tablename: str = "GLOSS_COMMON"
+    gloss_common_uid_pk: str = ""
+    dialect_uid_fk: str = ""
+    gloss_type: str = ""
+    gloss_name: str = ""
+    gloss_value: str = ""
+    gloss_uri: str = ""
+    delete_dt: str = ""
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return DM.orm_to_dict(GlossCommon)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return DM.orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: str = "gloss_common_uid_pk"
+        FK: dict = {"dialect_uid_fk": ("LANG_DIALECT", "dialect_uid_pk")}
+        CK: dict = {"gloss_type": EntityType.GLOSS_TYPE}
+        ORDER: list = ["gloss_name ASC"]
+
+
+class Glossary(object):
+    """
+    The glossary is a multi-lingual dictionary as well an extension
+    for the GlossCommon items.
+    """
+
+    _tablename: str = "GLOSSARY"
+    glossary_uid_pk: str = ""
+    gloss_common_uid_fk: str = ""
+    dialect_uid_fk: str = ""
+    gloss_type: str = ""
+    gloss_name: str = ""
+    gloss_value: str = ""
+    gloss_uri: str = ""
+    delete_dt: str = ""
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return DM.orm_to_dict(Glossary)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return DM.orm_from_dict(self, p_dict, p_row)
+
+    class Constraints(object):
+        PK: str = "glossary_uid_pk"
+        FK: dict = {
+            "gloss_common_uid_fk": ("GLOSS_COMMON", "gloss_common_uid_pk"),
+            "dialect_uid_fk": ("LANG_DIALECT", "dialect_uid_pk"),
+        }
+        CK: dict = {"gloss_type": EntityType.GLOSS_TYPE}
+        ORDER: list = ["gloss_name ASC"]
+
+
+# =============================================================
 # Game Astronomy
 # =============================================================
 class Universe(object):
@@ -1337,312 +1661,6 @@ class WeekTimeXDayTime(object):
 # the front end and middle ware to the new database and data model, including
 # generation of initial set-up data. Maybe do some implementation on the
 # financial app too.
-
-
-# =============================================================
-# Semantics and Languages
-# =============================================================
-class CharSet(object):
-    """
-    Description of a set of characters used in a language.
-    An alphabet represents consonants and vowels each
-    separately as individual letters.
-    An abjad represents consonants only as distinct letters;
-    vowels are represented as diacritics. In some cases, the
-    vowels may be omitted entirely, and are implied from
-    context .
-    An abugida represents consonants as separate letters, but
-    the glyph used also implies a “default” vowel, and deletion
-    or change of vowel is represented with modifications of the
-    glyph, in a fashion similar to diacritics, but not the same.
-    A syllabary represents a syllable of the language - usually
-    but not invariably in the form CV (consonant followed by
-    vowel) - as a single glyph; there is no necessary
-    relationship between glyphs that carry the same consonant,
-    or the same vowel.
-    Ideograms use a single - often complex - glyph to represent
-    a word or concept. In some languages, the ideogram may
-    actually be compound, with one portion signalling the
-    pronunciation, and another portion signalling the meaning.
-    """
-
-    _tablename: str = "CHAR_SET"
-    char_set_uid_pk: str = ""
-    char_set_name: str = ""
-    char_set_type: str = "alphabet"
-    char_set_desc: str = ""
-    delete_dt: str = ""
-
-    def to_dict(self) -> dict:
-        """Convert object to dict."""
-        return DM.orm_to_dict(CharSet)
-
-    def from_dict(self, p_dict: dict, p_row: int) -> dict:
-        """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
-
-    class Constraints(object):
-        PK: str = "char_set_uid_pk"
-        CK: dict = {"char_set_type": EntityType.CHAR_SET_TYPE}
-        ORDER: list = ["char_set_name ASC"]
-
-
-class CharMember(object):
-    """
-    Describe individual characters in a character set.
-    Where the character is not represented in Unicode, a reference
-    to a picture of the characteris stored, along with name and
-    description.
-    Member types are defined by the type of writing system
-    (character set) they belong to. Further categorizations
-    are possible for numerics, punctuation, and so on.
-    """
-
-    _tablename: str = "CHAR_MEMBER"
-    char_member_uid_pk: str = ""
-    char_set_uid_fk: str = ""
-    char_member_name: str = ""
-    char_member_uri: str = ""
-    char_member_desc: str = ""
-    delete_dt: str = ""
-
-    def to_dict(self) -> dict:
-        """Convert object to dict."""
-        return DM.orm_to_dict(CharMember)
-
-    def from_dict(self, p_dict: dict, p_row: int) -> dict:
-        """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
-
-    class Constraints(object):
-        PK: str = "char_member_uid_pk"
-        FK: dict = {"char_set_uid_fk": ("CHAR_SET", "char_set_uid_pk")}
-        ORDER: list = ["char_member_name ASC"]
-
-
-class LangFamily(object):
-    """
-    Describe basic features of a language family, without getting too
-    complicated.
-    - desc: overview
-    - phonetics: how the language sounds, e.g. guttural, nasal, etc.
-    - cultural influences: e.g. from other languages, or from
-      historical events, migration patterns, etc.
-    """
-
-    _tablename: str = "LANG_FAMILY"
-    lang_family_uid_pk: str = ""
-    char_set_uid_fk: str = ""
-    lang_family_name: str = ""
-    lang_family_desc: str = ""
-    phonetics: str = ""
-    cultural_influences: str = ""
-    delete_dt: str = ""
-
-    def to_dict(self) -> dict:
-        """Convert object to dict."""
-        return DM.orm_to_dict(LangFamily)
-
-    def from_dict(self, p_dict: dict, p_row: int) -> dict:
-        """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
-
-    class Constraints(object):
-        PK: str = "lang_family_uid_pk"
-        FK: dict = {"char_set_uid_fk": ("CHAR_SET", "char_set_uid_pk")}
-        ORDER: list = ["lang_family_name ASC"]
-
-
-class Language(object):
-    """
-        Describe basic features of a language, without getting too
-        complicated.
-        - desc: overiew
-        - gramatics: how phrases are generally structured,
-            e.g. subject-verb-object
-        - lexicals: major sources of lexicon, for example, lots of
-            words relating to the sea, or to the sky, or to the
-            land, or to the stars, or to the gods, etc.
-        - social influences: e.g. from other languages, or from
-            class, trade, migration patterns, etc.
-        - word formations:  how words are generally structured,
-            e.g. single-syllable-only, consonant-vowel-consonant,
-            multiples by prefix, etc.
-        More possible features:
-    /*
-    lang_object structure:
-    {"glossary":
-        {"phrase": "definition", ...},
-     "lexicon":
-        {"word": "definition", ...},
-     "grammar":
-        # the entire structure of a language, includes most of the
-        following,
-        # as well as things like rules for making plurals, etc.
-        {"rule": "explanation", ...},
-     "phonology":
-       # distribtution of phonemes (sounds) in a language
-        {"rule": "explanation", ...},
-     "morphology":
-       # how words are constructed from morphemes (smallest units
-       of meaning)
-        {"rule": "explanation", ...},
-     "syntax":
-        # how words are combined into phrases and sentences
-        {"rule": "explanation", ...},
-     "semantics":
-        {"rule": "explanation", ...},
-     "pragmatics":
-       # how context affects meaning, for example, intention,
-       social status, etc.
-        {"rule": "explanation", ...},
-     "orthography":
-       # how a language is written, for example, alphabet,
-       syllabary, etc.
-        {"rule": "explanation", ...},
-        {"letter": "pronunciation", ...},
-     "phonotactics":
-        # how sounds are combined into syllables and words
-         {"rule": "explanation", ...},
-        {"rule": "explanation", ...},
-    */
-    """
-
-    _tablename: str = "LANGUAGE"
-    lang_uid_pk: str = ""
-    lang_family_uid_fk: str = ""
-    lang_name: str = ""
-    lang_desc: str = ""
-    gramatics: str = ""
-    lexicals: str = ""
-    social_influences: str = ""
-    word_formations: str = ""
-    delete_dt: str = ""
-
-    def to_dict(self) -> dict:
-        """Convert object to dict."""
-        return DM.orm_to_dict(Language)
-
-    def from_dict(self, p_dict: dict, p_row: int) -> dict:
-        """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
-
-    class Constraints(object):
-        PK: str = "lang_uid_pk"
-        FK: dict = {"lang_family_uid_fk": ("LANG_FAMILY", "lang_family_uid_pk")}
-        ORDER: list = ["lang_name ASC"]
-
-
-class LangDialect(object):
-    """
-    Describe basic features of a dialect, without getting too
-    complicated.
-    - divergence_factors: how the dialect differs from the
-      main language, e.g. pronunciation, vocabulary, etc.
-    - syncretic_factors: how the dialect is similar to or borrows
-      from neighboring languages, e.g. pronunciation, vocabulary, ..
-    - preservation_factors: how the dialect preserves old features
-      of the main language which are no longer standard
-    """
-
-    _tablename: str = "LANG_DIALECT"
-    dialect_uid_pk: str = ""
-    lang_uid_fk: str = ""
-    dialect_name: str = ""
-    dialect_desc: str = ""
-    divergence_factors: str = ""
-    syncretic_factors: str = ""
-    preservation_factors: str = ""
-    delete_dt: str = ""
-
-    def to_dict(self) -> dict:
-        """Convert object to dict."""
-        return DM.orm_to_dict(LangDialect)
-
-    def from_dict(self, p_dict: dict, p_row: int) -> dict:
-        """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
-
-    class Constraints(object):
-        PK: str = "dialect_uid_pk"
-        FK: dict = {"lang_uid_fk": ("LANGUAGE", "lang_uid_pk")}
-        ORDER: list = ["dialect_name ASC"]
-
-
-class GlossCommon(object):
-    """
-    The common glossary is in the "common" language, e.g. English.
-    It serves as the 'Rosetta Stone' for all other languages, first
-    for in-game ones. It can also be used for real world languages, or
-    as the top-level 'parent' for a cascade of info; for example, when
-    they are multiple types of glossary items associated with a subject.
-    The primary key of a GlossCommon row is the FK reference for related
-    Glossary items.
-    - gloss_name (required): either a single word, or title for a longer entry
-    - gloss type (required): a word, phrase, weblink, graphic, data, software
-    - gloss_value (optional): the definition of the word, phrase, etc. or a
-      longer glossary entry, for example, describing a feature of the game
-    - gloss_uri (optional): a URI for the glossary entry, a web page,
-      a local file or external software/plug-in, a sound file, etc.
-    """
-
-    _tablename: str = "GLOSS_COMMON"
-    gloss_common_uid_pk: str = ""
-    dialect_uid_fk: str = ""
-    gloss_type: str = ""
-    gloss_name: str = ""
-    gloss_value: str = ""
-    gloss_uri: str = ""
-    delete_dt: str = ""
-
-    def to_dict(self) -> dict:
-        """Convert object to dict."""
-        return DM.orm_to_dict(GlossCommon)
-
-    def from_dict(self, p_dict: dict, p_row: int) -> dict:
-        """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
-
-    class Constraints(object):
-        PK: str = "gloss_common_uid_pk"
-        FK: dict = {"dialect_uid_fk": ("LANG_DIALECT", "dialect_uid_pk")}
-        CK: dict = {"gloss_type": EntityType.GLOSS_TYPE}
-        ORDER: list = ["gloss_name ASC"]
-
-
-class Glossary(object):
-    """
-    The glossary is a multi-lingual dictionary as well an extension
-    for the GlossCommon items.
-    """
-
-    _tablename: str = "GLOSSARY"
-    glossary_uid_pk: str = ""
-    gloss_common_uid_fk: str = ""
-    dialect_uid_fk: str = ""
-    gloss_type: str = ""
-    gloss_name: str = ""
-    gloss_value: str = ""
-    gloss_uri: str = ""
-    delete_dt: str = ""
-
-    def to_dict(self) -> dict:
-        """Convert object to dict."""
-        return DM.orm_to_dict(Glossary)
-
-    def from_dict(self, p_dict: dict, p_row: int) -> dict:
-        """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
-
-    class Constraints(object):
-        PK: str = "glossary_uid_pk"
-        FK: dict = {
-            "gloss_common_uid_fk": ("GLOSS_COMMON", "gloss_common_uid_pk"),
-            "dialect_uid_fk": ("LANG_DIALECT", "dialect_uid_pk"),
-        }
-        CK: dict = {"gloss_type": EntityType.GLOSS_TYPE}
-        ORDER: list = ["gloss_name ASC"]
-
 
 # =============================================================
 # Game Geography

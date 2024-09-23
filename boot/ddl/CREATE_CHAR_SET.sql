@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS CHAR_SET (
 char_set_uid_pk TEXT DEFAULT '',
-char_set_name TEXT DEFAULT '',
+font_name TEXT DEFAULT '',
 char_set_type TEXT DEFAULT 'alphabet',
 char_set_desc TEXT DEFAULT '',
 delete_dt TEXT DEFAULT '',

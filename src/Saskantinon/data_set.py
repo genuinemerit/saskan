@@ -367,3 +367,51 @@ class SetData(object):
                 cols["touch_type"] = random.choice(EntityType.MAP_TOUCH_TYPE)
                 cols["delete_dt"] = ""
                 DB.execute_insert(sql, tuple(cols.values()))
+
+    def set_grid_x_maps(self, p_context: dict):
+        """Define a set of Grid_x_Map records for game use.
+        :args:
+        - p_context: dict of context values.
+        """
+        DB, sql, _, cols = self._prep_set(DMS.GridXMap(), p_context)
+
+    def set_char_sets(self, p_context: dict):
+        """Define sets of Character records for game use.
+        :args:
+        - p_context: dict of context values.
+        """
+        DB, sql, _, cols = self._prep_set(DMS.CharSet(), p_context)
+        cols["char_set_uid_pk"] = SHM.get_uid()
+        cols["font_name"] = "EibarTraditional"
+        cols["char_set_type"] = "abugida"
+        cols["char_set_desc"] = "Eibar is the most widely spoken language in Saskantinon, particularly in the northern and western regions. It is the language of power due to its use by Fatunik scribes and as the official language of the region. Over time, Eibar has become diverse, incorporating various accents and influences from different regions and immigrant populations. It is also commonly spoken in Byerung, especially among those involved in jurisprudence. Since it is an abugida, each character represents a consonant and a distinct vowel sound, which itself may be a dipthong. This means that dialects may include additional symbols."  # noqa E501
+        cols["delete_dt"] = ""
+        DB.execute_insert(sql, tuple(cols.values()))
+
+        cols["char_set_uid_pk"] = SHM.get_uid()
+        cols["font_name"] = "EibarRider"
+        cols["char_set_type"] = "abugida"
+        cols["char_set_desc"] = "Rider Eibar is the dialect used in the United Rider Provinces except for Eelan, and some adjoining areas. It uses a few additional characters to represent sounds not found in the traditional Eibar abugida. But it is not different enough to be considered a separate language."  # noqa E501
+        cols["delete_dt"] = ""
+        DB.execute_insert(sql, tuple(cols.values()))
+
+        cols["char_set_uid_pk"] = SHM.get_uid()
+        cols["font_name"] = "EibarWestern"
+        cols["char_set_type"] = "abugida"
+        cols["char_set_desc"] = "Western Eibar is the dialect used in Eelan province and in High Weir. It uses several additional characters to represent sounds not found in the traditional Eibar abugida. But it is not different enough to be considered a separate language."  # noqa E501
+        cols["delete_dt"] = ""
+        DB.execute_insert(sql, tuple(cols.values()))
+
+        cols["char_set_uid_pk"] = SHM.get_uid()
+        cols["font_name"] = "EibarEastern"
+        cols["char_set_type"] = "abugida"
+        cols["char_set_desc"] = "Eastern Eibar is the dialect used in the Runes of Bye, Mobalbeshqi and the Kahila Lands. It uses several additional characters to represent sounds not found in the traditional Eibar abugida. But it is not different enough to be considered a separate language."  # noqa E501
+        cols["delete_dt"] = ""
+        DB.execute_insert(sql, tuple(cols.values()))
+
+        cols["char_set_uid_pk"] = SHM.get_uid()
+        cols["font_name"] = "EibarqBasic"
+        cols["char_set_type"] = "abugida"
+        cols["char_set_desc"] = "Basic Eibarq is spoken in the easternmost areas of Saskantinon, including parts of Pavanarune, and in Kahilakol, Kahilabequa, Mobalbesq, Byerung (that is, the Runes of Bye) and in the Ny Lands. While mutually intelligible with Eibar to a large degree, Eibarq exhibits very distinct phonemes and idiomatic expressions rooted in non-huum modes of utterance. It is favored by non-huum-looking individuals who want to emphasize their distinction, and it includes many alternative phrasings and slang that differ from standard Eibar, as well as an entirely distinctive abuigida where many characters map directly to the Eibar characters, but many others do not."  # noqa E501
+        cols["delete_dt"] = ""
+        DB.execute_insert(sql, tuple(cols.values()))
