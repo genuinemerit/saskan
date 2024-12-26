@@ -4,15 +4,15 @@
 :author:    GM (genuinemerit @ pm.me)
 
 Saskan Data Management middleware.
-Define static constants and non-DB data structures.
+Define static constants and non-DB data structures
+  which do not rely on PyGame for rendering.
 """
 
 from pprint import pformat as pf  # noqa: F401
 from pprint import pprint as pp  # noqa: F401
 
-import pygame as pg
-
-pg.init()  # Init PyGame for use in this module
+# from collections import OrderedDict
+from enum import Enum
 
 
 #  UNIQUE CONSTANTS / "TRUE" ENUMS
@@ -21,6 +21,7 @@ class Colors(object):
     """Constants for CLI and PyGame colors.
     Reference class attributes directly.
     No need to instantiate this class.
+    Remember to add the CL_END color at the end.
     """
 
     # CLI Colors and accents
@@ -28,12 +29,16 @@ class Colors(object):
     CL_BOLD = "\033[1m"
     CL_CYAN = "\033[96m"
     CL_DARKCYAN = "\033[36m"
-    CL_END = "\033[0m"
     CL_GREEN = "\033[92m"
     CL_PURPLE = "\033[95m"
     CL_RED = "\033[91m"
     CL_YELLOW = "\033[93m"
+
+    CL_BOLD = "\033[1m"
     CL_UNDERLINE = "\033[4m"
+    CL_PLAIN = "\033[22;24m"
+
+    CL_END = "\033[0m"
 
 
 class ImageType(object):
@@ -50,292 +55,338 @@ class ImageType(object):
     ICO = "ico"
 
 
+class LogLevel:
+    """Define valid logging levels."""
+
+    CRITICAL: int = 50
+    FATAL: int = 50
+    ERROR: int = 40
+    WARNING: int = 30
+    NOTICE: int = 20
+    INFO: int = 20
+    DEBUG: int = 10
+    NOTSET: int = 0
+
+
 #  COMPLEX CONSTANTS
 # ================================
-class Astro(object):
-    """Constants, including both lists and enums
-    Astronomical and physics units and conversions.
-    - Generally, can just refer directly to the lists.
-    - But the class can also be made into a dict:
-      `astro_dict = {k:v for k,v in Astro.__dict__.items()
-                     if not k.startswith('__')}`
+class Astro:
+    """
+    Constants for astronomical and physics units and conversions.
     """
 
-    # universe names
-    UNAME = [
-        ["Cosmic", "Mysterious", "Eternal", "Radiant", "Infinite", "Celestial"],
-        ["Endless", "Magical", "Spectacular", "Mystical", "Enchanting"],
-        ["Universe", "Cosmos", "Realm", "Dimension", "Oblivion", "Infinity"],
-    ]
-    # galactic cluster names
-    GCNAME = [
-        ["Runic", "Starry", "Brilliant", "Blessed", "Eternal", "Celestial"],
-        ["Oceanic", "Wonderful", "Waving", "Milky", "Turning"],
-        ["Way", "Home", "Heavens", "Lights", "Path", "Cluster"],
-    ]
-    # galaxy names
-    GXNAME = [
-        ["Brilliant", "Lustrous", "Twinkling", "Silvery", "Argent", "Glistening"],
-        ["Way", "Trail", "Cloud", "Wave", "Skyway"],
-        [
-            "Galaxy",
-            "Cluster",
-            "Nebula",
-            "Spiral",
-            "Starfield",
-            "Cosmos",
-            "Nebula",
-            "Megacosm",
-            "Space",
-        ],
-    ]
-    # timing pulsar names
-    TPNAME = [
-        ["Timer", "Chrono", "Clockwork", "Lighthouse", "Beacon", "Pendumlum"],
-        ["Pulsar", "Star", "Nova", "Sentry", "Stupa"],
-    ]
-    # mass, matter, energy
-    DE = "dark energy"
-    DM = "dark matter"
-    BM = "baryonic matter"
-    LCLS = "luminosity class"
-    SMS = "solar mass"
-    SL = "solar luminosity"
-    # objects, astronomical
-    BH = "black hole"
-    GB = "galactic bulge"
-    GC = "galactic cluster"
-    GH = "galactic halo"
-    GX = "galaxy"
-    IG = "interstellar matter"
-    SC = "star cluster"
-    SCLS = "star class"
-    TP = "timing pulsar"  # saskan
-    TU = "total universe"  # saskan
-    XU = "external universe"  # saskan
-    # time-related, real world and saskan
-    GS = "galactic second"  # 'galactic' second; saskan
-    GMS = "galactic millisecond"  # 'galactic' millisecond; saskan
-    PMS = "pulses per millisecond"  # 'galactic' second as # of pulses
-    ET = "elapsed time"  # age, duration, time passed
-    GYR = "gavoran year"  # saskan
-    GDY = "gavoran day"  # saskan
-    # rates, speeds, velocities
-    ER = "expansion rate"  # of a volume
-    UER = "universal expansion rate"
-    KSM = "km/s per Mpc"  # km/s per Mpc
-    PRO = "period of rotation"
-    PRV = "period of revolution"
-    PR = "pulse rate"
-    # distance
-    AU = "astronomical unit"  # distance from Fatune to Gavor
-    GLY = "gigalight year"
-    GPC = "gigaparsec"
-    KPC = "kiloparsec"
-    LM = "light minute"
-    LS = "light second"
-    LY = "light year"
-    MPC = "megaparsec"
-    PC = "parsec"
-    # area, volume
-    GLY2 = "square gigalight year"
-    GLY3 = "cubic gigalight year"
-    GPC2 = "square gigaparsec"
-    GPC3 = "cubic gigaparsec"
-    PC2 = "square parsec"
-    PC3 = "cubic parsec"
-    LY2 = "square light year"
-    LY3 = "cubic light year"
-    # constants
-    U_MIN_RAD_GLY = 45.824
-    U_MAX_RAD_GLY = 47.557
-    U_MIN_AGE_GYR = 2.67e10
-    U_MAX_AGE_GYR = 3.12e10
-    U_AVG_MASS_KG = 1.5e53
-    U_EXP_RATE = 73.3  # expansion rate in km/s per Mpc
-    U_VOL_TO_MASS = 3.61441428e48  # volume to mass multiplier
-    U_DARK_ENERGY_PCT = 0.683  # dark energy percentage
-    U_DARK_MATTER_PCT = 0.274  # dark matter percentage
-    U_BARYONIC_PCT = 0.043  # baryonic matter percentage
-    # conversions -- multiplicative in indicated direction
-    # For `AA_TO_BB`, BB = AA * value
-    # Example: `AU_TO_KM` means `KM = AU * 1.495979e+8`
-    AU_TO_KM = 1.495979e8  # astronomical units -> km
-    AU_TO_LM = 5.2596e16  # astro units -> light minutes
-    AU_TO_LS = 0.002004004004  # astro units -> light seconds
-    AU_TO_LY = 0.00001581250799  # astro units -> light years
-    GLY_TO_LY = 1e9  # gigalight years -> light years
-    GPC_TO_GLY = 3.09  # gigaparsecs -> gigalight years
-    GPC_TO_MPC = 1000.0  # gigaparsecs -> megaparsecs
-    KM_TO_AU = 0.000006684587122  # kilometers -> astro units
-    KPC_TO_MPC = 1000.0  # kiloparsecs -> megaparsecs
-    KPC_TO_PC = 1000.0  # kiloparsecs -> parsecs
-    LM_TO_AU = 0.00000000000002  # light minutes -> astro units
-    LM_TO_LS = 9460730472580800  # light minutes -> light seconds
-    LM_TO_LY = 0.000000000000019  # light minutes -> light years
-    LS_TO_AU = 499.004783676  # light seconds -> astro units
-    LS_TO_LM = 0.000000000000105  # light seconds -> light minutes
-    LY_TO_AU = 63240.87  # light years -> astro units
-    LY_TO_GLY = 1e-9  # light years -> gigalight years
-    LY_TO_LM = 52596000000000000  # light years -> light minutes
-    LY_TO_PC = 0.30659817672196  # light years -> parsecs
-    MPC_TO_GPC = 0.001  # megaparsecs -> gigaparsecs
-    MPC_TO_KPC = 1000.0  # megaparsecs -> kiloparsecs
-    GLY_TO_PC = 3.262e6  # gigalight years -> parsecs
-    PC_TO_GLY = 3.065603923973023e-07  # parsecs -> gigalight years
-    PC_TO_KPC = 0.001  # parsecs -> kiloparsecs
-    PC_TO_LY = 3.261598  # parsecs -> light years
+    class UniverseNames(Enum):
+        COSMIC = "Cosmic"
+        MYSTERIOUS = "Mysterious"
+        ETERNAL = "Eternal"
+        RADIANT = "Radiant"
+        INFINITE = "Infinite"
+        CELESTIAL = "Celestial"
+
+    class GalacticClusterNames(Enum):
+        RUNIC = "Runic"
+        STARRY = "Starry"
+        BRILLIANT = "Brilliant"
+        BLESSED = "Blessed"
+        OCEANIC = "Oceanic"
+
+    class GalaxyNames(Enum):
+        BRILLIANT = "Brilliant"
+        LUSTROUS = "Lustrous"
+        TWINKLING = "Twinkling"
+        SILVERY = "Silvery"
+        GALAXY = "Galaxy"
+
+    class TimingPulsarNames(Enum):
+        TIMER = "Timer"
+        CHRONO = "Chrono"
+        CLOCKWORK = "Clockwork"
+        LIGHTHOUSE = "Lighthouse"
+        BEACON = "Beacon"
+
+    # Mass, matter, energy
+    MASS_MATTER_ENERGY = {
+        "DE": "dark energy",
+        "DM": "dark matter",
+        "BM": "baryonic matter",
+        "LCLS": "luminosity class",
+        "SMS": "solar mass",
+        "SL": "solar luminosity",
+    }
+
+    # Objects, astronomical
+    ASTRONOMICAL_OBJECTS = {
+        "BH": "black hole",
+        "GB": "galactic bulge",
+        "GC": "galactic cluster",
+        "GH": "galactic halo",
+        "GX": "galaxy",
+        "IG": "interstellar matter",
+        "SC": "star cluster",
+        "SCLS": "star class",
+        "TP": "timing pulsar",
+        "TU": "total universe",
+        "XU": "external universe",
+    }
+
+    # Time-related, real world and saskan
+    TIME_RELATED = {
+        "GS": "galactic second",
+        "GMS": "galactic millisecond",
+        "PMS": "pulses per millisecond",
+        "ET": "elapsed time",
+        "GYR": "gavoran year",
+        "GDY": "gavoran day",
+    }
+
+    # Rates, speeds, velocities
+    RATES_SPEEDS = {
+        "ER": "expansion rate",
+        "UER": "universal expansion rate",
+        "KSM": "km/s per Mpc",
+        "PRO": "period of rotation",
+        "PRV": "period of revolution",
+        "PR": "pulse rate",
+    }
+
+    # Distance
+    DISTANCE = {
+        "AU": "astronomical unit",
+        "GLY": "gigalight year",
+        "GPC": "gigaparsec",
+        "KPC": "kiloparsec",
+        "LM": "light minute",
+        "LS": "light second",
+        "LY": "light year",
+        "MPC": "megaparsec",
+        "PC": "parsec",
+    }
+
+    # Area, volume
+    AREA_VOLUME = {
+        "GLY2": "square gigalight year",
+        "GLY3": "cubic gigalight year",
+        "GPC2": "square gigaparsec",
+        "GPC3": "cubic gigaparsec",
+        "PC2": "square parsec",
+        "PC3": "cubic parsec",
+        "LY2": "square light year",
+        "LY3": "cubic light year",
+    }
+
+    # Constants
+    CONSTANTS = {
+        "U_MIN_RAD_GLY": 45.824,
+        "U_MAX_RAD_GLY": 47.557,
+        "U_MIN_AGE_GYR": 2.67e10,
+        "U_MAX_AGE_GYR": 3.12e10,
+        "U_AVG_MASS_KG": 1.5e53,
+        "U_EXP_RATE": 73.3,
+        "U_VOL_TO_MASS": 3.61441428e48,
+        "U_DARK_ENERGY_PCT": 0.683,
+        "U_DARK_MATTER_PCT": 0.274,
+        "U_BARYONIC_PCT": 0.043,
+    }
+
+    # Conversions
+    CONVERSIONS = {
+        "AU_TO_KM": 1.495979e8,
+        "AU_TO_LM": 5.2596e16,
+        "AU_TO_LS": 0.002004004004,
+        "AU_TO_LY": 0.00001581250799,
+        "GLY_TO_LY": 1e9,
+        "GPC_TO_GLY": 3.09,
+        "GPC_TO_MPC": 1000.0,
+        "KM_TO_AU": 0.000006684587122,
+        "KPC_TO_MPC": 1000.0,
+        "KPC_TO_PC": 1000.0,
+        "LM_TO_AU": 0.00000000000002,
+        "LM_TO_LS": 9460730472580800,
+        "LM_TO_LY": 0.000000000000019,
+        "LS_TO_AU": 499.004783676,
+        "LS_TO_LM": 0.000000000000105,
+        "LY_TO_AU": 63240.87,
+        "LY_TO_GLY": 1e-9,
+        "LY_TO_LM": 52596000000000000,
+        "LY_TO_PC": 0.30659817672196,
+        "MPC_TO_GPC": 0.001,
+        "MPC_TO_KPC": 1000.0,
+        "GLY_TO_PC": 3.262e6,
+        "PC_TO_GLY": 3.065603923973023e-07,
+        "PC_TO_KPC": 0.001,
+        "PC_TO_LY": 3.261598,
+    }
 
 
-class Geog(object):
-    """Constants for computations using variety of units
-    and formulae for measures of distance at a human or
-    (fantasy) planetary geographical scale.
+class Geog:
+    """
+    Constants for computations using various units and
+    formulae for measures of distance at a human or fantasy
+    planetary geographical scale.
     """
 
-    # distance
-    CM = "centimeters"
-    FT = "feet"
-    GA = "gawos"  # saskan
-    IN = "inches"
-    KA = "katas"  # saskan
-    KM = "kilometers"
-    M = "meters"
-    MI = "miles"
-    MM = "millimeters"
-    NM = "nautical miles"
-    NOB = "nobs"  # saskan
-    THWAB = "thwabs"  # saskan
-    TWA = "twas"  # saskan
-    YUZA = "yuzas"  # saskan
-    # area, volume
-    M2 = "square meters"
-    M3 = "cubic meters"
-    # distance, geographical
-    DGLAT = "degrees latitude"
-    DGLONG = "degrees longitude"
-    # direction, geographical
-    LOC = "location"
-    N = "north"
-    E = "east"
-    S = "south"
-    W = "west"
-    NE = "northeast"
-    SE = "southeast"
-    SW = "southwest"
-    NW = "northwest"
-    NS = "north-south"
-    EW = "east-west"
-    # conversions - metric/imperial
-    # conversions -- multiplicative in indicated direction
-    # For `AA_TO_BB`, BB = AA * value
-    # Example: `CM_TO_IN` means `CM = IN * 0.3937007874`
-    CM_TO_IN = 0.3937007874  # centimeters -> inches
-    CM_TO_M = 0.01  # centimeters -> meters
-    CM_TO_MM = 10.0  # centimeters -> millimeters
-    FT_TO_IN = 12.0  # feet -> inches
-    FT_TO_M = 0.3048  # feet -> meters
-    IN_TO_CM = 2.54  # inches -> centimeters
-    IN_TO_FT = 0.08333333333  # inches -> feet
-    IN_TO_MM = 25.4  # inches -> millimeters
-    KM_TO_M = 1000.0  # kilometers -> meters
-    KM_TO_MI = 0.62137119223733  # kilometers -> miles
-    KM_TO_NM = 0.539956803  # kilometers -> nautical miles
-    M_TO_CM = 100.0  # meters -> centimeters
-    M_TO_FT = 3.280839895  # meters -> feet
-    M_TO_KM = 0.001  # meters -> kilometers
-    MI_TO_KM = 1.609344  # miles -> kilometers
-    MI_TO_NM = 0.868976242  # miles -> nautical miles
-    MM_TO_CM = 0.1  # millimeters -> centimeters
-    MM_TO_IN = 0.03937007874  # millimeters -> inches
-    NM_TO_KM = 1.852  # nautical miles -> kilometers
-    NM_TO_MI = 1.150779448  # nautical miles -> miles
-    # conversions - saskan/metric
-    CM_TO_NOB = 0.64  # centimeters -> nobs
-    GABO_TO_MI = 0.636  # gabos -> miles
-    GAWO_TO_KATA = 4.0  # gawos -> kata
-    GAWO_TO_KM = 1.024  # gawos -> kilometers
-    GAWO_TO_M = 1024.0  # gawos -> meters
-    IN_TO_NOB = 2.56  # inches -> nobs
-    KATA_TO_KM = 0.256  # kata -> kilometers
-    KATA_TO_M = 256.0  # kata -> meters
-    KATA_TO_MI = 0.159  # ktaa -> miles
-    KATA_TO_THWAB = 4.0  # kata -> thwabs
-    M_TO_NOB = 64.0  # meters -> nobs
-    M_TO_THWAB = 0.015625  # meters -> thwabs (1/64th)
-    MM_TO_NOB = 0.0064  # millimeters -> nobs
-    NOB_TO_CM = 1.5625  # nobs -> centimeters
-    NOB_TO_IN = 0.390625  # nobs -> inches
-    NOB_TO_MM = 156.25  # nobs -> millimeters
-    THWAB_TO_KATA = 0.25  # thwabs -> kata
-    THWAB_TO_M = 64.0  # thwabs -> meters
-    THWAB_TO_TWA = 64.0  # thwabs -> twas
-    TWA_TO_M = 1.00  # twas -> meters
-    TWA_TO_NOB = 64.0  # twas -> nobs
-    TWA_TO_THWAB = 0.015625  # twas -> thwabs (1/64th)
-    YUZA_TO_GABO = 4.0  # yuzas -> gabos
-    YUZA_TO_KM = 4.096  # yuzas -> kilometers
-    YUZA_TO_M = 4096.0  # yuzas -> meters
-    YUZA_TO_MI = 2.545  # yuzas -> miles
-    # conversions, geographical to metric
-    DGLAT_TO_KM = 80.0  # degree of latitutde -> kilometers
-    DGLONG_TO_KM = 112.0  # degree of longitude -> kilometers
+    # Distance Units
+    DISTANCE_UNITS = {
+        "CM": "centimeters",
+        "FT": "feet",
+        "GA": "gawos",  # saskan
+        "IN": "inches",
+        "KA": "katas",  # saskan
+        "KM": "kilometers",
+        "M": "meters",
+        "MI": "miles",
+        "MM": "millimeters",
+        "NM": "nautical miles",
+        "NOB": "nobs",  # saskan
+        "THWAB": "thwabs",  # saskan
+        "TWA": "twas",  # saskan
+        "YUZA": "yuzas",  # saskan
+    }
+
+    # Area and Volume Units
+    AREA_VOLUME_UNITS = {"M2": "square meters", "M3": "cubic meters"}
+
+    # Geographical Distance
+    GEOGRAPHICAL_DISTANCE = {"DGLAT": "degrees latitude", "DGLONG": "degrees longitude"}
+
+    # Geographical Directions
+    DIRECTIONS = {
+        "LOC": "location",
+        "N": "north",
+        "E": "east",
+        "S": "south",
+        "W": "west",
+        "NE": "northeast",
+        "SE": "southeast",
+        "SW": "southwest",
+        "NW": "northwest",
+        "NS": "north-south",
+        "EW": "east-west",
+    }
+
+    # Metric/Imperial Conversions
+    METRIC_IMPERIAL_CONVERSIONS = {
+        "CM_TO_IN": 0.3937007874,
+        "CM_TO_M": 0.01,
+        "CM_TO_MM": 10.0,
+        "FT_TO_IN": 12.0,
+        "FT_TO_M": 0.3048,
+        "IN_TO_CM": 2.54,
+        "IN_TO_FT": 0.08333333333,
+        "IN_TO_MM": 25.4,
+        "KM_TO_M": 1000.0,
+        "KM_TO_MI": 0.62137119223733,
+        "KM_TO_NM": 0.539956803,
+        "M_TO_CM": 100.0,
+        "M_TO_FT": 3.280839895,
+        "M_TO_KM": 0.001,
+        "MI_TO_KM": 1.609344,
+        "MI_TO_NM": 0.868976242,
+        "MM_TO_CM": 0.1,
+        "MM_TO_IN": 0.03937007874,
+        "NM_TO_KM": 1.852,
+        "NM_TO_MI": 1.150779448,
+    }
+
+    # Saskan/Metric Conversions
+    SASKAN_METRIC_CONVERSIONS = {
+        "CM_TO_NOB": 0.64,
+        "GABO_TO_MI": 0.636,
+        "GAWO_TO_KATA": 4.0,
+        "GAWO_TO_KM": 1.024,
+        "GAWO_TO_M": 1024.0,
+        "IN_TO_NOB": 2.56,
+        "KATA_TO_KM": 0.256,
+        "KATA_TO_M": 256.0,
+        "KATA_TO_MI": 0.159,
+        "KATA_TO_THWAB": 4.0,
+        "M_TO_NOB": 64.0,
+        "M_TO_THWAB": 0.015625,
+        "MM_TO_NOB": 0.0064,
+        "NOB_TO_CM": 1.5625,
+        "NOB_TO_IN": 0.390625,
+        "NOB_TO_MM": 156.25,
+        "THWAB_TO_KATA": 0.25,
+        "THWAB_TO_M": 64.0,
+        "THWAB_TO_TWA": 64.0,
+        "TWA_TO_M": 1.00,
+        "TWA_TO_NOB": 64.0,
+        "TWA_TO_THWAB": 0.015625,
+        "YUZA_TO_GABO": 4.0,
+        "YUZA_TO_KM": 4.096,
+        "YUZA_TO_M": 4096.0,
+        "YUZA_TO_MI": 2.545,
+    }
+
+    # Geographical to Metric Conversions
+    GEOGRAPHICAL_METRIC_CONVERSIONS = {"DGLAT_TO_KM": 80.0, "DGLONG_TO_KM": 112.0}
 
 
-class Geom(object):
-    """Constants assigned to meaningful abbreviations
-    and names relating generically to geometry and physics.
+class Geom:
+    """
+    Constants assigned to meaningful abbreviations and names relating
+    generically to geometry and physics.
     """
 
-    # math, general geometry
-    ABC = "(a, b, c)"
-    ANG = "angle"
-    AR = "area"
-    BND = "bounding rectangle"
-    CNT = "count"
-    CON = "container"
-    DC = "decimal"
-    DI = "diameter"
-    DIM = "dimensions"
-    DIR = "direction"
-    HT = "height"
-    INT = "integer"
-    LG = "length"
-    PCT = "percent"
-    PYR = "pitch, yaw, roll"
-    RD = "radius"
-    ROT = "rotation"
-    SAX = "semi-axes"
-    SZ = "size"
-    VE = "vector"
-    VL = "volume"
-    WD = "width"
-    XY = "(x, y)"
-    XYZD = "((x,x), (y,y), (z,z))"
-    XYZ = "(x, y, z)"
-    # geometry shapes
-    BX = "pg_rect"
-    CI = "circle"
-    EL = "ellipsoid"
-    RC = "rectangle"
-    SH = "sphere"
-    SHA = "shape"
-    SP = "spiral"
-    # weight. mass
-    GM = "grams"
-    KG = "kilograms"
-    LB = "pounds"
-    MS = "mass"
-    OZ = "ounces"
-    # energy
-    AMP = "amperes (A)"
-    OH = "ohms (Ω)"
-    V = "volts (V)"
-    WA = "watts (W)"
-    # names, labels, qualities
-    NM = "name"
-    REL = "relative"
-    SHP = "shape"
+    # Math and General Geometry
+    MATH_GEOMETRY = {
+        "ABC": "(a, b, c)",
+        "ANG": "angle",
+        "AR": "area",
+        "BND": "bounding rectangle",
+        "CNT": "count",
+        "CON": "container",
+        "DC": "decimal",
+        "DI": "diameter",
+        "DIM": "dimensions",
+        "DIR": "direction",
+        "HT": "height",
+        "INT": "integer",
+        "LG": "length",
+        "PCT": "percent",
+        "PYR": "pitch, yaw, roll",
+        "RD": "radius",
+        "ROT": "rotation",
+        "SAX": "semi-axes",
+        "SZ": "size",
+        "VE": "vector",
+        "VL": "volume",
+        "WD": "width",
+        "XY": "(x, y)",
+        "XYZD": "((x,x), (y,y), (z,z))",
+        "XYZ": "(x, y, z)",
+    }
+
+    # Geometry Shapes
+    GEOMETRY_SHAPES = {
+        "BX": "pg_rect",
+        "CI": "circle",
+        "EL": "ellipsoid",
+        "RC": "rectangle",
+        "SH": "sphere",
+        "SHA": "shape",
+        "SP": "spiral",
+    }
+
+    # Weight and Mass
+    WEIGHT_MASS = {
+        "GM": "grams",
+        "KG": "kilograms",
+        "LB": "pounds",
+        "MS": "mass",
+        "OZ": "ounces",
+    }
+
+    # Energy
+    ENERGY = {
+        "AMP": "amperes (A)",
+        "OH": "ohms (Ω)",
+        "V": "volts (V)",
+        "WA": "watts (W)",
+    }
+
+    # Names, Labels, Qualities
+    NAMES_LABELS_QUALITIES = {"NM": "name", "REL": "relative", "SHP": "shape"}
 
 
 #  SIMPLE DATA STRUCTURES
@@ -566,11 +617,7 @@ class EntityType(object):
         "layers_above",
         "layers_below",
     ]
-    MAP_SHAPE = [
-        "rectangle",
-        "box",
-        "sphere"
-    ]
+    MAP_SHAPE = ["rectangle", "box", "sphere"]
     MAP_TYPE = [
         "geo",
         "astro",
@@ -747,3 +794,26 @@ class EntityType(object):
         "molten",
         "other",
     ]
+
+
+class AppDisplay:
+    """Static values related to constructing GUI's in PyGame.
+    Object place-holders used for rendering.
+    """
+
+    # Typesetting
+    # -------------------
+    DASH16: str = "-" * 16
+    FONT_FXD = "Courier 10 Pitch"
+    FONT_MED_SZ = 30
+    FONT_SANS = "DejaVu Sans"
+    FONT_SM_SZ = 24
+    FONT_TINY_SZ = 12
+    FONT_LARGE_SZ = 36
+    # Window and Clock objects
+    # ---------------------------
+    WIN_W = 0.0
+    WIN_H = 0.0
+    WIN_MID = 0.0
+    WIN = None
+    TIMER = None

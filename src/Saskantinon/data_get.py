@@ -6,31 +6,29 @@
 Saskan Data Management middleware.
 """
 
+import method_files as FM
+
+# import method_shell as SM
+
+from data_base import DataBase
+from data_structs import Colors as DSC  # type: ignore
 from pprint import pformat as pf  # noqa: F401
 from pprint import pprint as pp  # noqa: F401
 
-from method_files import FileMethods  # type: ignore
-from method_shell import ShellMethods  # type: ignore
 
-FM = FileMethods()
-SM = ShellMethods()
-
-
-class GetData(object):
+class GetData:
     """
-    Provide methods for reading data from the database.
-    Generic DB IO methods are in the io_db module.
-    These methods are specifcally associated with data
-    models defined in the data_model* modules. It may be
-    useful to either define views in SQLlite or to use
-    this class to effectively create views.
+    Provide bespoke methods for reading data from the database.
+    Generic DB IO methods are in the data_base module.
     """
 
     def __init__(self):
         """
         Initialize a new instance of the GetData class.
         """
-        pass
+        self.CONTEXT = FM.get_json_file("static/context/context.json")
+        self.USERDATA = FM.get_json_file("static/context/userdata.json")
+        self.DB = DataBase(self.CONTEXT)
 
     def _get_by_value(
         self, p_table_nm: str, p_match: dict, DB: object, p_first_only: bool = True
@@ -53,95 +51,56 @@ class GetData(object):
           or just one non-ordered dict if p_first_only is True
         """
 
-        def _match_one_value():
-            rows = []
-            data: dict = {}
-            m_col = list(p_match.keys())[0]
-            m_val = list(p_match.values())[0]
-            if m_col in list(data_rows.keys()):
-                for row_num, col_val in enumerate(data_rows[m_col]):
-                    if col_val == m_val:
-                        for c_nm, c_val in data_rows.items():
-                            data[c_nm] = c_val[row_num]
-                        rows.append(data)
-                        data: dict = {}
-            return rows
-
-        def _match_two_values():
-            rows = []
-            data: dict = {}
-            data_row_cnt = len(data_rows[list(data_rows.keys())[0]])
-            m_col = list(p_match.keys())
-            m_val = list(p_match.values())
-            data_k = list(data_rows.keys())
-            if m_col[0] in data_k and m_col[1] in data_k:
-                for row_num in range(data_row_cnt):
-                    if (
-                        data_rows[m_col[0]][row_num] == m_val[0]
-                        and data_rows[m_col[1]][row_num] == m_val[1]
-                    ):
-                        for c_nm, c_val in data_rows.items():
-                            data[c_nm] = c_val[row_num]
-                        rows.append(data)
-                        data: dict = {}
-            return rows
-
-        data_rows = DB.execute_select_all(p_table_nm)
-        if len(p_match) == 1:
-            rows = _match_one_value()
-        elif len(p_match) == 2:
-            rows = _match_two_values()
-        else:
-            rows: None
-            print("WARN: Can only match on 1 or 2 values.")
-        if p_first_only:
-            rows = rows[0]
-        return rows
-
-    def get_text(self, p_lang_code: str, p_text_name: str, DB_CFG: dict):
+    def get_by_match(self, p_table_nm: str, p_match: dict, p_first_only: bool = True):
         """
-        Specialized method to get text data from the Texts table,
-        filtering for text name and language code.
-        :args:
-        - p_lang_code (str): language code
-        - p_text_name (str): text name
-        - DB_CFG : dict of DB config data
-        :returns:
-        - data: value of the 'text_value' column
-        """
-        row = self._get_by_value(
-            "TEXTS", {"lang_code": p_lang_code, "text_name": p_text_name}, DB_CFG
-        )
-        return row["text_value"]
-
-    def get_by_id(
-        self,
-        p_tbl_nm: str,
-        p_id_nm: str,
-        p_id_val: str,
-        DB: object,
-        p_first_only: bool = True,
-    ) -> dict:
-        """
-        "PUBLIC" method to get data from the DB table by matching on name:value.
-        Use this to retrieve columns, rows from any table
-        by matching on any column, including its `uid_pk`.
+        Get data from a DB table by selecting on one or two columns.
+        :param p_table_nm: Name of the table to query
+        :param p_match: Dict of col-name:value pairs to match on. Max of 2.
+        :param p_first_only: Return only the first row that matches
+        :return: List of non-ordered dicts of data from the table, or [], if no match
+                 found or p_first_only is False; or one non-ordered dict if p_first_only is True
         @DEV:
-        - See additional notes in the _get_by_value() method
-        - Will need to:
-            - deal with multiple rows returned
-            - handle delete_dt logic
-        :args:
-        - p_tbl_nm (str): table name
-        - p_id_nm (str): name of id column
-        - p_id_val (str): id value
-        - DB (object): instance of DataBase() class
-        - p_first_only (bool): return only the first row
-        :returns:
-        - rows: list of non-ordered dicts of data from the table, or [],
-          or just one non-ordered dict if p_first_only is True
-
-           p_table_nm: str, p_match: dict, DB: object, p_first_only: bool = True
+        - This logic would probably work with any number of columns to match. Test that out.
         """
-        rows = self._get_by_value(p_tbl_nm, {p_id_nm: p_id_val}, DB, p_first_only)
-        return rows
+
+        def _match_values(data_rows, match_cols, match_vals):
+            rows = []
+            for row_num in range(len(data_rows[match_cols[0]])):
+                if all(
+                    data_rows[col][row_num] == val
+                    for col, val in zip(match_cols, match_vals)
+                ):
+                    row = {c_nm: c_val[row_num] for c_nm, c_val in data_rows.items()}
+                    rows.append(row)
+            return rows
+
+        data_rows = self.DB.execute_select_all_clean(p_table_nm)
+        match_cols, match_vals = list(p_match.keys()), list(p_match.values())
+
+        if len(match_cols) not in [1, 2]:
+            print(f"{DSC.CL_RED}WARN{DSC.CL_END}: Can only match on 1 or 2 values.")
+            return []
+
+        data = _match_values(data_rows, match_cols, match_vals)
+        return data[0] if p_first_only and data else data
+
+    def get_text(self, p_lang_code: str, p_text_name: str, DB_CFG: dict) -> str:
+        """
+        Specialized method to get text data from the TEXT_DATA table.
+        :param p_lang_code: Language code
+        :param p_text_name: Text name
+        :param DB_CFG: Dict of DB config data
+        :return: value of the 'text_value' column
+        """
+        row = self.get_by_match(
+            "TEXT_DATA", {"lang_code": p_lang_code, "text_name": p_text_name}
+        )
+        return str(row["text_value"]) if row else ""
+
+    def get_check_constraints(self, param_val: str):
+        """
+        Get CONSTRAINTs for a table column
+        :param param_val: table_name:column_name
+        """
+        table_name, col_name = param_val.split(":")
+        return self.DB.get_check_constraint_values(table_name.upper(), col_name.lower())

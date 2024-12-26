@@ -1,11 +1,5 @@
 {
     "admin": {
-        "menu_bar": {
-            "x": 20,
-            "y": 35,
-            "h": 26,
-            "margin": 6},
-        "menus": {
             "file": {
                 "name": "Saskan Admin",
                 "items": {
@@ -95,16 +89,9 @@
                         "key_b": null},
                     "pg_help": {
                         "name": "PyGame",
-                        "key_b": null}}}}
-    },
-
+                        "key_b": null}}}
+        },
     "saskan": {
-        "menu_bar": {
-            "x": 20,
-            "y": 35,
-            "h": 26,
-            "margin": 6},
-        "menus": {
             "file": {
                 "name": "File",
                 "items": {
@@ -154,6 +141,6 @@
                     "pg_help": {
                         "name": "PyGame",
                         "key_b": null,
-                        "enabled": true}}}}
-    }
+                        "enabled": true}}}
+        }
 }

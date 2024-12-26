@@ -10,11 +10,13 @@ Define static constants and non-DB data structures
 from pprint import pformat as pf  # noqa: F401
 from pprint import pprint as pp  # noqa: F401
 
+import data_structs as DS
 import pygame as pg
 
 from data_structs import ImageType
 
 pg.init()  # Init PyGame for use in this module
+AD = DS.AppDisplay()
 
 
 #  UNIQUE CONSTANTS / "TRUE" ENUMS
@@ -44,22 +46,13 @@ class AppDisplay(object):
     As long as pg.display is not called, nothing will be rendered.
     """
 
-    # Typesetting
-    # -------------------
-    DASH16: str = "-" * 16
-    FONT_FXD = "Courier 10 Pitch"
-    FONT_MED_SZ = 30
-    FONT_SANS = "DejaVu Sans"
-    FONT_SM_SZ = 24
-    FONT_TINY_SZ = 12
-    LG_FONT_SZ = 36
     # PyGame Fonts
     # -------------------
-    F_SANS_TINY = pg.font.SysFont(FONT_SANS, FONT_TINY_SZ)
-    F_SANS_SM = pg.font.SysFont(FONT_SANS, FONT_SM_SZ)
-    F_SANS_MED = pg.font.SysFont(FONT_SANS, FONT_MED_SZ)
-    F_SANS_LG = pg.font.SysFont(FONT_SANS, LG_FONT_SZ)
-    F_FIXED_LG = pg.font.SysFont(FONT_FXD, LG_FONT_SZ)
+    F_SANS_TINY = pg.font.SysFont(AD.FONT_SANS, AD.FONT_TINY_SZ)
+    F_SANS_SM = pg.font.SysFont(AD.FONT_SANS, AD.FONT_SM_SZ)
+    F_SANS_MED = pg.font.SysFont(AD.FONT_SANS, AD.FONT_MED_SZ)
+    F_SANS_LG = pg.font.SysFont(AD.FONT_SANS, AD.FONT_LARGE_SZ)
+    F_FIXED_LG = pg.font.SysFont(AD.FONT_FXD, AD.FONT_LARGE_SZ)
     # PyGame Cursors
     # -------------------
     CUR_ARROW = pg.cursors.Cursor(pg.SYSTEM_CURSOR_ARROW)
@@ -75,13 +68,6 @@ class AppDisplay(object):
     KY_RPT_TYPE = (pg.K_KP1, pg.K_KP2, pg.K_KP3)
     KY_RPT_MODE = (pg.K_UP, pg.K_RIGHT, pg.K_LEFT)
     KEYMOD_NONE = 4096  # No modifier key pressed
-    # Window and Clock objects
-    # ---------------------------
-    WIN_W = 0.0
-    WIN_H = 0.0
-    WIN_MID = 0.0
-    WIN = None
-    TIMER = None
 
 
 #  SIMPLE DATA STRUCTURES

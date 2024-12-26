@@ -1,0 +1,16 @@
+{
+    "admin": {
+        "menu_bars": {
+            "x": 20,
+            "y": 35,
+            "h": 26,
+            "margin": 6}
+    },
+    "saskan": {
+        "menu_bars": {
+            "x": 20,
+            "y": 35,
+            "h": 26,
+            "margin": 6}
+    }
+}

@@ -11,32 +11,38 @@ This is a backend module for handling calls to the DB.
 For data models, see data_model_tool, _app, _world
 For setting and getting data, see data_get, data_set
 """
+import data_model as DM
+import data_structs as DS
+import method_files as FM
+import method_shell as SM
+import pendulum
 import shutil
 import sqlite3 as sq3
+import re
+
 from collections import OrderedDict
-from copy import copy
+# from copy import copy
 from os import path
 from pprint import pprint as pp  # noqa: F401
 
-import pendulum
-from method_files import FileMethods
-from method_shell import ShellMethods
-
-FM = FileMethods()
-SM = ShellMethods()
+DSC = DS.Colors()
 
 
 class DataBase(object):
     """Support Sqlite3 database setup, usage, maintenance."""
 
     def __init__(self, p_context: dict):
-        """Initialize DataBase object."""
-        self.DB = p_context["db"]
-        self.DDL = p_context["ddl"]
-        self.DML = p_context["dml"]
-        self.SASKAN_DB = p_context["saskan_db"]
-        self.SASKAN_BAK = p_context["saskan_bak"]
+        """Initialize DataBase object with configuration from context."""
+        self._initialize_attributes(p_context)
         self.db_conn = None
+
+    def _initialize_attributes(self, p_context: dict):
+        """Set database-related attributes from the provided context."""
+        self.DB = p_context.get("db")
+        self.DDL = p_context.get("ddl")
+        self.DML = p_context.get("dml")
+        self.SASKAN_DB = p_context.get("saskan_db")
+        self.SASKAN_BAK = p_context.get("saskan_bak")
 
     # Generate SQL files from data models
     # ===========================================
@@ -45,167 +51,123 @@ class DataBase(object):
     ) -> str:
         """
         Convert default value data type to SQLITE data type.
-        :args:
-        - p_col_nm (str) column name
-        - p_def_value (object) default value
-        - p_constraints (dict) Dict of constraints for the table
-        :returns:
-        - (str) SQLITE data type
+        :param p_col_nm: Column name.
+        :param p_def_value: Default value.
+        :param p_constraints: Dict of constraints for the table.
+        :return: SQLITE data type.
         """
-        sql = ""
-        if "JSON" in p_constraints.keys() and p_col_nm in p_constraints["JSON"]:
-            sql = " JSON"
-        else:
-            field_type = type(p_def_value).__name__
-            data_types = {
-                "str": " TEXT",
-                "bool": " BOOLEAN",
-                "float": " NUMERIC",
-                "int": " INTEGER",
-            }
-            sql = data_types.get(field_type, " TEXT")
-        return sql
+        # Check if JSON constraint applies to the column
+        if p_constraints.get("JSON") and p_col_nm in p_constraints["JSON"]:
+            return " JSON"
+
+        # Map Python types to SQLite data types
+        field_type = type(p_def_value).__name__
+        data_types = {
+            "str": " TEXT",
+            "bool": " BOOLEAN",
+            "float": " NUMERIC",
+            "int": " INTEGER",
+            "bytes": " BLOB",
+        }
+
+        # Return corresponding SQLite data type or default to TEXT
+        return data_types.get(field_type, " TEXT")
 
     def set_sql_default(self, p_def_value: object, p_data_type: str) -> str:
         """
         Extract SQL default value from data object.
-        :args:
-        - p_def_value (object) value object
-        - p_data_type (str) SQLITE data type
-        :returns:
-        - (str) SQLITE SQL DEFAULT clause
+
+        :param p_def_value: Value object.
+        :param p_data_type: SQLITE data type.
+        :return: SQLITE SQL DEFAULT clause.
         """
-        sql = ""
         col_default = str(p_def_value).strip()
+
+        # Convert boolean string to integer representation
         if col_default == "True":
-            col_default = "1"
+            col_default = 1
         elif col_default == "False":
-            col_default = "0"
-        elif p_data_type not in ("INTEGER", "NUMERIC"):
+            col_default = 0
+
+        # Quote default value unless it's a numeric type
+        elif p_data_type not in {"INTEGER", "NUMERIC"}:
             col_default = f"'{col_default}'"
-        sql = f" DEFAULT {col_default}"
-        return sql
+
+        return f" DEFAULT {col_default}"
 
     def set_sql_comment(self, p_def_value: object) -> str:
         """
         Convert constraint annotations to SQLITE COMMENT.
-        :args:
-        - p_def_value (object) may be a class-object value
-          if so, then add a comment
-        :returns:
-        - (str) SQLITE COMMENT
-        """
-        sql = ""
-        for data_type in ["rect", "pg", "color", "surface"]:
-            if data_type in str(p_def_value):
-                sql += f",   -- {str(p_def_value)} object"
-        return sql
 
-    def set_sql_column_group(
-        self, p_col_nm: str, p_constraints: dict, p_col_names: list
-    ) -> tuple:
+        :param p_def_value: May be a class-object value; if so, add a comment.
+        :return: SQLITE COMMENT.
         """
-        Generate SQL CREATE TABLE code from a data model
-        for specialized data types, by splitting them into separate
-        columns grouped with a similar name.
-        @DEV:
-        - Denigrated. Try to avoid having to do this.
-        :args:
-        - p_col_nm (str) Name of customized data objects
-        - p_constraints (dict) Dict of constraints for the table
-        - p_col_names (list) List of column names already processed
-        :returns: tuple of:
-        - (str) One or more lines of SQL code
-        - (list) Updated list of column names already processed
-        """
-        sql = ""
-        if "GROUP" in p_constraints and p_col_nm in p_constraints["GROUP"]:
-            group_class = copy(p_constraints["GROUP"][p_col_nm])
-            sql += f"-- GROUP {p_col_nm}: {str(group_class)}\n"
-            sub_model = {
-                k: v for k, v in group_class.__dict__.items() if not k.startswith("_")
-            }
-            for k, v in sub_model.items():
-                g_col_nm = f"{p_col_nm}_{k}"
-                p_col_names.append(g_col_nm)
-                sql += f"{g_col_nm}"
-                data_type = self.set_sql_data_type(g_col_nm, v, p_constraints)
-                sql += data_type
-                sql += self.set_sql_default(v, data_type.split(" ")[1])
-                sql += self.set_sql_comment(v)
-                sql += ",\n"
-        return (sql, p_col_names)
+        p_def_value_str = str(p_def_value)
+        sql_comments = [
+            f",   -- {p_def_value_str} object"
+            for data_type in ["rect", "pg", "color", "surface"]
+            if data_type in p_def_value_str
+        ]
+
+        return "".join(sql_comments)
 
     def set_sql_foreign_keys(self, p_constraints: dict) -> str:
         """
         Generate SQL FOREIGN KEY code from data model.
-        :args:
-        - p_constraints (dict) Dict of constraints for the table
-        :returns:
-        - (str) One or more lines of SQL code
+
+        :param p_constraints: Dict of constraints for the table.
+        :return: One or more lines of SQL code.
         """
-        sql = ""
         foreign_keys = p_constraints.get("FK", {})
-        for col, ref in foreign_keys.items():
-            table_name, column_name = ref[0], ref[1]
-            sql += (
-                f"FOREIGN KEY ({col}) REFERENCES {table_name}"
-                + f"({column_name}) ON DELETE CASCADE,\n"
-            )
-        return sql
+        sql_lines = [
+            f"FOREIGN KEY ({col}) REFERENCES {table_name}({column_name}) ON DELETE CASCADE,"
+            for col, (table_name, column_name) in foreign_keys.items()
+        ]
+        return "\n".join(sql_lines)
 
     def set_sql_primary_key(self, p_pk_uid: str = "") -> str:
         """
         Generate SQL PRIMARY KEY code from a data model.
+
         Although it is possible to create a Primary Key from composited
         values in SQLITE, a single Key value is actually generated. This
         can create confusion when trying to create a Foreign Key relationship
-        to a table with such a key. So this app uses UIDs exclusively as PKs
-        and the data model and this SQL generator expects a single value as
-        PK.
-        :args:
-        - p_pk_uid (str) Name of the PK/UID field for this table.
-        :returns:
-        - (str) One or more lines of SQL code
+        to a table with such a key. So this app uses UIDs exclusively as PKs.
+        This SQL generator expects a single input value as PK.
+
+        :param p_pk_uid: Name of the PK/UID field for this table.
+        :return: One or more lines of SQL code.
         """
-        if p_pk_uid not in ("", None):
-            sql = f"PRIMARY KEY ({p_pk_uid}),\n"
-        else:
-            sql = ""
-        return sql
+        return f"PRIMARY KEY ({p_pk_uid}),\n" if p_pk_uid else ""
 
     def set_sql_check_constraints(self, p_constraints: dict) -> str:
         """
         Convert CHECK constraint annotations to a SQLITE CHECK rule
         that validates against a list of allowed values, similar to ENUM.
+
         For example:
         CHECK (col_name IN ('val1', 'val2', 'val3'))
-        :args:
-        - p_constraints (dict) Dict of constraints for the table
-        :returns:
-        - (str) SQLITE CHECK rule
+
+        :param p_constraints: Dict of constraints for the table.
+        :return: SQLITE CHECK rule.
         """
         check_constraints = p_constraints.get("CK", {})
-        sql = ""
-        for ck_col, ck_vals in check_constraints.items():
-            ck_vals = ["'" + str(v) + "'" for v in ck_vals]
-            check_values = ", ".join(map(str, ck_vals))
-            sql += f"CHECK ({ck_col} IN ({check_values})),\n"
-        return sql
+        sql_lines = [
+            f"CHECK ({ck_col} IN ({', '.join(map(repr, ck_vals))})),\n"
+            for ck_col, ck_vals in check_constraints.items()
+        ]
+        return "".join(sql_lines)
 
     def generate_create_sql(
         self, p_table_nm: str, p_constraints: dict, p_col_fields: dict
     ) -> list:
         """
         Generate SQL CREATE TABLE code from data model.
-        :args:
-        - p_table_name (str) Name of table to create SQL for
-        - p_constraints (dict) Dict of constraints for the table
-        - p_col_fields (dict) Dict of column fields, default values
-        :writes:
-        - SQL file to [APP]/sql/CREATE_[p_table_name].sql
-        :returns:
-        - (list) List of column names
+
+        :param p_table_nm: Name of table to create SQL for.
+        :param p_constraints: Dict of constraints for the table.
+        :param p_col_fields: Dict of column fields, default values.
+        :return: List of column names.
         """
         col_names = []
         sqlns = []
@@ -224,523 +186,965 @@ class DataBase(object):
 
             sqlns.append(sql)
 
-        sqlns.append(self.set_sql_check_constraints(p_constraints))
-        sqlns.append(self.set_sql_foreign_keys(p_constraints))
-        sqlns.append(self.set_sql_primary_key(p_constraints["PK"]))
-        sqlns[-1] = sqlns[-1][:-2]
+        sqlns.extend(
+            [
+                self.set_sql_check_constraints(p_constraints),
+                self.set_sql_foreign_keys(p_constraints),
+                self.set_sql_primary_key(p_constraints["PK"])[
+                    :-2
+                ],  # Remove trailing comma and newline
+            ]
+        )
 
-        sql = f"CREATE TABLE IF NOT EXISTS {p_table_nm} " + f"(\n{''.join(sqlns)});\n"
+        sql = f"CREATE TABLE IF NOT EXISTS {p_table_nm} (\n{''.join(sqlns)});\n"
         FM.write_file(path.join(self.DDL, f"CREATE_{p_table_nm}.sql"), sql)
-
         return col_names
 
-    def generate_drop_sql(self, p_table_name: str):
+    def generate_drop_sql(self, p_table_name: str) -> bool:
         """
-        Generate SQL DROP TABLE code.
-        :args:
-        - p_table_name (str) Name of table to drop
-        :writes:
-        - SQL file to [APP]/sql/DROP_[p_table_name].sql
-        """
-        sql = f"DROP TABLE IF EXISTS {p_table_name};\n"
-        file_path = path.join(self.DDL, f"DROP_{p_table_name}.sql")
-        FM.write_file(file_path, sql)
+        Generate SQL DROP TABLE code and write it to a specific file.
 
-    def generate_insert_sql(self, p_table_name: str, p_col_names: list):
+        :param p_table_name: Name of the table to drop.
+        :return: Boolean flag indicating success/failure of the file writing operation.
         """
-        Generate SQL INSERT code.
-        :args:
-        - p_table_name (str) Name of table to insert into
-        - p_col_names (list) List of column names for the table
-        :writes:
-        - SQL file to [APP]/sql/INSERT_[p_table_name].sql
+        sql = f"DROP TABLE IF EXISTS `{p_table_name}`;\n"
+        file_path = path.join(self.DDL, f"DROP_{p_table_name}.sql")
+
+        try:
+            # Write the generated SQL to the specified file
+            if not FM.write_file(file_path, sql):
+                raise IOError(f"Failed to write SQL to {file_path}")
+        except Exception as e:
+            # Log the exception or handle it according to your application's needs
+            print(f"An error occurred during SQL DROP generation: {SM.show_trace(e)}")
+            return False
+
+        return True
+
+    def generate_insert_sql(self, p_table_name: str, p_col_names: list) -> bool:
         """
-        placeholders = ", ".join(["?" for _ in p_col_names])
-        columns = ",\n".join(p_col_names)
-        sql = (
-            f"INSERT INTO {p_table_name} (\n{columns}) " + f"VALUES ({placeholders});\n"
-        )
-        file_path = path.join(self.DML, f"INSERT_{p_table_name}.sql")
-        FM.write_file(file_path, sql)
+        Generate SQL INSERT code and write it to a specific file.
+
+        :param p_table_name: Name of the table to insert into.
+        :param p_col_names: List of column names for the table.
+        :return: Boolean flag indicating success/failure of the file writing operation.
+        """
+        try:
+            # Safely handle column names by enclosing them in backticks
+            placeholders = ", ".join("?" for _ in p_col_names)
+            columns = ",\n".join(f"`{col}`" for col in p_col_names)
+
+            sql = (
+                f"INSERT INTO `{p_table_name}` (\n{columns}) "
+                + f"VALUES ({placeholders});\n"
+            )
+
+            # Use path.join assuming os.path is imported as path in this class
+            file_path = path.join(self.DML, f"INSERT_{p_table_name}.sql")
+
+            # Write the generated SQL to the specified file
+            if not FM.write_file(file_path, sql):
+                raise IOError(f"Failed to write SQL to {file_path}")
+
+        except Exception as e:
+            # Log the exception or handle it according to your application's needs
+            print(f"An error occurred during SQL INSERT generation: {str(e)}")
+            return False
+
+        return True
 
     def generate_select_all_sql(
         self, p_table_name: str, p_constraints: dict, p_col_names: list
-    ):
+    ) -> bool:
         """
-        Generate SQL SELECT ALL code.
-        :args:
-        - p_table_name (str) Name of table to select from
-        - p_constraints (dict) Dict of constraints for the table
-        - p_col_names (list) List of column names for the table
-        :writes:
-        - SQL file to [APP]/sql/SELECT_ALL_[p_table_name].sql
+        Generate SQL SELECT ALL code and write it to a specific file.
+
+        :param p_table_name: Name of the table to select from.
+        :param p_constraints: Dict of constraints for the query, such as ordering.
+        :param p_col_names: List of column names to be selected.
+        :return: Boolean flag indicating success/failure of the file writing operation.
         """
-        columns = ",\n".join(p_col_names)
-        sql = f"SELECT {columns}\nFROM {p_table_name}"
+        try:
+            # Enclose column names in backticks to prevent issues with reserved keywords
+            columns = ",\n".join(f"`{col}`" for col in p_col_names)
+            sql = f"SELECT {columns}\nFROM `{p_table_name}`"
 
-        if "ORDER" in p_constraints:
-            order_by = ", ".join(p_constraints["ORDER"])
-            sql += f"\nORDER BY {order_by}"
+            # Add ORDER BY clause if it's present in constraints
+            if "ORDER" in p_constraints:
+                order_by = ", ".join(f"`{col}`" for col in p_constraints["ORDER"])
+                sql += f"\nORDER BY {order_by}"
 
-        sql += ";\n"
+            sql += ";\n"
 
-        file_path = path.join(self.DML, f"SELECT_ALL_{p_table_name}.sql")
-        FM.write_file(file_path, sql)
+            # Use path.join assuming os.path is imported as path in this class
+            file_path = path.join(self.DML, f"SELECT_ALL_{p_table_name}.sql")
+
+            # Write the generated SQL to the specified file
+            if not FM.write_file(file_path, sql):
+                raise IOError(f"Failed to write SQL to {file_path}")
+
+        except Exception as e:
+            # Log the exception or handle it according to needs
+            print(f"An error occurred during SQL SELECT generation: {str(e)}")
+            return False
+
+        return True
+
+    def generate_select_all_clean_sql(
+        self, p_table_name: str, p_constraints: dict, p_col_names: list
+    ) -> bool:
+        """
+        Generate SQL SELECT ALL CLEAN code and write it to a specific file.
+
+        :param p_table_name: Name of the table to select from.
+        :param p_constraints: Dict of constraints for the query, such as ordering.
+        :param p_col_names: List of column names to be selected.
+        :return: Boolean flag indicating success/failure of the file writing operation.
+        """
+        try:
+            # Enclose column names in backticks to handle reserved keywords safely.
+            columns = ",\n".join(f"`{col}`" for col in p_col_names)
+            sql = (
+                f"SELECT {columns}\n"
+                f"FROM `{p_table_name}`\n"
+                "WHERE delete_dt IS NULL OR delete_dt = ''"
+            )
+
+            # Add ORDER BY clause if it's present in constraints.
+            if "ORDER" in p_constraints:
+                order_by = ", ".join(f"`{col}`" for col in p_constraints["ORDER"])
+                sql += f"\nORDER BY {order_by}"
+
+            sql += ";\n"
+
+            # Use path.join assuming os.path is imported as path in this class.
+            file_path = path.join(self.DML, f"SELECT_ALL_{p_table_name}_CLEAN.sql")
+
+            # Write the generated SQL to the specified file.
+            if not FM.write_file(file_path, sql):
+                raise IOError(f"Failed to write SQL to {file_path}")
+
+        except Exception as e:
+            # Log or handle exception according to your application's needs.
+            print(f"An error occurred during SQL SELECT generation: {str(e)}")
+            return False
+
+        return True
 
     def generate_select_pk_sql(
         self, p_table_name: str, p_constraints: dict, p_col_names: list
-    ):
+    ) -> bool:
         """
-        Generate SQL SELECT WHERE = [PK] code.
-        :args:
-        - p_table_name (str) Name of table to select from
-        - p_constraints (dict) Dict of constraints for the table
-        - p_col_names (list) List of column names for the table
-        :writes:
-        - SQL file to [APP]/sql/SELECT_BY_PK_[p_table_name].sql
-        @DEV:
-        - Simplify if we go with "one PK column only" rule
+        Generate SQL SELECT WHERE = [PK] query and write it to a file.
+
+        :param p_table_name: Name of the table to select from.
+        :param p_constraints: Dict of constraints for the query,
+           expects 'PK' key for primary key condition.
+        :param p_col_names: List of column names to be included in the selection.
+        :return: Boolean flag indicating success/failure of the file writing operation.
         """
-        pk_conditions = " AND ".join([f"{col}=?" for col in p_constraints["PK"]])
-        sql = (
-            f"SELECT {', '.join(p_col_names)}\n"
-            + f"FROM {p_table_name}\nWHERE {pk_conditions}"
-        )
+        try:
+            # Enclose column names in backticks for safe usage.
+            columns = ", ".join(f"`{col}`" for col in p_col_names)
+            table_name_quoted = f"`{p_table_name}`"
+            pk_column_quoted = f"`{p_constraints['PK']}`"
 
-        if "ORDER" in p_constraints:
-            order_by = ", ".join(p_constraints["ORDER"])
-            sql += f"\nORDER BY {order_by}"
+            sql = (
+                f"SELECT {columns}\n"
+                f"FROM {table_name_quoted}\n"
+                f"WHERE {pk_column_quoted} = ?"
+            )
 
-        sql += ";\n"
+            # Add ORDER BY clause if applicable.
+            if "ORDER" in p_constraints:
+                order_by = ", ".join(f"`{col}`" for col in p_constraints["ORDER"])
+                sql += f"\nORDER BY {order_by}"
 
-        file_path = path.join(self.DML, f"SELECT_BY_PK_{p_table_name}.sql")
-        FM.write_file(file_path, sql)
+            sql += ";\n"
+
+            # Construct the file path using os.path (assumed imported as path).
+            file_path = path.join(self.DML, f"SELECT_BY_PK_{p_table_name}.sql")
+
+            # Write the generated SQL to the specified file.
+            if not FM.write_file(file_path, sql):
+                raise IOError(f"Failed to write SQL to {file_path}")
+
+        except KeyError as e:
+            # Handle missing keys specifically for better error reporting.
+            print(f"Missing required constraint key: {str(e)}")
+            return False
+
+        except Exception as e:
+            # Log or handle unexpected exceptions according to your application's needs.
+            print(f"An error occurred during SQL SELECT generation: {str(e)}")
+            return False
+
+        return True
 
     def generate_update_sql(
         self, p_table_name: str, p_constraints: dict, p_col_names: list
-    ):
+    ) -> bool:
         """
-        Generate SQL UPDATE code.
-        - If more than one PK, then use AND logic in the WHERE clause
-        :args:
-        - p_table_name (str) Name of table to update
-        - p_constraints (dict) Dict of constraints for the table
-        - p_col_names (list) Dict of column names for the table
-        :writes:
-        - SQL file to [APP]/sql/UPDATE_[p_table_name].sql
-        @DEV:
-        - Simplify if we go with "one PK column only" rule
+        Generate SQL UPDATE query and write it to a file.
+        - Assumes there is only ever one PK column.
+
+        :param p_table_name: Name of the table to update.
+        :param p_constraints: Dict of constraints for the query,
+            expects 'PK' key for primary key condition.
+        :param p_col_names: List of column names to be updated.
+        :return: Boolean flag indicating success/failure of the file writing operation.
         """
-        pk_conditions = " AND ".join([f"{col}=?" for col in p_constraints["PK"]])
-        set_columns = ",\n".join(
-            [f"{col}=?" for col in p_col_names if col not in p_constraints["PK"]]
-        )
+        try:
+            # Enclose table name in backticks for safe usage.
+            table_name_quoted = f"`{p_table_name}`"
 
-        sql = (
-            f"UPDATE {p_table_name} SET\n{set_columns}\n" + f"WHERE {pk_conditions};\n"
-        )
+            # Extract the single primary key column.
+            pk_column = p_constraints.get("PK")
+            if not pk_column:
+                raise KeyError("Primary key ('PK') must be specified in constraints.")
 
-        file_path = path.join(self.DML, f"UPDATE_{p_table_name}.sql")
-        FM.write_file(file_path, sql)
+            # Generate SET clause excluding the PK column.
+            set_columns = ",\n".join(
+                f"`{col}`=?" for col in p_col_names if col != pk_column
+            )
 
-    def generate_delete_sql(self, p_table_name: str, p_constraints: dict):
+            # Construct the WHERE clause with the single PK.
+            where_clause = f"`{pk_column}`=?"
+
+            # Form the complete SQL statement.
+            sql = (
+                f"UPDATE {table_name_quoted} SET\n{set_columns}\n"
+                f"WHERE {where_clause};\n"
+            )
+
+            # Construct the file path using os.path (assumed imported as path).
+            file_path = path.join(self.DML, f"UPDATE_{p_table_name}.sql")
+
+            # Write the generated SQL to the specified file.
+            if not FM.write_file(file_path, sql):
+                raise IOError(f"Failed to write SQL to {file_path}")
+
+        except KeyError as e:
+            # Handle missing keys specifically for better error reporting.
+            print(f"Missing required constraint key: {str(e)}")
+            return False
+
+        except Exception as e:
+            # Log or handle unexpected exceptions according to your application's needs.
+            print(f"An error occurred during SQL UPDATE generation: {str(e)}")
+            return False
+
+        return True
+
+    def generate_delete_sql(self, p_table_name: str, p_constraints: dict) -> bool:
         """
         Generate SQL DELETE code.
-        - If more than one PK, then use AND logic in the WHERE clause
-        :args:
-        - p_table_name (str) Name of table to delete from
-        - p_constraints (dict) Dict of constraints for the table
-        :writes:
-        - SQL file to [APP]/sql/DELETE_[p_table_name].sql
-        @DEV:
-        - Simplify if we go with "one PK column only" rule
+        - Assumes there is only one PK column.
+        - Use this only for purging old virtually deleted records.
+        :param p_table_name: Name of table to delete from
+        :param p_constraints: Dict of constraints for the table
+        :writes: SQL file to [APP]/ddl/DELETE_[p_table_name].sql
+        :returns: Boolean flag True if successful, False otherwise.
         """
-        pk_conditions = " AND ".join([f"{col}=?" for col in p_constraints["PK"]])
-        sql = f"DELETE FROM {p_table_name}\nWHERE {pk_conditions};\n"
-        file_path = path.join(self.DDL, f"DELETE_{p_table_name}.sql")
-        FM.write_file(file_path, sql)
+        try:
+            # Enclose table name in backticks for safe usage.
+            table_name_quoted = f"`{p_table_name}`"
 
-    def generate_sql(self, p_data_model: object):
+            # Assume there is only one PK.
+            pk_column = p_constraints.get("PK")
+
+            # Validate that a PK constraint is provided.
+            if not pk_column or not isinstance(pk_column, str):
+                raise ValueError(
+                    "A single primary key constraint must be provided as a string."
+                )
+
+            # Construct the SQL DELETE statement.
+            sql = f"DELETE FROM {table_name_quoted}\nWHERE `{pk_column}`=?;\n"
+
+            # Construct the file path using os.path (assumed imported as path).
+            file_path = path.join(self.DDL, f"DELETE_{p_table_name}.sql")
+
+            # Write the generated SQL to the specified file.
+            if not FM.write_file(file_path, sql):
+                raise IOError(f"Failed to write SQL to {file_path}")
+
+            return True
+
+        except Exception as e:
+            # Log or handle unexpected exceptions according to your application's needs.
+            print(f"An error occurred during SQL DELETE generation: {str(e)}")
+            return False
+
+    def parse_field_definitions(self, p_dm_doc: str) -> dict:
         """
-        Generate full set of SQL code from a data model.
-        :args:
-        - p_data_model: data model class object
+        Parse field definitions from metadata in a data model's class-level docstring.
+        :param p_dm_doc: Docstring from a data model class formatted as follows
+          in order to identify metadata field descriptions:
+            $$
+            - field_name: field_description
+            $$
+        :returns: dict of field definitions
         """
-        constraints = {
-            k: v
-            for k, v in p_data_model.Constraints.__dict__.items()
-            if not k.startswith("_")
-        }
-        table_name = p_data_model._tablename
-        model = {
-            k: v
-            for k, v in p_data_model.__dict__.items()
-            if not k.startswith("_")
-            and k not in ("to_dict", "from_dict", "Constraints")
-        }
-        col_names = self.generate_create_sql(table_name, constraints, model)
-        self.generate_drop_sql(table_name)
-        self.generate_insert_sql(table_name, col_names)
-        self.generate_select_all_sql(table_name, constraints, col_names)
-        self.generate_select_pk_sql(table_name, constraints, col_names)
-        self.generate_update_sql(table_name, constraints, col_names)
-        self.generate_delete_sql(table_name, constraints)
+        fields = OrderedDict()
+
+        # Split the docstring once by "$$", focusing on the part after the first occurrence.
+        *_, field_definitions = p_dm_doc.partition("$$")
+
+        # Process each line in the field definitions section.
+        for line in field_definitions.splitlines():
+            line = line.strip()
+            if line.startswith("- ") and ":" in line:
+                # Split into field name and definition only once, expecting exactly one colon.
+                field_nm, definition = map(str.strip, line[2:].split(":", 1))
+                fields[field_nm] = definition
+
+        return fields
+
+    def generate_insert_metadata_sql(
+        self, p_data_model: object, p_name_space: str
+    ) -> bool:
+        """
+        Create or extend SQL INSERT_METADATA code.
+        Read in the existing INSERT_METADATA.sql file if exists, else create one.
+        Add new metadata based on reading the data model's docstring.
+        :param p_data_model: Data model class object
+        :param p_name_space: Name space of the data model class, e.g. 'app' or 'fin'
+        :writes: SQL file to [APP]/ddl/CREATE_TABLE_[p_table_name].sql
+        :returns: Boolean indicating success/failure.
+
+        @DEV:
+        - Fix this so that a comma is always added to the end of the VALUES line,
+           even when it is the last item for a given table name.
+        - Only replace the comma with a semi-colon on the penultimate line.
+        """
+        try:
+            field_defs = self.parse_field_definitions(p_data_model.__doc__)
+            if not field_defs:
+                # There are no field definitions to process.
+                return True
+
+            sql_file_path = path.join(self.DDL, "INSERT_METADATA.sql")
+            if FM.is_file_or_dir(sql_file_path):
+                SQL = FM.get_file(sql_file_path)
+                SQL = SQL.rstrip(";")  # Remove trailing semicolon if present
+            else:
+                # If the SQL file is empty, copy from template and remove placeholder
+                FM.copy_one_file(
+                    path.join(self.DML, "INSERT_METADATA.sql"), sql_file_path
+                )
+                SQL = FM.get_file(sql_file_path).replace("(?, ?, ?, ?, ?, ?, ?);", "")
+
+            # Extend the SQL insert statement with new metadata fields
+            for f_nm, f_def in field_defs.items():
+                f_def = f_def.replace('"', "").replace("'", "")
+                SQL += "\n"
+                SQL += f'("{SM.get_uid()}", '
+                SQL += f'"{p_name_space}", '
+                SQL += f'"{p_data_model.__name__}", '
+                SQL += f'"{p_data_model._tablename}", '
+                SQL += f'"{f_nm}", '
+                SQL += f'"{f_def}", '
+                SQL += '""),'
+            SQL = SQL[:-1] + ";"
+
+            # Write the updated SQL back to the file
+            FM.write_file(sql_file_path, SQL)
+            return True
+
+        except Exception as e:
+            # Log the exception or handle it as needed
+            print(f"An error occurred: {SM.show_trace(e)}")
+            return False
+
+    def generate_sql(self, p_data_model: object, p_name_space: str) -> bool:
+        """
+        Generate a full set of SQL code from a data model, including specialized INSERT scripts
+        to populate the metadata table.
+
+        :param p_data_model: Data model class object.
+        :param p_name_space: Namespace for the data model.
+        :return: Boolean flag indicating success/failure of the process.
+        """
+        try:
+            # Extract constraints and model attributes while avoiding private/undesired attributes
+            constraints = {
+                k: v
+                for k, v in p_data_model.Constraints.__dict__.items()
+                if not k.startswith("_")
+            }
+            table_name = p_data_model._tablename
+            model_dict = {
+                k: v
+                for k, v in p_data_model.__dict__.items()
+                if not k.startswith("_")
+                and k not in ("to_dict", "from_dict", "Constraints")
+            }
+            # Generate create SQL and capture column names
+            col_names = self.generate_create_sql(table_name, constraints, model_dict)
+
+            # Method calls that rely on successful execution of prior steps
+            # To help with debugging, may want to wrap these in a dict so I can print the keys
+            operations = {
+                "drop": lambda: self.generate_drop_sql(table_name),
+                "insert": lambda: self.generate_insert_sql(table_name, col_names),
+                "select_all": lambda: self.generate_select_all_sql(
+                    table_name, constraints, col_names
+                ),
+                "select_all_clean": lambda: self.generate_select_all_clean_sql(
+                    table_name, constraints, col_names
+                ),
+                "select_pk": lambda: self.generate_select_pk_sql(
+                    table_name, constraints, col_names
+                ),
+                "update": lambda: self.generate_update_sql(
+                    table_name, constraints, col_names
+                ),
+                "delete": lambda: self.generate_delete_sql(table_name, constraints),
+                "insert_metadata": lambda: self.generate_insert_metadata_sql(
+                    p_data_model, p_name_space
+                ),
+            }
+
+            # Execute each operation and ensure all succeed
+            for op_type, operation in operations.items():
+                if not operation():
+                    print(f"Call to generate {op_type} SQL for {table_name} failed.")
+                    return False
+
+        except Exception as e:
+            # Log the exception or handle it according to your application's needs
+            print(f"An error occurred during SQL generation. {SM.show_trace(e)}")
+            return False
+
+        return True
 
     # DataBase Connections
     # ===========================================
 
     def __set_fk_pragma(self, p_foreign_keys_on: bool):
-        """Set the foreign_keys pragma to ON or OFF
+        """'PRIVATE'
+        Set the foreign_keys pragma to ON or OFF
         FK's should be ignored when a table is dropped.
         This could potentially cause problems so keep an eye on it.
         As long as dropping, re-creating the entire DB, should be OK.
-        :args:
-        - p_foreign_keys_on (bool): If True, set foreign_keys to on
+        :param p_foreign_keys_on: If True, set foreign_keys to on
         """
-        if p_foreign_keys_on is True:
-            self.db_conn.execute("PRAGMA foreign_keys = ON;")
-        else:
-            self.db_conn.execute("PRAGMA foreign_keys = OFF;")
+        pragma_value = "ON" if p_foreign_keys_on else "OFF"
+        self.db_conn.execute(f"PRAGMA foreign_keys = {pragma_value};")
 
     def disconnect_db(self):
         """Close cursors and drop DB connection to self object."""
         if hasattr(self, "db_conn") and self.db_conn is not None:
             try:
-                self.cur.close()
+                if hasattr(self, "cur") and self.cur is not None:
+                    self.cur.close()
                 self.db_conn.close()
-            except RuntimeWarning:
-                pass
-        self.db_conn = None
+            except Exception as e:
+                # Log or handle specific exceptions if needed
+                print(f"An error occurred while closing the database: {e}")
+            finally:
+                self.db_conn = None
 
-    def connect_db(self, p_db_nm: str, p_foreign_keys_on: bool = True):
-        """Open DB connection to SASKAN.db.
-        Create a DB file at the specified location
-          if one does not already exist.
-        Set foreign key pragma ON by default.
-        N.B. - If doing a DROP, set to OFF.
-        :sets:
-        - db_conn: the database connection
-        - foreign_keys PRAGMA on or off
-        - cur: cursor for the connection
-        :args:
-        - p_db_nm (str): Name of DB to connect to.
-            This should always be "SASKAN.db", but I am making it a
-            parameter in case I want to define another DB at some point.
-            May eventually want to be able to read from the backup or
-            archive databases too.
-        - p_foreign_keys_on (bool): default True
+    def connect_db(self, p_db_nm: str, p_foreign_keys_on: bool = True) -> bool:
+        """Open DB connection.
+
+        Create a DB file at the specified location if one does not already exist.
+        Set foreign key pragma ON by default. If doing a DROP, set to OFF.
+
+        :param p_db_nm: Name of DB to connect to.
+        :param p_foreign_keys_on: Default True
+        :set db_conn: The database connection
+        :set cur: Cursor for the connection
         """
         self.disconnect_db()
+
         try:
             self.db_conn = sq3.connect(p_db_nm)
-        except Exception as err:
-            raise (err)
-        self.__set_fk_pragma(p_foreign_keys_on)
-        self.cur: sq3.Cursor = self.db_conn.cursor()
+            self.cur: sq3.Cursor = self.db_conn.cursor()
+
+            # Set foreign keys pragma
+            self.__set_fk_pragma(p_foreign_keys_on)
+
+            return True  # Connection successful
+
+        except sq3.Error as err:
+            print(f"Database connection error: {err}")
+            return False  # Connection failed
 
     # SQL Helpers
     # ===========================================
     def get_sql_file(self, p_sql_loc: str, p_sql_nm: str) -> str:
-        """Read SQL from named file.
-        :args:
-        - p_sql_nm (str) Name of  SQL file in [APP]/sql
-        :returns:
-        - (str) Content of the SQL file
+        """Read SQL from a named file.
+
+        :param p_sql_loc: Location of the SQL file directory.
+        :param p_sql_nm: Name of the SQL file in [APP]/sql.
+        :return: Content of the SQL file.
+        :raises FileNotFoundError: If the SQL file does not exist.
+        :raises ValueError: If the SQL file is empty.
         """
-        sql_nm = p_sql_nm.replace(".sql", "").replace(".SQL", "")
-        sql_nm = sql_nm.upper() + ".sql"
+        # Normalize and construct the SQL file name
+        sql_nm = f"{p_sql_nm.rsplit('.', 1)[0].upper()}.sql"
+
+        # Construct the full path to the SQL file
         sql_path = path.join(p_sql_loc, sql_nm)
-        SQL: str = FM.get_file(sql_path)
-        if SQL == "":
-            raise Exception(f"SQL file {sql_nm} is empty.")
+
+        # Read the content of the SQL file
+        try:
+            SQL: str = FM.get_file(sql_path)
+        except FileNotFoundError:
+            raise FileNotFoundError(
+                f"SQL file {sql_nm} not found at location {p_sql_loc}."
+            )
+
+        # Check if the SQL content is empty
+        if not SQL.strip():
+            raise ValueError(f"SQL file {sql_nm} is empty.")
+
         return SQL
 
     def get_db_columns(self, p_tbl_nm: str = "", p_sql_select: str = "") -> list:
-        """For currently open connection and cursor, for the
-        specified SQL SELECT file, return a list of the table's
-        column names.
-        :args:
-        - p_tbl_nm (str) Optional. If provided, use this instead
-          of scanning the SQL code.
-        - p_sql_select (str) Optional.
-            Text content of a well-structured SQL SELECT file,
-            where table name is the last word in the
-          first line. Use this if p_tbl_nm is not provided.
-        :returns:
-        - (list) of column names for the table
+        """Retrieve a list of column names for a specified table.
+
+        :param p_tbl_nm: Optional. If provided, use this instead of scanning the SQL code.
+        :param p_sql_select: Optional. Text content of a well-structured SQL SELECT file,
+                             where the table name is the last word in the first line.
+                             Use this if p_tbl_nm is not provided.
+        :return: List of column names for the table.
+        :raises ValueError: If neither p_tbl_nm nor a valid table name from p_sql_select
+            is provided.
         """
-        if p_tbl_nm in (None, ""):
-            tbl_nm = p_sql_select.split("FROM ")[1].split()[0].rstrip(",;")
+        # Determine the table name
+        if not p_tbl_nm:
+            try:
+                tbl_nm = p_sql_select.split("FROM ")[1].split()[0].rstrip(",;")
+            except (IndexError, AttributeError):
+                raise ValueError(
+                    "Table name could not be determined from p_sql_select."
+                )
         else:
             tbl_nm = p_tbl_nm
+
+        # Execute PRAGMA to retrieve column information
         self.cur.execute(f"PRAGMA table_info({tbl_nm})")
         cols = self.cur.fetchall()
+
+        # Extract column names
         col_nms = [c[1] for c in cols]
+
         return col_nms
 
     def set_dict_from_cursor(self, p_cols: list) -> OrderedDict:
         """
-        Translate current cursor contents into a dict of lists
-        :args:
-        - p_cols (list) List of column names
-        :return:
-        - (OrderedDict )dict of lists, with column names as keys
-          and in same order as listed in table-column order.
+        Translate current cursor contents into a dict of lists.
+
+        :param p_cols: List of column names.
+        :return: OrderedDict of lists, with column names as keys
+                 and in the same order as listed in table-column order.
         """
-        result = OrderedDict().fromkeys(p_cols)
-        FETCH = self.cur.fetchall()  # list of tuples
-        for row in FETCH:
-            for i, col in enumerate(p_cols):
-                if result[col] is None:
-                    result[col] = list()
-                result[col].append(row[i])
+        # Initialize OrderedDict with empty lists for each column
+        result = OrderedDict((col, []) for col in p_cols)
+
+        # Fetch all rows from the cursor
+        fetch_all_rows = self.cur.fetchall()  # list of tuples
+
+        # Populate the OrderedDict
+        for row in fetch_all_rows:
+            for col, value in zip(p_cols, row):
+                result[col].append(value)
+
         return result
 
     # Executing Raw SQL
     # ===========================================
     def execute_sql(self, p_sql_code: str, p_foreign_keys_on: bool):
-        """Run SQL passed in as a string.
-        @DEV:
-        - This is potentially a very dangerous call.
-        - May want to do something like write a key to
-          /tmp or /dev/shm, pass it in here so it can be verified.
-        :args:
-        - p_sql_nm (str): Name of external SQL file
-        - p_foreign_keys_on (bool): Set foreign key pragma ON or OFF.
         """
-        result = None
-        self.connect_db(self.SASKAN_DB, p_foreign_keys_on=True)
-        sql = p_sql_code.strip()
-        if sql.upper().startswith("SELECT"):
-            if (
-                "DROP" in sql.upper()
-                or "INSERT" in sql.upper()
-                or "UPDATE" in sql.upper()
-                or "DELETE" in sql.upper()
-                or "PRAGMA" in sql.upper()
-            ):
-                raise Exception("SQL code refused.")
-            else:
-                self.cur.execute(sql)
-                cols: list = self.get_db_columns(p_sql_select=sql)
-                data: list = [r for r in self.cur.fetchall()]
+        DENIGRATED -- potentially dangerous.
 
-                if len(data) == 0:
-                    result: dict = {col: [] for col in cols}
-                else:
-                    result: dict = {
-                        col: [row[i] for row in data] for i, col in enumerate(cols)
-                    }
-                self.disconnect_db()
-        else:
-            raise Exception("SQL code refused.")
+        # May want to do something like write a key to
+        # /tmp or /dev/shm, pass it in here so it can be verified.
+
+        Execute a SELECT SQL query passed in as a string.
+
+        :param p_sql_code: The SQL code to be executed.
+        :param p_foreign_keys_on: Set foreign key pragma ON or OFF.
+        :raises Exception: If the SQL code is not a SELECT statement or contains unsafe operations.
+        :return: A dictionary with column names as keys and lists of column data as values.
+        """
+        # Connect to the database
+        self.connect_db(self.HOFIN_DB, p_foreign_keys_on=p_foreign_keys_on)
+
+        # Prepare and validate SQL code
+        sql = p_sql_code.strip()
+        sql_upper = sql.upper()
+
+        if not sql_upper.startswith("SELECT"):
+            raise Exception("SQL code refused. Only SELECT statements are allowed.")
+
+        # Check for potentially dangerous SQL operations
+        forbidden_keywords = {"DROP", "INSERT", "UPDATE", "DELETE", "PRAGMA"}
+        if any(keyword in sql_upper for keyword in forbidden_keywords):
+            raise Exception("SQL code refused due to unsafe operations.")
+
+        # Execute the SQL query
+        self.cur.execute(sql)
+
+        # Get column names and fetch data
+        cols = self.get_db_columns(p_sql_select=sql)
+        data = self.cur.fetchall()
+
+        # Construct result dictionary
+        result = (
+            {col: [row[i] for row in data] for i, col in enumerate(cols)}
+            if data
+            else {col: [] for col in cols}
+        )
+
+        # Disconnect from the database
+        self.disconnect_db()
+
         return result
 
     # Executing SQL Scripts
     # ===========================================
     def execute_select_all(self, p_table_nm: str) -> dict:
-        """Run a SQL SELECT_ALL* script. No dynamic parameters.
-           Return data as a dict of lists.
-        :args:
-        - p_table_nm (str): Name of SQL table
-        :returns:
-        - (dict) Dict of lists, {col_nms: [data values]}
         """
-        self.connect_db(self.SASKAN_DB, p_foreign_keys_on=True)
-        sql: str = self.get_sql_file(self.DML, f"SELECT_ALL_{p_table_nm.upper()}")
-        cols: list = self.get_db_columns(p_sql_select=sql)
+        Run a SQL SELECT_ALL* script and return data as a dictionary of lists.
+        This will return both virtually-deleted and non-deleted records.
+
+        :param p_table_nm: Name of the SQL table.
+        :return: Dictionary with column names as keys and lists of column data as values.
+        """
+        # Connect to the database
+        self.connect_db(self.HOFIN_DB, p_foreign_keys_on=True)
+
+        # Prepare SQL statement
+        sql = self.get_sql_file(self.DML, f"SELECT_ALL_{p_table_nm.upper()}")
+
+        # Get column names
+        cols = self.get_db_columns(p_sql_select=sql)
+
+        # Execute the SQL query and fetch data
         self.cur.execute(sql)
-        data: list = [r for r in self.cur.fetchall()]
-        if len(data) == 0:
-            result: dict = {col: [] for col in cols}
-        else:
-            result: dict = {col: [row[i] for row in data] for i, col in enumerate(cols)}
+        data = self.cur.fetchall()
+
+        # Construct result dictionary
+        result = (
+            {col: [row[i] for row in data] for i, col in enumerate(cols)}
+            if data
+            else {col: [] for col in cols}
+        )
+
+        # Disconnect from the database
         self.disconnect_db()
+
         return result
 
-    def execute_select_by(self, p_sql_nm: str, p_pk_values: list) -> dict:
-        """Run a SQL SELECT_BY script using parameters
-           to select (by primary key).
-           Return data as a dict of lists.
-        :args:
-        - p_sql_nm (str): Name of external SQL file
-        - p_pk_values (list): Primary key values to match on.
-            Must be listed in correct order.
-        :returns:
-        - (dict) Dict of lists, {col_nms: [data values]}
+    def execute_select_all_clean(self, p_table_nm: str) -> dict:
         """
-        self.connect_db(self.SASKAN_DB, p_foreign_keys_on=True)
-        sql: str = self.get_sql_file(self.DML, p_sql_nm)
-        cols: list = self.get_db_columns(p_sql_select=sql)
-        self.cur.execute(sql, p_pk_values)
-        data: list = [r for r in self.cur.fetchall()]
-        if len(data) == 0:
-            result: dict = {col: [] for col in cols}
-        else:
-            result: dict = {col: [row[i] for row in data] for i, col in enumerate(cols)}
+        Run a SQL SELECT_ALL_*_CLEAN script and return data as a dictionary of lists.
+        This will return only recrods that have not been virtually deleted.
+
+        :param p_table_nm: Name of the SQL table.
+        :return: Dictionary with column names as keys and lists of column data as values.
+        """
+        # Connect to the database
+        self.connect_db(self.HOFIN_DB, p_foreign_keys_on=True)
+
+        # Prepare SQL statement
+        sql = self.get_sql_file(self.DML, f"SELECT_ALL_{p_table_nm.upper()}_CLEAN")
+
+        # Get column names
+        cols = self.get_db_columns(p_sql_select=sql)
+
+        # Execute the SQL query and fetch data
+        self.cur.execute(sql)
+        data = self.cur.fetchall()
+
+        # Construct result dictionary
+        result = (
+            {col: [row[i] for row in data] for i, col in enumerate(cols)}
+            if data
+            else {col: [] for col in cols}
+        )
+
+        # Disconnect from the database
         self.disconnect_db()
+
         return result
 
-    def execute_ddl(self, p_sql_list: list, p_foreign_keys_on: bool):
-        """Run one or more static SQL DROP or CREATE script.
+    def execute_select_by(self, p_dmo: object, p_pk_value: str) -> dict:
+        """
+        Run a SQL SELECT_BY script using parameters to select by primary key,
+        which is always the UID. Return data as a dictionary.
+
+        :param p_dmo: Data model object for the table.
+        :param p_pk_value: Primary key value to match on.
+        :return: Dictionary with column names as keys and their corresponding data values.
+        """
+        # Connect to the database
+        self.connect_db(self.HOFIN_DB, p_foreign_keys_on=True)
+
+        # Prepare SQL statement
+        sql = self.get_sql_file(self.DML, f"SELECT_BY_PK_{p_dmo._tablename}")
+
+        # Retrieve column definitions from the data model
+        rec = DM.cols_to_dict(p_dmo)[p_dmo._tablename]
+        keys = list(rec.keys())
+
+        # Execute the SQL query with primary key value
+        self.cur.execute(
+            sql, [p_pk_value]
+        )  # Wrap p_pk_value in a list for SQL execution
+        data = self.cur.fetchone()  # Fetch only one record since it's based on PK
+
+        # Update record dictionary with fetched data
+        if data:
+            rec.update({keys[n]: value for n, value in enumerate(data)})
+
+        # Disconnect from the database
+        self.disconnect_db()
+
+        return rec
+
+    def execute_ddl(self, p_sql_list: list, p_foreign_keys_on: bool) -> bool:
+        """
+        Run one or more static SQL DROP or CREATE scripts.
         DELETEs have a separate method.
-        N.B. - If DROP statements, set p_foreign_keys_on to False.
+
+        - If these are DROP statements, then set p_foreign_keys_on to False.
         - SQL names must be passed in as a list, even if just one script.
         - No dynamic parameters.
         - Executed as one transaction. If anything fails, all roll back.
-        :args:
-        - p_sql_nm (str): Name of external SQL file
-        - p_foreign_keys_on (bool): Set foreign key pragma ON or OFF.
+
+        :param p_sql_list: List of external SQL file names.
+        :param p_foreign_keys_on: Set foreign key pragma ON or OFF.
+        :return: True if transaction succeeds, False if it fails.
         """
-        self.connect_db(self.SASKAN_DB, p_foreign_keys_on)
+        self.connect_db(self.HOFIN_DB, p_foreign_keys_on)
         try:
             self.cur.execute("BEGIN")
             for p_sql_nm in p_sql_list:
                 sql = self.get_sql_file(self.DDL, p_sql_nm)
                 self.cur.execute(sql)
             self.db_conn.commit()
+            return True
         except sq3.Error as e:
             # Rollback the transaction if any operation fails
             self.db_conn.rollback()
-            print("Rolled back.", e)
-            print(f"Transaction failed on processing of:  {p_sql_nm}...")
+            print(f"{DSC.CL_RED}{DSC.CL_BOLD}Rolled back: {e}{DSC.CL_END}")
+            print(f"Transaction failed on processing of: {p_sql_nm}...")
             pp(("sql code: ", sql))
+            return False
         finally:
             self.disconnect_db()
 
-    def execute_insert(self, p_sql_nm: str, p_values: tuple):
-        """Run a single SQL INSERT command which uses dynamic values,
-           that is, assigned as parameters rather than hard-coded in script.
-           Values are the column names in specified order.
-           For now assume that:
-            - Expect full list of values satisfying one row
-            - caller knows what values to provide and in what order
-        :args:
-        - p_sql_nm (str): Name of external SQL file
-        - p_values (tuple): n-tuple of values to insert
+    def execute_insert(self, p_tbl_nm: str, p_values: tuple) -> bool:
         """
-        self.connect_db(self.SASKAN_DB, p_foreign_keys_on=True)
-        SQL = self.get_sql_file(self.DML, p_sql_nm)
+        Run a single SQL INSERT command with dynamic values as parameters.
+
+        This method assumes:
+        - A full list of values satisfying one row is passed in.
+        - Caller knows what values to provide and in what order.
+
+        :param p_tbl_nm: Name of database table.
+        :param p_values: n-tuple of values to insert.
+        :return: True if insertion succeeds, False otherwise.
+        """
+        self.connect_db(self.HOFIN_DB, p_foreign_keys_on=True)
+        SQL = self.get_sql_file(self.DML, f"INSERT_{p_tbl_nm}")
         try:
             self.cur.execute(SQL, p_values)
+            self.db_conn.commit()
+            return True
         except sq3.Error as e:
-            print("Error in execute_insert:", e)
+            print(f"{DSC.CL_RED}{DSC.CL_BOLD}Error in execute_insert: {e}{DSC.CL_END}")
             print(f"SQL: {SQL}")
             print(f"p_values: {p_values}")
-        self.db_conn.commit()
-        self.disconnect_db()
+            return False
+        finally:
+            self.disconnect_db()
 
-    def execute_update(self, p_sql_nm: str, p_key_val: str, p_values: tuple):
-        """Run a SQL UPDATE file which uses dynamic values.
-           Key value is the matching condition for WHERE clause (prim key).
-           Values are the column names in specified order.
-           For now I will assume that:
-            - UPDATEs will always expect full list of values
-            - caller knows what values to provide and in what order
-        :args:
-        - p_sql_nm (str): Name of external SQL file
-        - p_key_val (str): Value of primary key to match on
-        - p_values (tuple): n-tuple of values to update
+    def execute_update(self, p_tbl_nm: str, p_key_val: str, p_values: tuple) -> bool:
         """
-        self.connect_db(self.SASKAN_DB, p_foreign_keys_on=True)
-        SQL = self.get_sql_file(self.DML, p_sql_nm)
-        self.cur.execute(SQL, p_values + (p_key_val,))
-        self.db_conn.commit()
-        self.disconnect_db()
+        Run a SQL UPDATE command with dynamic values.
 
-    def execute_delete(self, p_sql_nm: str, p_key_vals: list):
-        """Run a SQL DELETE file which uses key values (primary key)
-           for WHERE clause (prim key).
-           For now I will assume that:
-            - caller knows what values to provide and in what order
-        :args:
-        - p_sql_nm (str): Name of external SQL file
-        - p_key_vals (list): Value of primary key(s) to match on
+        This method assumes:
+        - A full list of values is passed in, not only the changed ones.
+        - Caller knows what values to provide and in what order.
 
-        @DEV:
-        - There is not an equivalent in hofin::io_db, so need to
-          review this. May need to tweak it to include setting
-          p_foreign_keys_on to True.
+        :param p_tbl_nm: Name of table to update.
+        :param p_key_val: Value of primary key (UID) to match on.
+        :param p_values: n-tuple of values to update.
+        :return: True if update succeeds, False otherwise.
         """
-        if isinstance(p_key_vals, str):
-            p_key_vals = [p_key_vals]
-        self.connect_db(self.SASKAN_DB, p_foreign_keys_on=True)
-        SQL = self.get_sql_file(self.DDL, p_sql_nm)
-        self.cur.execute(SQL, p_key_vals)
-        if self.db_conn is not None:
+        self.connect_db(self.HOFIN_DB, p_foreign_keys_on=True)
+        SQL = self.get_sql_file(self.DML, f"UPDATE_{p_tbl_nm}")
+        try:
+            # Ensure p_key_val is added at the end for the WHERE clause
+            self.cur.execute(SQL, p_values + (p_key_val,))
             self.db_conn.commit()
-        self.disconnect_db()
+            return True
+        except sq3.Error as e:
+            print(f"{DSC.CL_RED}{DSC.CL_BOLD}Error in execute_update: {e}{DSC.CL_END}")
+            print(f"SQL: {SQL}")
+            print(f"p_values: {p_values}")
+            return False
+        finally:
+            self.disconnect_db()
+
+    def execute_delete(self, p_sql_nm: str, p_key_val: str) -> bool:
+        """
+        Run a SQL DELETE command using a key value (primary key) for the WHERE clause.
+
+        This method is intended for physical purge processes.
+
+        :param p_sql_nm: Name of the SQL file.
+        :param p_key_val: Value of the primary key to match on.
+        :return: True if delete succeeds, False otherwise.
+        @DEV:
+        - May need to set p_foreign_keys_on to False?
+        - Will delete-cascade logic work in SQLite? Test this.
+        """
+        self.connect_db(self.HOFIN_DB, p_foreign_keys_on=True)
+        SQL = self.get_sql_file(self.DDL, p_sql_nm)
+        try:
+            self.cur.execute(SQL, (p_key_val,))
+            self.db_conn.commit()
+            return True
+        except sq3.Error as e:
+            print(f"Error in execute_delete: {e}")
+            print(f"SQL: {SQL}")
+            print(f"PK: {p_key_val}")
+            return False
+        finally:
+            self.disconnect_db()
+
+    def get_check_constraint_values(self, p_tbl_nm: str, p_col_nm: str) -> list:
+        """
+        Retrieve a list of valid CHECK constraint values for a given
+        table and column by parsing the SQL code of the table.
+
+        :param p_tbl_nm: Name of the table to check.
+        :param p_col_nm: Name of the column to check.
+        :return: List of valid CHECK constraint values or an empty list if none are found.
+        """
+        self.connect_db(self.HOFIN_DB, p_foreign_keys_on=True)
+        try:
+            self.cur.execute(
+                "SELECT sql FROM sqlite_master WHERE type='table' AND name=?;",
+                (p_tbl_nm,),
+            )
+            row = self.cur.fetchone()
+            if not row:
+                return []
+
+            sql = row[0]
+            check_constraints = re.findall(r"CHECK\s*\(\s*([^)]*?)\)", sql)
+
+            for constraint in check_constraints:
+                if p_col_nm in constraint:
+                    valid_values = re.findall(r"'(.*?)'", constraint)
+                    if valid_values:
+                        return valid_values
+
+            return []
+        finally:
+            self.disconnect_db()
 
     # Backup, Archive and Restore
     # ===========================================
 
-    def backup_table_exists(self) -> bool:
-        """Verify that the BACKUP table exists."""
-        self.connect_db(self.SASKAN_DB)
-        self.cur.execute(
-            "SELECT name FROM sqlite_master " + "WHERE type='table' AND name='BACKUP'"
-        )
-        table_exists = self.cur.fetchone() is not None
-        self.disconnect_db()
-        return table_exists
-
-    def backup_db(self, p_db: str, p_bak: str):
-        """Copy specified main DB file to backup location.
-        If the main database exists but BACKUP table not created
-        yet then this will fail in the execute_insert() call.
-        """
-        if self.backup_table_exists():
-            bkup_dttm = pendulum.now().format("YYYYMMDD_HHmmss")
-            self.execute_insert(
-                "INSERT_BACKUP",
-                (
-                    SM.get_uid(),
-                    f"Backup {bkup_dttm}",
-                    bkup_dttm,
-                    "backup",
-                    p_db,
-                    p_bak,
-                    "",
-                ),
-            )
-        shutil.copyfile(p_db, p_bak)
-
     def archive_db(self, p_db: str):
-        """Copy main main DB file to archive location."""
+        """
+        Copy a DB file to archive location.
+        - The DB being archived might be main or backup.
+
+        :param p_db: Path to database file to be archived.
+        """
+        # Generate a timestamp for the archive operation
         arcv_dttm = pendulum.now().format("YYYYMMDD_HHmmss")
         arcv_nm = p_db.replace(".db", "_") + arcv_dttm + ".arcv"
-        if self.backup_table_exists():
-            self.execute_insert(
-                "INSERT_BACKUP",
-                (
-                    SM.get_uid(),
-                    f"Archive {arcv_dttm}",
-                    arcv_dttm,
-                    "archive",
-                    p_db,
-                    arcv_nm,
-                    "",
-                ),
-            )
+
+        # Perform the insert operation for the archive metadata
+        self.execute_insert(
+            "BACKUP",
+            (
+                SM.get_uid(),
+                f"Archive {arcv_dttm}",
+                arcv_dttm,
+                "archive",
+                p_db,
+                arcv_nm,
+                "",
+            ),
+        )
+
+        # Copy the specified database file to the archive location
         shutil.copyfile(p_db, arcv_nm)
 
-    def restore_db(self):
-        """Copy backup DB file to main location.
-        @DEV:
-        - Pass name of backup and main files to use.
+    def backup_db(self, p_db: str, p_bak: str):
         """
-        if self.backup_table_exists():
-            bkup_dttm = pendulum.now().format("YYYYMMDD_HHmmss")
-            self.execute_insert(
-                "INSERT_BACKUP",
-                (
-                    SM.get_uid(),
-                    f"Restore {bkup_dttm}",
-                    bkup_dttm,
-                    "restore",
-                    self.DB_BKUP,
-                    self.DB,
-                    "",
-                ),
-            )
-        shutil.copyfile(self.DB_BKUP, self.DB)
+        Copy specified DB file to backup location.
+        Generally this would be the main DB to a backup DB.
+        - There is only ever one backup file.
+        - The existing backup is overwritten. If desired, archive the backup
+          before backing up the main DB.
+
+        :param p_db: Path to specified database file
+        :param p_bak: Path to backup database file
+
+        @DEV:
+        - May want to add a check to see if the backup file exists
+        - Under some initial conditions this method could be called before
+          the backup table is created. In this case we either need to create
+          the backup table skip writing to it.
+        """
+        # Generate a timestamp for the backup operation
+        bkup_dttm = pendulum.now().format("YYYYMMDD_HHmmss")
+
+        # Perform the insert operation for the backup metadata
+        self.execute_insert(
+            "BACKUP",
+            (
+                SM.get_uid(),
+                f"Backup {bkup_dttm}",
+                bkup_dttm,
+                "backup",
+                p_db,
+                p_bak,
+                "",
+            ),
+        )
+
+        # Copy the specified database file to the backup location
+        shutil.copyfile(p_db, p_bak)
+
+    def restore_db(self, p_restore: str):
+        """
+        Copy a backed up or archived DB file to main location.
+
+        :param p_restore: Path to specified database file to restore from
+
+        @DEV:
+        - May need to add checks for existence of files and the backup table.
+        """
+        # Generate a timestamp for the restore operation
+        restore_dttm = pendulum.now().format("YYYYMMDD_HHmmss")
+
+        # Perform the insert operation for the restore metadata
+        self.execute_insert(
+            "BACKUP",
+            (
+                SM.get_uid(),
+                f"Restore {restore_dttm}",
+                restore_dttm,
+                "restore",
+                p_restore,
+                self.DB,
+                "",
+            ),
+        )
+
+        # Copy the specified database file to the main database location
+        shutil.copyfile(p_restore, self.DB)

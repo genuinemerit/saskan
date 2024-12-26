@@ -4,97 +4,33 @@
 :author:    GM (genuinemerit @ pm.me)
 
 Data Management middleware.
-"""
+Standalone methods. No class object is defined.
 
-from collections import OrderedDict
-from pathlib import Path
-from pprint import pformat as pf  # noqa: F401
-from pprint import pprint as pp  # noqa: F401
+=============================================================
+DB/DM table definitions
 
-import data_model_app as DMA
-import data_model_story as DMS
-from method_files import FileMethods
-from method_shell import ShellMethods
+Data models are used to create SQLITE tables and
+standard/generic SQL commands (INSERT, UPDATE, SELECT).
+See:
+- data_model_app.py: for application widgets data.
+- data_model_story.py: for story/game/scenario data.
+All fields must have a default value.
 
-FM = FileMethods()
-SM = ShellMethods()
+A sub-class identifies:
+- SQLITE constraints, e.g. PRIMARY KEY, FOREIGN KEY, CHECKs
+- Sort order for SELECT queries.
 
-# =============================================================
-# DB/DM table definitions
-#
-# The data models are used to create SQLITE tables and
-#   standard/generic SQL commands (INSERT, UPDATE, SELECT).
-# All fields must have a default value.
-# A sub-class identifies:
-# - SQLITE constraints,
-# - GROUPed types derived from data types defined above,
-# - sort order for SELECT queries.
-# This module provides the generic tools for running DDL commands.
-#
-# Moved test data set-up methods into a separate module,
-# under the test directory.
-#
+This module provides standalone methods for creating SQL files and running
+DDL commands to create the tables in the database.
+It also provides translators for displaying SQL results or
+column names as a full dictionary, rather than as a dict of lists,
+which is the default data structure returned by SELECT scripts.
+
 # @DEV:
 # Define database tables to store name, location, other info
 # regarding image, video, sound and possibly other types of resources
-# (plug-ins, mods, external services, etc.).
-# Also regions, countries, provinces, cities, towns, villages, scenes, etc.
-# May want to break this module up into data categories.
-# =======================================================
-
-
-# =============================================================
-# Abstracted methods for Data Model objects
-# =============================================================
-def orm_to_dict(DM: object) -> dict:
-    """Convert data model object to an OrderedDict.
-    Returned attributes order will match SQL order in the database.
-    :args:
-    - DM object
-    """
-    all_vars = OrderedDict(vars(DM))
-    public_vars = OrderedDict(
-        {
-            k: v
-            for k, v in all_vars.items()
-            if not k.startswith("_")
-            and k not in ("Constraints", "to_dict", "from_dict")
-        }
-    )
-    return {all_vars["_tablename"]: public_vars}
-
-
-def orm_from_dict(DM: object, p_dict: dict, p_row: int) -> dict:
-    """
-    Load DB SELECT results into memory.
-    Set data model attributes from dict of listed values
-    and return a regular dict with populated values.
-    :args:
-    - DM - instantiatd data model object
-    - p_dict: dict of lists of values
-    - p_row: row number of the lists of values to use
-    """
-    batch_rec = {
-        k: v
-        for k, v in dict(DM.to_dict()[DM._tablename]).items()
-        if k not in ("_tablename", "to_dict", "from_dict")
-    }
-    for k, v in batch_rec.items():
-        setattr(DM._tablename, k, p_dict[k][p_row])
-        batch_rec[k] = getattr(DM._tablename, k)
-    return batch_rec
-
-
-# =======================================================
-# DB/DM Calls
-# - Create SQL files
-# - Create SQLITE tables
-# =======================================================
-class DataModel(object):
-    """Methods to:
-    - Create set of SQL files to manage the game database.
-    - Boot the database by running the SQL files.
-    More:
+# Probably will want to break modules into more sub-categories.
+    More to come on the story side of things:
       - roads
       - paths
       - trails
@@ -123,123 +59,196 @@ class DataModel(object):
       - temples
       - scenes
       - buildingsmountains, spacecraft, buildings, etc.
+=======================================================
+"""
+
+from collections import OrderedDict
+from pathlib import Path
+from pprint import pformat as pf  # noqa: F401
+from pprint import pprint as pp  # noqa: F401
+
+import method_files as FM
+import method_shell as SM
+import data_model_app as DMA
+import data_model_story as DMS
+
+
+# =============================================================
+# Utilities for Data Model objects
+# =============================================================
+def cols_to_dict(DM: object) -> dict:
     """
+    Convert data model object to an OrderedDict.
+    Returned attributes match SQL order in the database.
 
-    def __init__(self):
-        """Initialize the InitGameDatabase object."""
-        pass
+    :param DM: Data model object
+    :return: Dictionary with table name as key and public attributes as value
+    """
+    # Create an OrderedDict excluding private and specific public methods or attributes
+    public_vars = OrderedDict(
+        (k, v)
+        for k, v in vars(DM).items()
+        if not k.startswith("_") and k not in {"Constraints", "to_dict", "from_dict"}
+    )
 
-    def create_sql(self, DB: object):
-        """Pass data object to create SQL files.
-        Delete all SQL before creating new ones.
-        :args:
-        - DB - current instance of the DB object.
-        """
-        # delete all *.sql in DB.DDL
-        ddl_sql = FM.scan_dir(DB.DDL, "*.sql")
-        for sql_file in ddl_sql:
-            FM.delete_file(sql_file)
-        # delete all *.sql in DB.DML
-        dml_sql = FM.scan_dir(DB.DML, "*.sql")
-        for sql_file in dml_sql:
-            FM.delete_file(sql_file)
-        # data_model_app
-        for model in [
-            DMA.Backup,
-            DMA.Texts,
-            DMA.Frames,
-            DMA.MenuBars,
-            DMA.Menus,
-            DMA.MenuItems,
-            DMA.Windows,
-            DMA.Links,
-            DMA.ButtonSingle,
-            DMA.ButtonMulti,
-            DMA.ButtonItem,
-        ]:
-            DB.generate_sql(model)
+    # Return dictionary with the table name from '_tablename' attribute as the key
+    return {getattr(DM, "_tablename", "unknown_table"): public_vars}
 
-        # data_model_world
-        for model in [
-            DMS.MapRect,
-            DMS.MapBox,
-            DMS.MapSphere,
-            DMS.Grid,
-            DMS.GridCell,
-            DMS.GridInfo,
-            DMS.MapXMap,
-            DMS.GridXMap,
-            DMS.CharSet,
-            DMS.CharMember,
-            DMS.LangFamily,
-            DMS.Language,
-            DMS.LangDialect,
-            DMS.GlossCommon,
-            DMS.Glossary,
-            DMS.Universe,
-            DMS.ExternalUniv,
-            DMS.GalacticCluster,
-            DMS.Galaxy,
-            DMS.StarSystem,
-            DMS.World,
-            DMS.Moon,
-            DMS.Lake,
-            DMS.LakeXMap,
-            DMS.River,
-            DMS.RiverXMap,
-            DMS.OceanBody,
-            DMS.OceanBodyXMap,
-            DMS.OceanBodyXRiver,
-            DMS.LandBody,
-            DMS.LandBodyXMap,
-            DMS.LandBodyXLandBody,
-            DMS.LandBodyXOceanBody,
-            DMS.SolarYear,
-            DMS.Season,
-            DMS.LunarYear,
-            DMS.LunarYearXMoon,
-            DMS.SolarCalendar,
-            DMS.LunarCalendar,
-            DMS.Month,
-            DMS.LunarCalendarXMonth,
-            DMS.SolarCalendarXMonth,
-            DMS.WeekTime,
-            DMS.LunarCalendarXWeekTime,
-            DMS.SolarCalendarXWeekTime,
-            DMS.DayTime,
-            DMS.WeekTimeXDayTime,
-        ]:
-            DB.generate_sql(model)
 
-    def create_db(
-        self,
-        DB: object,
-        p_backup: bool = True,
-    ):
-        """
-        Drop and recreate empty all DB tables.
-        This is a destructive operation.
-        - Backs up and archives DB if it exists.
-        - Always makes a new .ARCV file.
-        - Overlays existing .BAK if it exists.
-        - Does not wipe out existing archived DB's.
-        - Logged records appear in .BAK, not in refreshed .DB
-        :args:
-        - DB - instantiation of the DataBase() Class.
-        - p_backup: bool. If True, backup and archive the .DB
+def rec_to_dict(DM: object, p_dict: dict, p_row: int) -> dict:
+    """
+    Return a regular dict with populated values for one row of data.
 
-        @DEV:
-        - See test/test_data_model_tool.py for examples of
-            populating test data.
-        """
-        if p_backup:
-            file_path = Path(DB.SASKAN_DB)
-            if file_path.exists():
-                DB.backup_db(DB.SASKAN_DB, DB.SASKAN_BAK)
-                DB.archive_db(DB.SASKAN_DB)
+    :param DM: Instantiated data model object
+    :param p_dict: Dictionary containing lists of values (e.g., from a SELECT)
+    :param p_row: Row number of the lists of values to return
+    :return: Dictionary with column names as keys and corresponding row values
+    """
+    # Create a dictionary of public attributes using cols_to_dict()
+    table_name = getattr(DM, "_tablename", "unknown_table")
+    rec = cols_to_dict(DM).get(table_name, {})
 
-        sql_list = [sql.name for sql in FM.scan_dir(DB.DDL, "DROP*")]
-        DB.execute_ddl(sql_list, p_foreign_keys_on=False)
+    # Populate the record with values from p_dict for the specified row
+    rec.update((col, v_list[p_row]) for col, v_list in p_dict.items())
 
-        sql_list = [sql.name for sql in FM.scan_dir(DB.DDL, "CREATE*")]
-        DB.execute_ddl(sql_list, p_foreign_keys_on=True)
+    return rec
+
+
+# =======================================================
+# DB/DM DDL Calls
+# - Create DDL and DML SQL files
+# - Create SQLITE database and tables
+# =======================================================
+def create_sql(DB: object) -> bool:
+    """
+    Pass data object to create SQL files.
+    Delete all existing SQL before creating new ones.
+
+    :param DB: Current instance of the DB object.
+    :return: True if successful, False otherwise
+    """
+    # Combine DDL and DML directories for efficient processing
+    directories = [DB.DDL, DB.DML]
+
+    try:
+        # Delete all *.sql files in specified directories
+        for directory in directories:
+            for sql_file in FM.scan_dir(directory, "*.sql"):
+                FM.delete_file(sql_file)
+
+        # Define data models for processing with their respective categories
+        # Metadata table must be the first table in the list
+        data_models = {
+            "app": [
+                DMA.Backup,
+                DMA.Texts,
+                DMA.Frames,
+                DMA.MenuBars,
+                DMA.Menus,
+                DMA.MenuItems,
+                DMA.Windows,
+                DMA.Links,
+                DMA.ButtonSingle,
+                DMA.ButtonMulti,
+                DMA.ButtonItem,
+            ],
+            "story": [
+                DMS.MapRect,
+                DMS.MapBox,
+                DMS.MapSphere,
+                DMS.Grid,
+                DMS.GridCell,
+                DMS.GridInfo,
+                DMS.MapXMap,
+                DMS.GridXMap,
+                DMS.CharSet,
+                DMS.CharMember,
+                DMS.LangFamily,
+                DMS.Language,
+                DMS.LangDialect,
+                DMS.GlossCommon,
+                DMS.Glossary,
+                DMS.Universe,
+                DMS.ExternalUniv,
+                DMS.GalacticCluster,
+                DMS.Galaxy,
+                DMS.StarSystem,
+                DMS.World,
+                DMS.Moon,
+                DMS.Lake,
+                DMS.LakeXMap,
+                DMS.River,
+                DMS.RiverXMap,
+                DMS.OceanBody,
+                DMS.OceanBodyXMap,
+                DMS.OceanBodyXRiver,
+                DMS.LandBody,
+                DMS.LandBodyXMap,
+                DMS.LandBodyXLandBody,
+                DMS.LandBodyXOceanBody,
+                DMS.SolarYear,
+                DMS.Season,
+                DMS.LunarYear,
+                DMS.LunarYearXMoon,
+                DMS.SolarCalendar,
+                DMS.LunarCalendar,
+                DMS.Month,
+                DMS.LunarCalendarXMonth,
+                DMS.SolarCalendarXMonth,
+                DMS.WeekTime,
+                DMS.LunarCalendarXWeekTime,
+                DMS.SolarCalendarXWeekTime,
+                DMS.DayTime,
+                DMS.WeekTimeXDayTime,
+            ],
+        }
+
+        # Generate SQL for each model category
+        for category, models in data_models.items():
+            for model in models:
+                success = DB.generate_sql(model, category)
+                if not success:
+                    raise Exception(
+                        f"Error generating SQL for model {model} in category {category}"
+                    )
+
+    except Exception as e:
+        # Log exception or handle it
+        print(f"An error occurred while generating SQL files: {SM.show_trace(e)}")
+        return False
+
+    return True
+
+
+def create_db(DB: object, p_backup: bool = True):
+    """
+    Drop and recreate empty all DB tables.
+    This is a destructive operation.
+    - Back up and archive DB if it exists.
+    - Always make a new .ARCV file.
+    - Overlay existing .BAK if it exists.
+    - Do not wipe out existing archived DB's.
+    - Logged records appear in .BAK, not in refreshed .DB
+    :param DB: Instantied DataBase() Class.
+    :param p_backup: Booean flag. If True, backup and archive the .DB
+    """
+    if p_backup:
+        bkup_path = Path(DB.HOFIN_BAK)
+        if bkup_path.exists():
+            DB.archive_db(DB.HOFIN_BAK)
+        db_path = Path(DB.HOFIN_DB)
+        if db_path.exists():
+            DB.backup_db(db_path, DB.HOFIN_BAK)
+
+    # Use a single call to execute_ddl with concatenated SQL lists for efficiency
+    drop_sql_list = [sql.name for sql in FM.scan_dir(DB.DDL, "DROP*")]
+    create_sql_list = [sql.name for sql in FM.scan_dir(DB.DDL, "CREATE*")]
+
+    # Execute DROP statements without foreign key constraints
+    ok = DB.execute_ddl(drop_sql_list, p_foreign_keys_on=False)
+    if ok:
+        print("Database tables dropped.")
+        # Execute CREATE statements with foreign key constraints
+        ok = DB.execute_ddl(create_sql_list, p_foreign_keys_on=True)
+        if ok:
+            print("Database tables created.")

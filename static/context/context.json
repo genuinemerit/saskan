@@ -1,1 +1,18 @@
-{"cfg": {"frames": "boot/config/frames.json", "links": "boot/config/links.json", "menus": "boot/config/menus.json", "texts": "boot/config/texts.json", "widgets": "boot/config/widgets.json", "windows": "boot/config/windows.json"}, "db": "db", "ddl": "boot/ddl", "dml": "db/dml", "git": "github.com/genuinemerit/saskan-app/", "lang": "en", "saskan_db": "db/SASKAN.db", "saskan_bak": "db/SASKAN.bak", "wiki": "github.com/genuinemerit/saskan-wiki/"}
+{
+    "cfg": {
+        "frames": "boot/config/frames.json",
+        "links": "boot/config/links.json",
+        "menus": "boot/config/menus.json",
+        "texts": "boot/config/texts.json",
+        "widgets": "boot/config/widgets.json",
+        "windows": "boot/config/windows.json"
+    },
+    "db": "db",
+    "ddl": "boot/ddl",
+    "dml": "db/dml",
+    "git": "github.com/genuinemerit/saskan-app/",
+    "lang": "en",
+    "saskan_db": "db/SASKAN.db",
+    "saskan_bak": "db/SASKAN.bak",
+    "wiki": "github.com/genuinemerit/saskan-wiki/"
+}
