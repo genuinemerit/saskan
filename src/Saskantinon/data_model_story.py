@@ -4,6 +4,27 @@
 :author:    GM (genuinemerit @ pm.me)
 
 Saskan Data Management middleware.
+
+Data models for story-related components of the app,
+like maps, languages, settings, characters and so on.
+
+- Use the `$$ .. $$` docstring formatting. It is specific to defining/extracting metadata.
+  Metadata is defined in the comment blocks, separated by '$$'.
+  Don't use quotes or apostrophes inside metadata definitions.
+- Metadata is extracted from the data model classes by the DataBase() class to
+  provide definitions stored in the METADATA table. It is defined in the
+  doctrings of each model class, using the following syntax:
+    $$
+    - field_name: description of the field
+    - field_name: description of the field
+    $$
+
+- Store files and images in the database as BLOBs, not as external files.
+  Modify the data models to include BLOBs for images, sounds and included files where appropriate.
+
+- Do NOT use an __init__ method in data model classes. We never instantiate them.
+  The data types and default values are extracted directly by the DataBase() class
+  reading the "magic" __dict__ attribute of the classes.
 """
 
 from pprint import pformat as pf  # noqa: F401
@@ -28,7 +49,7 @@ class MapRect(object):
     Can contain, overlap, border other Map_Rect structures.
     Can be associated with granular Grid data tables, such as:
     - geography (continents, regions, mountains, hills, rivers,
-        lakes, seas, oceans, etc.)
+      lakes, seas, oceans, etc.)
     - political boundaries (countries, provinces, states, counties, etc.)
     - roads, paths, trails, waterways, bodies of water, etc.
     - cities, towns, villages, neighborhoods, etc.
@@ -38,6 +59,20 @@ class MapRect(object):
     3 shapes: rectangle, box, sphere.
     6 types (can be of any shape):
         "geo", "astro", "underwater", "underground", "info", "political"
+
+    $$
+    - map_rect_uid_pk: Primary key, unique identifier for each map rectangle
+    - map_shape: Shape of the map area (e.g., rectangle, box, sphere)
+    - map_type: Type of map area (e.g., geo, astro, underwater)
+    - map_name: Name of the map rectangle
+    - map_desc: Description of the map rectangle
+    - north_lat: Northern latitude boundary of the map rectangle
+    - south_lat: Southern latitude boundary of the map rectangle
+    - east_lon: Eastern longitude boundary of the map rectangle
+    - west_lon: Western longitude boundary of the map rectangle
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
+
     """
 
     _tablename: str = "MAP_RECT"
@@ -75,6 +110,22 @@ class MapBox(MapRect):
     They should reflect the maximum meters in each direction.
     Can contain, overlap, border other Map_Rect structures.
     Can be associated with granular Grid data tables.
+
+    $$
+    - map_box_uid_pk: Primary key, unique identifier for each map box
+    - map_shape: Shape of the map area (e.g., box)
+    - map_type: Type of map area (e.g., geo, astro, underwater)
+    - map_name: Name of the map box
+    - map_desc: Description of the map box
+    - north_lat: Northern latitude boundary of the map box
+    - south_lat: Southern latitude boundary of the map box
+    - east_lon: Eastern longitude boundary of the map box
+    - west_lon: Western longitude boundary of the map box
+    - up_m: Maximum meters upwards from the base level
+    - down_m: Maximum meters downwards from the base level
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
+
     """
 
     _tablename: str = "MAP_BOX"
@@ -122,7 +173,22 @@ class MapSphere(MapRect):
     @DEV:
     - See if we can tweak this class to support ellipsoids.
     - Should just be matter of providing a second set of axes.
-    - Would probably want to make it a separate class, to be consistent.
+    - Nah. Should make it a separate class, to be consistent.
+
+    $$
+    - map_sphere_uid_pk: Primary key, unique identifier for each map sphere
+    - map_shape: Shape of the map area (e.g., sphere)
+    - map_type: Type of map area (e.g., geo, astro, underwater)
+    - map_name: Name of the map sphere
+    - map_desc: Description of the map sphere
+    - origin_lat: Latitudinal coordinate of the sphere's origin
+    - origin_lon: Longitudinal coordinate of the sphere's origin
+    - z_value: Z coordinate value, indicating height or depth from a reference point
+    - unit_of_measure: Unit of measure used for dimensions (e.g., meters, parsecs)
+    - sphere_radius: Radius of the sphere
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
+
     """
 
     _tablename: str = "MAP_SPHERE"
@@ -165,8 +231,8 @@ class Grid(object):
 
     The Grid itself only defines the dimensions of the matrix; it does
     not store data in the cells. If a Grid or Grid cell needs to be mapped
-    to Pygame pixel or some story-telling or mapping dimension like km, that
-    is handled algorithmically.
+    to Pygame pixel or some story-telling or mapping dimension like km,
+    that is handled algorithmically.
 
     Dimensions are defined as x=col=east-west, y=row=north-south and
     zu=up-from-zeroth-row, zd=down-from-zeroth-row. The cnt is the number
@@ -176,6 +242,17 @@ class Grid(object):
     the Grid table.  Values for each cell are stored in the GridCellValue table.
 
     Grids are always associated with one or more MAP_* tables.
+
+    $$
+    - grid_uid_pk: Primary key, unique identifier for each grid
+    - grid_name: Name of the grid
+    - x_col_cnt: Number of columns (east-west direction)
+    - y_row_cnt: Number of rows (north-south direction)
+    - z_up_cnt: Number of layers above the zeroth row
+    - z_down_cnt: Number of layers below the zeroth row
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
+
     """
 
     _tablename: str = "GRID"
@@ -205,21 +282,34 @@ class GridCell(object):
     The GridCell structure defines a given data cell within a Grid.
     The grid_cell_name is an optional descriptive name for a cell.
     The grid_cell-id is its x/y/z location in the Grid matrix,
-    where a postive z is up and negative z is down. x and y locations
+    where a positive z is up and negative z is down. x and y locations
     are zero-based and begin in the "lower-left" or "south-west" or
     "front-left" corner of the Grid. In the ID field, the values are
-    stored in the form of a python tuple, .e.g. (3, 4, -2)
+    stored in the form of a python tuple, e.g., (3, 4, -2).
     Each individual index is stored as an integer.
 
     There can be zero to many name:value type of data associated
     with a given grid. Fairly open-ended. Those values are defined
     in the GridCellValue table, which holds an FK to the GridCell.
 
+    $$
+    - grid_cell_uid_pk: Primary key, unique identifier for each grid cell
+    - grid_uid_fk: Foreign key linking to the Grid table
+    - grid_name: Name of the grid this cell belongs to
+    - grid_cell_name: Optional descriptive name for the grid cell
+    - x_col_ix: Zero-based column index (east-west direction)
+    - y_row_ix: Zero-based row index (north-south direction)
+    - z_up_down_ix: Index indicating vertical position (positive for up, negative for down)
+    - grid_cell_id: Tuple representing the x, y, z location in the Grid matrix
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
+
     """
 
     _tablename: str = "GRID_CELL"
     grid_cell_uid_pk: str = ""
     grid_uid_fk: str = ""
+    grid_name: str = ""
     grid_cell_name: str = ""
     x_col_ix: int = 0
     y_row_ix: int = 0
@@ -245,19 +335,34 @@ class GridInfo(object):
     """
     The GridInfo structure holds information that belongs
     to a given cell within a grid.
-    The ID is short descriptive tag for the cell value.
-    The Type identifies the data type of the value.
-    The Name is a suitable label for the value.
-    The Value is the actual value, which may be a URL.
+
+    $$
+    - grid_info_uid_pk: Primary key, unique ID for each grid info record
+    - grid_uid_fk: Foreign key linking to the Grid table
+    - grid_cell_uid_fk: Foreign key linking to the GridCell table
+    - grid_name: Name of the grid this information belongs to
+    - grid_cell_name: Name of grid cell this info is associated with
+    - grid_info_id: Short descriptive tag for the cell value
+    - grid_info_data_type: Data type of the value (e.g., string, integer)
+    - grid_info_name: Label for value, providing context or description
+    - grid_info_value: Actual value, which might be binary data
+    - grid_info_path: Path for storing data outside the database
+    - delete_dt: Deletion date, when the record was marked for deletion
+    $$
+
     """
 
     _tablename: str = "GRID_INFO"
     grid_info_uid_pk: str = ""
+    grid_uid_fk: str = ""
     grid_cell_uid_fk: str = ""
+    grid_name: str = ""
+    grid_cell_name: str = ""
     grid_info_id: str = ""
     grid_info_data_type: str = ""
     grid_info_name: str = ""
-    grid_info_value: str = ""
+    grid_info_value: bytes = b""
+    grid_info_path: str = ""
     delete_dt: str = ""
 
     def to_dict(self) -> dict:
@@ -270,7 +375,10 @@ class GridInfo(object):
 
     class Constraints(object):
         PK: str = "grid_info_uid_pk"
-        FK: dict = {"grid_cell_uid_fk": ("GRID_CELL", "grid_cell_uid_pk")}
+        FK: dict = {
+            "grid_cell_uid_fk": ("GRID_CELL", "grid_cell_uid_pk"),
+            "grid_uid_fk": ("GRID", "grid_uid_pk")
+        }
         CK: dict = {"grid_info_data_type": EntityType.DATA_TYPE}
         ORDER: list = ["grid_info_name ASC"]
 
@@ -281,15 +389,28 @@ class MapXMap(object):
     - MAP_* (n) <--> MAP_* (n)
     The "touch type" reads in direction 1-->2.
     For example, 1-contains-2, 1-is_contained_by-2, etc.
-    In this case, the FK rule is not enforced, only managed.
+
+    On this table, the FK rule is not enforced, only managed.
     This is so we can use this structure for any type of map,
-    and even mix different types.
+    and even mix different types. This type of "FK" is not identified
+    in the Constraints class, as it is not a true FK.
+    We use the designation `_vfk` to indicate a virtual FK.
+
+    $$
+    - map_x_map_uid_pk: Primary key, unique ID for each map-to-map association
+    - map_uid_1_vfk: Virtual foreign key representing the first map in the association
+    - map_uid_2_vfk: Virtual foreign key representing the second map in the association
+    - touch_type: Describes the relationship type between the two maps (e.g.,
+      contains, is_contained_by)
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
+
     """
 
     _tablename: str = "MAP_X_MAP"
     map_x_map_uid_pk: str = ""
-    map_uid_1_fk: str = ""
-    map_uid_2_fk: str = ""
+    map_uid_1_vfk: str = ""
+    map_uid_2_vfk: str = ""
     touch_type: str = ""
     delete_dt: str = ""
 
@@ -313,12 +434,23 @@ class GridXMap(object):
     FK field is indexed for the Grid association,
     but the Map FK is handled algorithmically so that this
     can be used on multiple types of MAP_* tables.
+
+    $$
+    - grid_x_map_uid_pk: Primary key, unique identifier for
+      each grid-to-map association
+    - grid_uid_fk: Foreign key representing the associated grid, indexed for performance
+    - map_uid_vfk: Virtual foreign key representing the associated map,
+      adaptable for various MAP_* tables
+    - delete_dt: Deletion date, indicating when the record was
+      marked for deletion
+    $$
+
     """
 
     _tablename: str = "GRID_X_MAP"
     grid_x_map_uid_pk: str = ""
     grid_uid_fk: str = ""
-    map_uid_fk: str = ""
+    map_uid_vfk: str = ""
     delete_dt: str = ""
 
     def to_dict(self) -> dict:
@@ -340,8 +472,8 @@ class GridXMap(object):
 class CharSet(object):
     """
     Description of a set of characters used in a language.
-    Provide to the name of a font. We'll define where fonts
-    gets stored in the app tree elsewhere, like the boot
+    Provide the name of a font. We'll define where fonts
+    get stored in the app tree elsewhere, like the boot
     configuration. The font name is generic. It may encompass
     multiple types of font files, e.g, tff, otf, dfont, etc.
 
@@ -358,7 +490,7 @@ class CharSet(object):
     An alphabet represents consonants and vowels each
     separately as individual letters.
 
-    An abjad represents consonants only as distinct letters;
+    An abjad represents only consonants as distinct letters;
     vowels are represented as diacritics. In some cases, the
     vowels may be omitted entirely, and are implied from
     context.
@@ -378,6 +510,19 @@ class CharSet(object):
     a word or concept. In some languages, the ideogram may
     actually be compound, with one portion signalling the
     pronunciation, and another portion signalling the meaning.
+
+    $$
+    - char_set_uid_pk: Primary key, unique ID for each character set
+    - font_name: Name of the font associated with the character set,
+      supports multiple font file types
+    - char_set_type: Type of the character set, default is 'alphabet',
+      can be 'abjad', 'abugida', 'syllabary', or 'ideogram'
+    - char_set_desc: Description of the character set, providing
+      additional context or details
+    - delete_dt: Deletion date, indicating when the record was
+      marked for deletion
+    $$
+
     """
 
     _tablename: str = "CHAR_SET"
@@ -405,18 +550,29 @@ class CharMember(object):
     """
     Describe individual characters in a character set.
     Where the character is not represented in Unicode, a reference
-    to a picture of the characteris stored, along with name and
-    description.
-    Member types are defined by the type of writing system
-    (character set) they belong to. Further categorizations
-    are possible for numerics, punctuation, and so on.
+    to a picture or a binary of the image of the character is stored,
+    along with name and description. Member types are defined by
+    the type of writing system (character set) they belong to. Further
+    categorizations are possible for numerics, punctuation, and so on.
+
+    $$
+    - char_member_uid_pk: Primary key, unique identifier for each character member
+    - char_set_uid_fk: Foreign key referencing the character set this member belongs to
+    - char_member_name: Name of the character member
+    - char_member_image: Binary data representing the image of the character if not available in Unicode
+    - char_member_path: File path to the image or representation of the character
+    - char_member_desc: Description providing additional details about the character member
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
+
     """
 
     _tablename: str = "CHAR_MEMBER"
     char_member_uid_pk: str = ""
     char_set_uid_fk: str = ""
     char_member_name: str = ""
-    char_member_uri: str = ""
+    char_member_image: bytes = b""
+    char_member_path: str = ""
     char_member_desc: str = ""
     delete_dt: str = ""
 
@@ -432,6 +588,12 @@ class CharMember(object):
         PK: str = "char_member_uid_pk"
         FK: dict = {"char_set_uid_fk": ("CHAR_SET", "char_set_uid_pk")}
         ORDER: list = ["char_member_name ASC"]
+
+
+# Pick up here. Note that no SET methods have been defined yet
+# for the following classes, except for association tables, which
+# are handled generically. However, all X classes need to be
+# modified to include a touch_type column.
 
 
 class LangFamily(object):

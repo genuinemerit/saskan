@@ -5,11 +5,27 @@
 
 Saskan Data Management middleware.
 
-# x Convert g_ and t_ configs to database tables.
-# x Convert the APP values on c_context.json to db tables.
-# - Convert the schema files to db tables: services, ontology
-# - Convert the time and scenes to db tables.
-# - If needed, modify the geo and astro db tables per schema files
+Data models for core components of the app,
+like frames, buttons, menus and links.
+
+- Use the `$$ .. $$` docstring formatting. It is specific to defining/extracting metadata.
+  Metadata is defined in the comment blocks, separated by '$$'.
+  Don't use quotes or apostrophes inside metadata definitions.
+- Metadata is extracted from the data model classes by the DataBase() class to
+  provide definitions stored in the METADATA table. It is defined in the
+  doctrings of each model class, using the following syntax:
+    $$
+    - field_name: description of the field
+    - field_name: description of the field
+    $$
+
+- Store files and images in the database as BLOBs, not as external files.
+  Modify the data models to include BLOBs for images, sounds and included files where appropriate.
+
+- Do NOT use an __init__ method in data model classes. We never instantiate them.
+  The data types and default values are extracted directly by the DataBase() class
+  reading the "magic" __dict__ attribute of the classes.
+
 # =============================================================
 """
 
@@ -29,7 +45,17 @@ SM = ShellMethods()
 # System Maintenance
 # =============================================================
 class Backup(object):
-    """Store metadata about DB backup, restore, archive, export."""
+    """Store metadata about DB backup, restore, archive, export.
+    $$
+    - bkup_uid_pk: Primary key
+    - bkup_name: Name of the backup
+    - bkup_dttm: Date and time of the backup
+    - bkup_type: Type of backup, e.g., 'full', 'incremental'
+    - file_from: Source file or directory
+    - file_to: Destination file or directory
+    - delete_dt: Date and time the record was deleted
+    $$
+    """
 
     _tablename: str = "BACKUP"
     bkup_uid_pk: str = ""  # Primary key
@@ -60,6 +86,13 @@ class Texts(object):
     - Name/ID/label of a text string, not unique. shared
       across languages..
     - Text string value.
+    $$
+    - text_uid_pk: Primary key, unique identifier for each text entry
+    - lang_code: Language code of the text, e.g., en, de, fr
+    - text_name: Name/ID/label of a text string, not unique, shared across languages
+    - text_value: Text string value
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
     """
 
     _tablename: str = "TEXTS"
@@ -89,8 +122,22 @@ class Texts(object):
 class Frames(object):
     """Define the values for frames i.e., the outermost window.
     - Optionally may have info-bar and page-header
-    - frame_id: not unique, can be shared by apps,
-       e.g. 'admin' or 'game'
+
+    $$
+    - frame_uid_pk: Primary key, unique identifier for each frame entry
+    - lang_code: Language code of the frame, e.g., en, de, fr
+    - frame_id: Not unique, can be shared by apps, e.g., 'admin' or 'game'
+    - frame_title: Title of the frame
+    - frame_desc: Description of the frame
+    - frame_w: Width of the frame
+    - frame_h: Height of the frame
+    - pg_hdr_x: X-coordinate of the page header
+    - pg_hdr_y: Y-coordinate of the page header
+    - pg_hdr_w: Width of the page header
+    - pg_hdr_h: Height of the page header
+    - pg_hdr_txt: Text displayed in the page header
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
     """
 
     _tablename: str = "FRAMES"
@@ -124,9 +171,21 @@ class Frames(object):
 
 class MenuBars(object):
     """Define dimensions for Menu Bars used in frames.
-    - frame_id: match to FRAMES record(s)
+    - frame_id: Match to FRAMES record(s)
+
+    $$
+    - menu_bar_uid_pk: Primary key, unique identifier for each menu bar entry
+    - frame_uid_fk: Foreign key referencing the frame's unique identifier
+    - frame_id: Identifier to match with corresponding frame records
+    - mbar_margin: Margin around the menu bar
+    - mbar_h: Height of the menu bar
+    - mbar_x: X-coordinate of the top-left corner relative to the frame
+    - mbar_y: Y-coordinate of the top-left corner relative to the frame
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
+
     There is no displayed text on this structure; it is a container.
-    Its width (w) is derived from width of the frame.
+    Its width (w) is derived from the width of the frame.
     Its top-left x, y is relative to the frame.
     """
 
@@ -155,9 +214,18 @@ class MenuBars(object):
 
 
 class Menus(object):
-    """Define the values for Menus, i.e, name of a dropdown.
-    - menu_id: generic string label "ID" or key for menu
-    - menu_name: text string label for menu in designated language
+    """Define the values for Menus, i.e., name of a dropdown.
+
+    $$
+    - menu_uid_pk: Primary key, unique identifier for each menu entry
+    - menu_bar_uid_fk: Foreign key referencing the associated menu bar
+    - frame_id: Identifier to match with corresponding frame records
+    - lang_code: Language code for the menu text
+    - menu_id: Generic string label "ID" or key for menu
+    - menu_name: Text string label for menu in designated language
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
+
     """
 
     _tablename: str = "MENUS"
@@ -185,9 +253,22 @@ class Menus(object):
 
 
 class MenuItems(object):
-    """Define the values for Menu Items, i.e, each item on a Dropdown.
-    - item_id: generic string label "ID" or key for menu item
-    - item_name: text string label for menu in designated language
+    """Define the values for Menu Items, i.e., each item on a Dropdown.
+
+    $$
+    - item_uid_pk: Primary key, unique identifier for each menu item entry
+    - menu_uid_fk: Foreign key referencing the associated menu
+    - lang_code: Language code for the menu item text
+    - frame_id: Identifier to match with corresponding frame records
+    - item_id: Generic string label "ID" or key for menu item
+    - item_order: Order of the item within the menu
+    - item_name: Text string label for menu item in designated language
+    - key_binding: Shortcut key binding for the menu item
+    - help_text: Help text or description for the menu item
+    - enabled_by_default: Boolean indicating if the item is enabled by default
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
+
     """
 
     _tablename: str = "MENU_ITEMS"
@@ -200,7 +281,7 @@ class MenuItems(object):
     item_name: str = ""
     key_binding: str = ""
     help_text: str = ""
-    enabled_default: bool = True
+    enabled_by_default: bool = True
     delete_dt: str = ""
 
     def to_dict(self) -> dict:
@@ -220,6 +301,18 @@ class MenuItems(object):
 
 class Windows(object):
     """Define the values for screens within the game.
+
+    $$
+    - win_uid_pk: Primary key, unique identifier for each window entry
+    - frame_uid_fk: Foreign key referencing the associated frame
+    - frame_id: Identifier to match with corresponding frame records
+    - lang_code: Language code for the window text
+    - win_id: Generic string label "ID" or key for the window
+    - win_title: Title of the window in designated language
+    - win_margin: Margin size around the window
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
+
     """
 
     _tablename: str = "WINDOWS"
@@ -249,9 +342,21 @@ class Windows(object):
 
 class Links(object):
     """Define the values for URIs used in the app.
-    - link_name: displayed name for the link
-    - link_value: URI to retrieve
-    - link_icon: name of a file in app images directory
+
+    $$
+    - link_uid_pk: Primary key, unique identifier for each link entry
+    - lang_code: Language code associated with the link
+    - link_id: Identifier for the specific link
+    - frame_id: Identifier for the frame associated with the link
+    - link_protocol: Protocol type (e.g., HTTP, HTTPS) used by the link
+    - mime_type: MIME type specifying the nature of the link content
+    - link_name: Descriptive name of the link
+    - link_value: The actual URI or address represented by the link
+    - link_icon: Icon representing the link visually (stored as BLOB)
+    - link_icon_path: Path to the icon file
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
+
     """
 
     _tablename: str = "LINKS"
@@ -263,7 +368,8 @@ class Links(object):
     mime_type: str = ""
     link_name: str = ""
     link_value: str = ""
-    link_icon: str = ""
+    link_icon: bytes = b""
+    link_icon_path: str = ""
     delete_dt: str = ""
 
     def to_dict(self) -> dict:
@@ -286,27 +392,38 @@ class Links(object):
 
 class ButtonSingle(object):
     """Define the values for binary buttons used in the app.
-    - button_name: displayed name for the button
-    - button_icon: name of a file in app images directory
-      or empty string for no icon
-    - button_key: key to press to activate button
-    - x, y: position of top-left relative to window
-    - enabled: True to enable, False to disable
-    - help_text: text to display when mouse hovers over button
-    - action: name of function to call when button is clicked
+
+    $$
+    - button_single_uid_pk: Primary key, unique identifier for each button entry
+    - button_type: Type of button (e.g., submit, reset)
+    - button_name: Displayed name for the button
+    - button_icon: Binary data representing the button's icon image
+    - button_icon_path: Path to the icon file in the app images directory
+    - button_key: Key to press to activate the button
+    - frame_uid_fk: Foreign key linking to the associated frame
+    - window_uid_fk: Foreign key linking to the associated window
+    - left_x: X-coordinate position of top-left corner relative to the window
+    - top_y: Y-coordinate position of top-left corner relative to the window
+    - enabled_by_default: True to enable, False to disable the button
+    - help_text: Text to display when the mouse hovers over the button
+    - action: Name of the function to call when the button is clicked
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
+
     """
 
     _tablename: str = "BUTTON_SINGLE"
     button_single_uid_pk: str = ""
     button_type: str = ""
     button_name: str = ""
-    button_icon: str = ""
+    button_icon: bytes = b""
+    button_icon_path: str = ""
     button_key: str = ""
     frame_uid_fk: str = ""
     window_uid_fk: str = ""
-    x: float = 0.0
-    y: float = 0.0
-    enabled: bool = True
+    left_x: float = 0.0
+    top_y: float = 0.0
+    enabled_by_default: bool = True
     help_text: str = ""
     action: str = ""
     delete_dt: str = ""
@@ -330,18 +447,36 @@ class ButtonSingle(object):
 
 
 class ButtonMulti(object):
-    """Define values for multi-choice button group"""
+    """Define values for multi-choice button group.
+
+    $$
+    - button_multi_uid_pk: Primary key, unique identifier for each button group entry
+    - button_type: Type of button group (e.g., radio, checkbox)
+    - button_name: Displayed name for the button group
+    - button_icon: Binary data representing the button group's icon image
+    - button_icon_path: Path to the icon file in the app images directory
+    - frame_uid_fk: Foreign key linking to the associated frame
+    - window_uid_fk: Foreign key linking to the associated window
+    - x: X-coordinate position of top-left corner relative to the window
+    - y: Y-coordinate position of top-left corner relative to the window
+    - enabled_by_default: True to enable, False to disable the button group
+    - help_text: Text to display when the mouse hovers over the button group
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
+
+    """
 
     _tablename: str = "BUTTON_MULTI"
     button_multi_uid_pk: str = ""
     button_type: str = ""
     button_name: str = ""
-    button_icon: str = ""
+    button_icon: bytes = b""
+    button_icon_path: str = ""
     frame_uid_fk: str = ""
     window_uid_fk: str = ""
-    x: float = 0.0
-    y: float = 0.0
-    enabled: bool = True
+    left_x: float = 0.0
+    top_y: float = 0.0
+    enabled_by_default: bool = True
     help_text: str = ""
     delete_dt: str = ""
 
@@ -364,17 +499,33 @@ class ButtonMulti(object):
 
 
 class ButtonItem(object):
-    """Define values for button item within a check or
-    radio button group.
+    """Define values for button item within a check or radio button group.
+
+    $$
+    - button_item_uid_pk: Primary key, unique identifier for each button item
+    - button_multi_uid_fk: Foreign key linking to the associated multi-choice button group
+    - button_name: Displayed name for the button item
+    - button_icon: Binary data representing the button item's icon image
+    - button_icon_path: Path to the icon file in the app images directory
+    - button_order: Integer defining the display order of the button item within the group
+    - button_action: Action or command executed when the button is pressed
+    - enabled_by_default: True to enable, False to disable the button item by default
+    - is_enabled: Indicates if the button item is currently enabled
+    - help_text: Text to display when the mouse hovers over the button item
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
+
     """
 
     _tablename: str = "BUTTON_ITEM"
     button_item_uid_pk: str = ""
     button_multi_uid_fk: str = ""
     button_name: str = ""
-    button_icon: str = ""
+    button_icon: bytes = b""
+    button_icon_path: str = ""
     button_order: int = 0
     button_action: str = ""
+    enabled_by_default: bool = True
     is_enabled: bool = True
     help_text: str = ""
     delete_dt: str = ""
@@ -391,3 +542,5 @@ class ButtonItem(object):
         PK: str = "button_item_uid_pk"
         FK: dict = {"button_multi_uid_fk": ("BUTTON_MULTI", "button_multi_uid_pk")}
         ORDER: list = ["button_name ASC"]
+
+

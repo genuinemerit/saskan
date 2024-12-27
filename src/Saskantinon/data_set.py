@@ -8,8 +8,6 @@ Saskan Data Management middleware.
 """
 
 import json
-import random
-import secrets
 import method_files as FM
 import method_shell as SM
 import data_model_app as DMA
@@ -20,7 +18,7 @@ from pprint import pformat as pf  # noqa: F401
 from pprint import pprint as pp  # noqa: F401
 from data_base import DataBase
 from data_get import GetData
-from data_structs import EntityType, Colors
+from data_structs import Colors
 
 GD = GetData()
 
@@ -34,16 +32,53 @@ class SetData:
     @TODO:
     - Add method for loading WIDGETS table from config data,
       after defining the WIDGETS data model.
+    - Once the Admin front-end is more defined, many of the methods
+      for setting data on the Story models can likely be added here.
     """
 
     def __init__(self):
         """
         Initialize a new instance of the SetData class.
         """
-        self.GRID_UID: dict = {}
         self.CONTEXT = FM.get_json_file("static/context/context.json")
         self.USERDATA = FM.get_json_file("static/context/userdata.json")
         self.DB = DataBase(self.CONTEXT)
+
+    def _virtual_delete(self, p_table_nm: str, p_rec: dict) -> bool:
+        """
+        Mark a record as deleted by setting the delete_dt column to the current time.
+        :param p_table_nm: Name of the table to update.
+        :param p_rec: Dict of current record values.
+        :return: True if the operation is successful, False otherwise.
+        """
+        rec = p_rec.copy()
+        rec["delete_dt"] = SM.get_iso_time_stamp()
+        uid_key = f"{p_table_nm}_uid_pk"
+        uid = rec[uid_key]
+        del rec[uid_key]
+        return self.DB.execute_update(p_table_nm, uid, tuple(rec.values()))
+
+    def _prep_data_set(self, data_model: object) -> tuple:
+        """
+        Prepare data sets for a given table, based on data model and
+        its related JSON boot->config file.
+
+        :param DM: An instance of a data model class.
+        :returns: A tuple containing:
+                  - Table name (str)
+                  - Table data (dict) from JSON configuration
+                  - Column names for the selected model (ordered dict)
+        """
+        # Extract table name and determine configuration path
+        tbl_nm = data_model._tablename
+        # Retrieve configuration file path
+        config_path = self.CONTEXT["cfg"].get(tbl_nm.lower(), "")
+        # Load table data from JSON file if a valid configuration path is provided
+        tbl_data = FM.get_json_file(config_path) if config_path else {}
+        # Convert model to an ordered dictionary of tbl_cols
+        tbl_cols = OrderedDict(data_model.to_dict()[tbl_nm])
+        # Return a prepared set of things to help optimize SET operations
+        return (tbl_nm, tbl_data, tbl_cols)
 
     def boot_user_data(self, p_userdata_path: str = None) -> None:
         """
@@ -76,20 +111,6 @@ class SetData:
 
         # Update instance variables
         self.USERDATA = context_data
-
-    def _virtual_delete(self, p_table_nm: str, p_rec: dict) -> bool:
-        """
-        Mark a record as deleted by setting the delete_dt column to the current time.
-        :param p_table_nm: Name of the table to update.
-        :param p_rec: Dict of current record values.
-        :return: True if the operation is successful, False otherwise.
-        """
-        rec = p_rec.copy()
-        rec["delete_dt"] = SM.get_iso_time_stamp()
-        uid_key = f"{p_table_nm}_uid_pk"
-        uid = rec[uid_key]
-        del rec[uid_key]
-        return self.DB.execute_update(p_table_nm, uid, tuple(rec.values()))
 
     # Template for an insert/update method where value/s passed in as string
     # Eventually these will have a CLI and/or GUI front-end to get the values
@@ -126,29 +147,6 @@ class SetData:
         )
 
     # App Scaffolding Tables - DB tables pre-populated from Config data.
-
-    def _prep_data_set(self, data_model: object) -> tuple:
-        """
-        Prepare data sets for a given table, based on data model and
-        its related JSON boot->config file.
-
-        :param DM: An instance of a data model class.
-        :returns: A tuple containing:
-                  - Table name (str)
-                  - Table data (dict) from JSON configuration
-                  - Column names for the selected model (ordered dict)
-        """
-        # Extract table name and determine configuration path
-        tbl_nm = data_model._tablename
-        # Retrieve configuration file path
-        config_path = self.CONTEXT["cfg"].get(tbl_nm.lower(), "")
-        # Load table data from JSON file if a valid configuration path is provided
-        tbl_data = FM.get_json_file(config_path) if config_path else {}
-        # Convert model to an ordered dictionary of tbl_cols
-        tbl_cols = OrderedDict(data_model.to_dict()[tbl_nm])
-        # Return a prepared set of things to help optimize SET operations
-        return (tbl_nm, tbl_data, tbl_cols)
-
     # Config-sourced insert/update where each line of the config file is a record
     def set_texts(self) -> bool:
         """
@@ -487,13 +485,18 @@ class SetData:
         return True
 
     # Story-related Tables
+    # ====================
     # At this point, there are not config data files for these types of tables.
-    # For prototyping, they are hard-coded here.
+    # For prototyping, most values are are hard-coded in these functions.
     # Eventually, they will be populated either from a config file, a spreadsheet,
     # or a CLI or GUI front-end.
 
     def set_rect_maps(self) -> bool:
-        """Define a rectangular map for game use."""
+        """Define a rectangular map for game use.
+        @DEV:
+        - Likely there will be a fixed,pre-defined number of RECT (2D) style maps.
+        - These will be defined in a config file or spreadsheet, probably not via a front-end.
+        """
         table_name, _, table_cols = self._prep_data_set(DMA.MapRect())
         map_name = "Saskan Lands Political Regions"
         table_cols.pop("map_rect_uid_pk")
@@ -520,7 +523,11 @@ class SetData:
         return True
 
     def set_box_maps(self) -> bool:
-        """Define a box map for game use."""
+        """Define a box map for game use.
+        @DEV:
+        - Likely there will be a fixed,pre-defined number of BOX (3D) style maps.
+        - These will be defined in a config file or spreadsheet, probably not via a front-end.
+        """
         table_name, _, table_cols = self._prep_data_set(DMA.MapBox())
         map_name = "Saskan Lands Geography"
         table_cols.pop("map_box_uid_pk")
@@ -550,7 +557,11 @@ class SetData:
         return True
 
     def set_sphere_maps(self) -> bool:
-        """Define a spherical map for game use."""
+        """Define a spherical map for game use.
+        @DEV:
+        - Likely there will be a fixed,pre-defined number of SPHERE (3D) style maps.
+        - These will be defined in a config file or spreadsheet, probably not via a front-end.
+        """
         table_name, _, table_cols = self._prep_data_set(DMA.MapSphere())
         map_name = "Gavor-Havorra Planetary Map"
         table_cols.pop("map_sphere_uid_pk")
@@ -576,151 +587,297 @@ class SetData:
 
         return True
 
-    # Pick up here with re-factoring the rest of the methods
-
-    def set_grids(self, p_context: dict):
-        """Define a Grids for game use.
-        :args:
-        - p_context: dict of context values.
+    def set_grids(self) -> bool:
+        """Define a Grids structure for game use.
+        @DEV:
+        Hard-coded values are for test purposes.
+        Likely only support a fixed number of pre-defined grids, hard-coded or
+        provided via a config file not a front-end.
         """
-        DB, sql, _, cols = self._prep_data_set(DMS.Grid(), p_context)
-        cols["grid_uid_pk"] = SM.get_uid()
-        cols["grid_name"] = "30x_40y_30zu_30zd"
-        cols["x_col_cnt"] = 30
-        cols["y_row_cnt"] = 40
-        cols["z_up_cnt"] = 30
-        cols["z_down_cnt"] = 30
-        cols["delete_dt"] = ""
-        DB.execute_insert(sql, tuple(cols.values()))
-        self.GRID_UID[cols["grid_name"]] = cols["grid_uid_pk"]
+        table_name, _, table_cols = self._prep_data_set(DMA.Grid())
+        grid_name = "30x_40y_30zu_30zd"
+        table_cols.pop("grid_uid_pk")
+        table_cols.update(
+            {
+                "grid_name": grid_name,
+                "x_col_cnt": 30,
+                "y_row_cnt": 40,
+                "z_up_cnt": 30,
+                "z_down_cnt": 30,
+                "delete_dt": "",
+            }
+        )
 
-    def set_grid_cells(self, p_context: dict):
+        existing_data = GD.get_by_match(table_name, {"grid_name": grid_name})
+        if existing_data and not self._virtual_delete(table_name, existing_data[0]):
+            return False
+
+        if not self.DB.execute_insert(SM.get_uid(), tuple(table_cols.values())):
+            return False
+
+        return True
+
+    def set_grid_cells(self, p_grid_name: str, p_grid_data: list) -> bool:
         """Define a set of Grid Cells for game use.
-        :args:
-        - p_context: dict of context values.
+        Fail if natural key to GRID is not found.
+        For this method we have to pass in values.
+        :param p_grid_name: str - Name of the grid to which the cells belong.
+        :param p_grid_data: list of dicts of grid cell data:
+                            - grid_cell_name: str
+                            - x_col_ix: int
+                            - y_row_ix: int
+                            - z_up_down_ix: int (negative for down)
+        @DEV:
+        - Modify this table/model to include grid_name as a natural key.
+        - TBD, but likely the inputs will be from a config file or spreadsheet
+          since GRID_CELL is really just and extenion of a GRID, providing handy
+          ways to reference each cell within a grid. The values could even be
+          generated by a script, but I want to preserve the ability to manually
+          set or reset the name of a specific grid-cell.
         """
-        DB, sql, _, cols = self._prep_data_set(DMS.GridCell(), p_context)
-        # Read records to get UID for GRID instead of storing them
-        for grid_name in self.GRID_UID:
-            grid = GD.get_by_id("GRID", "grid_uid_pk", self.GRID_UID[grid_name], DB)
-            for n in range(1, 11):
-                cols["grid_cell_uid_pk"] = SM.get_uid()
-                cols["grid_uid_fk"] = grid["grid_uid_pk"]
-                cols["grid_cell_name"] = f"Test Cell {n}"
-                cols["x_col_ix"] = random.randint(0, grid["x_col_cnt"] - 1)
-                cols["y_row_ix"] = random.randint(0, grid["y_row_cnt"] - 1)
-                cols["z_up_down_ix"] = random.randint(
-                    (grid["z_down_cnt"] - 1) * -1, grid["z_up_cnt"] - 1
-                )
-                cols["grid_cell_id"] = (
-                    f"{cols['x_col_ix']}x_"
-                    + f"{cols['y_row_ix']}y_"
-                    + f"{cols['z_up_down_ix']}z"
-                )
-                cols["delete_dt"] = ""
-                DB.execute_insert(sql, tuple(cols.values()))
+        table_name, _, table_cols = self._prep_data_set(DMA.GridCell())
 
-    def set_grid_infos(self, p_context: dict):
-        """Define a set of Grid Info records for game use.
-        :args:
-        - p_context: dict of context values.
-        """
-        DB, sql, _, cols = self._prep_data_set(DMS.GridInfo(), p_context)
-        cells = DB.execute_select_all("GRID_CELL")
-        for n in range(0, len(cells["grid_cell_uid_pk"])):
-            cols["grid_info_uid_pk"] = SM.get_uid()
-            cols["grid_cell_uid_fk"] = cells["grid_cell_uid_pk"][n]
-            cols["grid_info_id"] = f"Test Info ID {n}"
-            cols["grid_info_data_type"] = random.choice(EntityType.DATA_TYPE)
-            cols["grid_info_name"] = f"Test Info Name {n}"
-            cols["grid_info_value"] = (
-                random.randint(1, 1000)
-                if cols["grid_info_data_type"] in ("INT", "FLOAT")
-                else secrets.token_bytes(10)
+        linked_data = GD.get_by_match("GRID", {"grid_name": p_grid_name})
+        if not linked_data:
+            print(f"{Colors.CL_RED}ERROR{Colors.CL_END}: Link to GRID not found.")
+            return False
+
+        for cells in p_grid_data:
+            cell_cols = table_cols.copy()
+            grid_cell_id = (
+                f"{cells['x_col_ix']}x_"
+                + f"{cells['y_row_ix']}y_"
+                + f"{cells['z_up_down_ix']}z"
             )
-            cols["delete_dt"] = ""
-            DB.execute_insert(sql, tuple(cols.values()))
 
-    def set_map_x_maps(self, p_context: dict):
-        """Define a set of Map_x_Map records for game use.
-        :args:
-        - p_context: dict of context values.
+            existing_data = GD.get_by_match(
+                table_name, {"grid_name": p_grid_name, "grid_cell_id": grid_cell_id}
+            )
+            if existing_data and not self._virtual_delete(table_name, existing_data[0]):
+                return False
+
+            cell_cols.pop("grid_cell_uid_pk")
+            cell_cols.update(
+                {
+                    "grid_uid_fk": linked_data[0]["grid_uid_pk"],
+                    "grid_name": p_grid_name,
+                    "grid_cell_name": cells["grid_cell_name"],
+                    "x_col_ix": cells["x_col_ix"],
+                    "y_row_ix": cells["y_row_ix"],
+                    "z_up_down_ix": cells["z_up_down_ix"],
+                    "grid_cell_id": grid_cell_id,
+                    "delete_dt": "",
+                }
+            )
+
+            if not self.DB.execute_insert(
+                table_name, (SM.get_uid(), tuple(cell_cols.values()))
+            ):
+                return False
+
+        return True
+
+    def set_grid_infos(
+        self, p_grid_name: str, p_grid_cell_name, p_info_data: list
+    ) -> bool:
+        """Define a set of Grid Info records for game use.
+        Fail if natural key to GRID and GRID_CELL is not found.
+        For this method we have to pass in values.
+        :param p_grid_name: str - Name of the grid to which the cells belong.
+        :param p_grid_cell_name: str - Name of the grid cell to which the info belongs.
+        :param p_info_data: list of dicts of grid info data:
+                            - grid_info_id_type: str
+                            - grid_info_data_type: str (enum)
+                            - grid_info_name: str
+                            - grid_info_value: str
+        @DEV:
+        - Add GIRD_UID_FK to this table as a foreign key to GRID.
+        - Add GRID_NAME and GRID_CELL_NAME as natural keys to this table.
+        - Likely the inputs will be from a config file or spreadsheet, but could be a GUI.
+        - Modify the grid_info_value to be a BLOB, so it can store any type of data.
+            - or maybe better, provide a separate column for each value data type:
+              INT, FLOAT, STR, BLOB, JSON
         """
-        DB, sql, _, cols = self._prep_data_set(DMS.MapXMap(), p_context)
-        rects = DB.execute_select_all("MAP_RECT")
-        boxes = DB.execute_select_all("MAP_BOX")
-        spheres = DB.execute_select_all("MAP_SPHERE")
-        for r in range(0, len(rects["map_rect_uid_pk"])):
-            for b in range(0, len(boxes["map_box_uid_pk"])):
-                cols["map_x_map_uid_pk"] = SM.get_uid()
-                cols["map_uid_1_fk"] = rects["map_rect_uid_pk"][r]
-                cols["map_uid_2_fk"] = boxes["map_box_uid_pk"][b]
-                cols["touch_type"] = random.choice(EntityType.MAP_TOUCH_TYPE)
-                cols["delete_dt"] = ""
-                DB.execute_insert(sql, tuple(cols.values()))
-        for b in range(0, len(boxes["map_box_uid_pk"])):
-            for s in range(0, len(spheres["map_sphere_uid_pk"])):
-                cols["map_x_map_uid_pk"] = SM.get_uid()
-                cols["map_uid_1_fk"] = boxes["map_box_uid_pk"][b]
-                cols["map_uid_2_fk"] = spheres["map_sphere_uid_pk"][s]
-                cols["touch_type"] = random.choice(EntityType.MAP_TOUCH_TYPE)
-                cols["delete_dt"] = ""
-                DB.execute_insert(sql, tuple(cols.values()))
+        table_name, _, table_cols = self._prep_data_set(DMS.GridInfo())
 
-    def set_grid_x_maps(self, p_context: dict):
-        """Define a set of Grid_x_Map records for game use.
-        :args:
-        - p_context: dict of context values.
+        linked_data = GD.get_by_match("GRID", {"grid_name": p_grid_name})
+        if not linked_data:
+            print(f"{Colors.CL_RED}ERROR{Colors.CL_END}: Link to GRID not found.")
+            return False
+
+        linked_data = GD.get_by_match("GRID_CELL", {"grid_cell_name": p_grid_cell_name})
+        if not linked_data:
+            print(f"{Colors.CL_RED}ERROR{Colors.CL_END}: Link to GRID_CELL not found.")
+            return False
+
+        for info in p_info_data:
+            info_cols = table_cols.copy()
+            existing_data = GD.get_by_match(
+                table_name, {"grid_info_id": info["grid_info_id"]}
+            )
+            if existing_data and not self._virtual_delete(table_name, existing_data[0]):
+                return False
+
+            info_cols.pop("grid_info_uid_pk")
+            info_cols.update(
+                {
+                    "grid_uid_fk": linked_data[0]["grid_uid_pk"],
+                    "grid_cell_uid_fk": linked_data[0]["grid_cell_uid_pk"],
+                    "grid_info_id": info["grid_info_id"],
+                    "grid_info_data_type": info["grid_info_data_type"],
+                    "grid_info_name": info["grid_info_name"],
+                    "grid_info_value": info["grid_info_value"],
+                    "delete_dt": "",
+                }
+            )
+
+            if not self.DB.execute_insert(
+                table_name, (SM.get_uid(), tuple(info_cols.values()))
+            ):
+                return False
+
+        return True
+
+    # There are bunch of association tables that link various entities together.
+    # Maybe there is a way to optimize/abstract the SET methods for these tables
+    # so that there does not have to be specific method for each one of them?
+    # Typically they consist of two foreign keys and a PK, all UIDs.
+    # Occasionally they also have a touch_type value like 'overlaps', 'contains',
+    # used with maps.
+
+    def set_x_associations(self, p_model: object, p_x_values: dict) -> bool:
+        """Define a assoociations for an X (association) table record.
+        :param p_model: object - Data model object for an association table.
+        :param p_x_values: dict - Dictionary of values, in this format:
+                    {"col_nm_1": "uid", "col_nm_2": "uid", "touch_type": "type"}
+                    where the column names are the foreign keys in the association table
+                    and the touch type is optional.
+        Note that the p_x_values are for a single record.
+        @DEV:
+        - Modify the X records so that they always have an optional touch_type value.
         """
-        DB, sql, _, cols = self._prep_data_set(DMS.GridXMap(), p_context)
+        table_name, _, table_cols = self._prep_data_set(p_model)
 
-    def set_char_sets(self, p_context: dict):
+        # If the column names sent as params are not in the model, fail.
+        if not all([col in table_cols for col in p_x_values.keys()]):
+            return False
+
+        # Based on FK names, derive the table name(s) that they link to.
+        uid_keys = list(p_x_values.keys())
+        # Get the table names for the foreign keys
+        fk_table: list = []
+        for i in range(0, 2):
+            fk_table.append(
+                table_cols[p_x_values[uid_keys[i]]].split("_uid")[0].upper()
+            )
+
+        # Verify that the hard-linked (FK'd) records exist in the database.
+        for i in range(0, 2):
+            if not GD.get_by_match(fk_table[i], {uid_keys[i]: p_x_values[uid_keys[i]]}):
+                print(
+                    f"{Colors.CL_RED}ERROR{Colors.CL_END}: Link to {fk_table[i]} not found."
+                )
+                return False
+
+        # Update the association record if it already exists.
+        existing_data = GD.get_by_match(
+            table_name,
+            {
+                uid_keys[0]: p_x_values[uid_keys[0]],
+                uid_keys[i]: p_x_values[uid_keys[i]],
+            },
+        )
+        if existing_data and not self._virtual_delete(table_name, existing_data[0]):
+            return False
+
+        # Insert the association record.
+        table_cols.pop(f"{table_name}_uid_pk")
+        table_cols.update(
+            {
+                uid_keys[0]: p_x_values[uid_keys[0]],
+                uid_keys[1]: p_x_values[uid_keys[1]],
+                "touch_type": p_x_values["touch_type"],
+                "delete_dt": "",
+            }
+        )
+        return self.DB.execute_insert(
+            table_name, (SM.get_uid(), tuple(table_cols.values()))
+        )
+
+    def set_char_sets(self) -> bool:
         """Define sets of Character records for game use.
-        :args:
-        - p_context: dict of context values.
+        @DEV:
+        - Likely there will be a fixed,pre-defined number of CHAR_SETS.
+        - Hard-coded for now. Eventually, these will be defined in a config file or spreadsheet.
+        - May also have a front-end for defining and modifying these.
         """
-        DB, sql, _, cols = self._prep_data_set(DMS.CharSet(), p_context)
-        cols["char_set_uid_pk"] = SM.get_uid()
-        cols["font_name"] = "EibarTraditional"
-        cols["char_set_type"] = "abugida"
-        cols["char_set_desc"] = (
-            "Eibar is the most widely spoken language in Saskantinon, particularly in the northern and western regions. It is the language of power due to its use by Fatunik scribes and as the official language of the region. Over time, Eibar has become diverse, incorporating various accents and influences from different regions and immigrant populations. It is also commonly spoken in Byerung, especially among those involved in jurisprudence. Since it is an abugida, each character represents a consonant and a distinct vowel sound, which itself may be a dipthong. This means that dialects may include additional symbols."  # noqa E501
-        )
-        cols["delete_dt"] = ""
-        DB.execute_insert(sql, tuple(cols.values()))
+        table_name, _, table_cols = self._prep_data_set(DMS.CharSet())
 
-        cols["char_set_uid_pk"] = SM.get_uid()
-        cols["font_name"] = "EibarRider"
-        cols["char_set_type"] = "abugida"
-        cols["char_set_desc"] = (
-            "Rider Eibar is the dialect used in the United Rider Provinces except for Eelan, and some adjoining areas. It uses a few additional characters to represent sounds not found in the traditional Eibar abugida. But it is not different enough to be considered a separate language."  # noqa E501
-        )
-        cols["delete_dt"] = ""
-        DB.execute_insert(sql, tuple(cols.values()))
+        charsets: list = [
+            {
+                "type": "abugida",
+                "font_name": "EibarTraditional",
+                "desc": "Eibar is the most widely spoken language in Saskantinon, particularly "
+                + "in the northern and western regions. It is the language of power due to "
+                + "its use by Fatunik scribes and as the official language of the region. "
+                + "Over time, Eibar has become diverse, incorporating various accents and "
+                + "influences from different regions",
+            },
+            {
+                "type": "abugida",
+                "font_name": "EibarRider",
+                "desc": "Rider Eibar is the dialect used in the United Rider Provinces except "
+                + "for Eelan, and some adjoining areas. It uses a few additional characters "
+                + "to represent sounds not found in the traditional Eibar abugida. But it is "
+                + "not different enough to be considered a separate language.",
+            },
+            {
+                "type": "abugida",
+                "font_name": "EibarWestern",
+                "desc": "Western Eibar is the dialect used in Eelan province and in High Weir. "
+                + "It uses several additional characters to represent sounds not found in the "
+                + "traditional Eibar abugida. But it is not different enough to be considered a "
+                + "separate language.",
+            },
+            {
+                "type": "abugida",
+                "font_name": "EibarEastern",
+                "desc": "Eastern Eibar is the dialect used in the Runes of Bye, Mobalbeshqi "
+                + "and the Kahila Lands. It uses several additional characters to represent "
+                + "sounds not found in the traditional Eibar abugida. But it is not different "
+                + "enough to be considered a separate language.",
+            },
+            {
+                "type": "abugida",
+                "font_name": "EibarqBasic",
+                "desc": "Basic Eibarq is spoken in the easternmost areas of Saskantinon, "
+                + "including parts of Pavanarune, and in Kahilakol, Kahilabequa, Mobalbesq, "
+                + "Byerung (that is, the Runes of Bye) and in the Ny Lands. While mutually "
+                + "intelligible with Eibar to a large degree, Eibarq exhibits very distinct "
+                + "phonemes and idiomatic expressions rooted in non-huum modes of utterance. "
+                + "It is favored by non-huum-looking individuals who want to emphasize their "
+                + "distinction, and it includes many alternative phrasings and slang that differ "
+                + "from standard Eibar, as well as an entirely distinctive abuigida where many "
+                + "characters map directly to the Eibar characters, but many others do not.",
+            },
+        ]
+        for cs in charsets:
+            existing_data = GD.get_by_match(table_name, {"font_name": cs["font_name"]})
+            if existing_data and not self._virtual_delete(table_name, existing_data[0]):
+                return False
+            cs_cols = table_cols.copy()
+            cs_cols.pop("char_set_uid_pk")
+            cs_cols.update(
+                {
+                    "font_name": cs["font_name"],
+                    "char_set_type": cs["type"],
+                    "char_set_desc": cs["desc"],
+                    "delete_dt": "",
+                }
+            )
+            if not self.DB.execute_insert(
+                table_name, (SM.get_uid(), tuple(cs_cols.values()))
+            ):
+                return False
 
-        cols["char_set_uid_pk"] = SM.get_uid()
-        cols["font_name"] = "EibarWestern"
-        cols["char_set_type"] = "abugida"
-        cols["char_set_desc"] = (
-            "Western Eibar is the dialect used in Eelan province and in High Weir. It uses several additional characters to represent sounds not found in the traditional Eibar abugida. But it is not different enough to be considered a separate language."  # noqa E501
-        )
-        cols["delete_dt"] = ""
-        DB.execute_insert(sql, tuple(cols.values()))
-
-        cols["char_set_uid_pk"] = SM.get_uid()
-        cols["font_name"] = "EibarEastern"
-        cols["char_set_type"] = "abugida"
-        cols["char_set_desc"] = (
-            "Eastern Eibar is the dialect used in the Runes of Bye, Mobalbeshqi and the Kahila Lands. It uses several additional characters to represent sounds not found in the traditional Eibar abugida. But it is not different enough to be considered a separate language."  # noqa E501
-        )
-        cols["delete_dt"] = ""
-        DB.execute_insert(sql, tuple(cols.values()))
-
-        cols["char_set_uid_pk"] = SM.get_uid()
-        cols["font_name"] = "EibarqBasic"
-        cols["char_set_type"] = "abugida"
-        cols["char_set_desc"] = (
-            "Basic Eibarq is spoken in the easternmost areas of Saskantinon, including parts of Pavanarune, and in Kahilakol, Kahilabequa, Mobalbesq, Byerung (that is, the Runes of Bye) and in the Ny Lands. While mutually intelligible with Eibar to a large degree, Eibarq exhibits very distinct phonemes and idiomatic expressions rooted in non-huum modes of utterance. It is favored by non-huum-looking individuals who want to emphasize their distinction, and it includes many alternative phrasings and slang that differ from standard Eibar, as well as an entirely distinctive abuigida where many characters map directly to the Eibar characters, but many others do not."  # noqa E501
-        )
-        cols["delete_dt"] = ""
-        DB.execute_insert(sql, tuple(cols.values()))
+        return True
