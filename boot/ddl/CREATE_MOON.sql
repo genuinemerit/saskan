@@ -2,6 +2,9 @@ CREATE TABLE IF NOT EXISTS MOON (
 moon_uid_pk TEXT DEFAULT '',
 world_uid_fk TEXT DEFAULT '',
 moon_name TEXT DEFAULT '',
+moon_desc TEXT DEFAULT '',
+moon_lore TEXT DEFAULT '',
+center_from_world_center_km NUMERIC DEFAULT 0.0,
 mass_kg NUMERIC DEFAULT 0.0,
 radius_km NUMERIC DEFAULT 0.0,
 obliquity_dg NUMERIC DEFAULT 0.0,
@@ -15,5 +18,4 @@ angular_velocity NUMERIC DEFAULT 0.0,
 delete_dt TEXT DEFAULT '',
 CHECK (rotation_direction IN ('prograde', 'retrograde')),
 CHECK (orbit_direction IN ('prograde', 'retrograde')),
-FOREIGN KEY (world_uid_fk) REFERENCES WORLD(world_uid_pk) ON DELETE CASCADE,
-PRIMARY KEY (moon_uid_pk));
+FOREIGN KEY (world_uid_fk) REFERENCES WORLD(world_uid_pk) ON DELETE CASCADE,PRIMARY KEY (moon_uid_pk));

@@ -7,5 +7,4 @@ menu_id TEXT DEFAULT '',
 menu_name TEXT DEFAULT '',
 delete_dt TEXT DEFAULT '',
 CHECK (lang_code IN ('en')),
-FOREIGN KEY (menu_bar_uid_fk) REFERENCES MENU_BARS(menu_bar_uid_pk) ON DELETE CASCADE,
-PRIMARY KEY (menu_uid_pk));
+FOREIGN KEY (menu_bar_uid_fk) REFERENCES MENU_BARS(menu_bar_uid_pk) ON DELETE CASCADE,PRIMARY KEY (menu_uid_pk));

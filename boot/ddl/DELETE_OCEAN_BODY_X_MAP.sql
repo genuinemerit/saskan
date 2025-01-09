@@ -1,2 +1,2 @@
-DELETE FROM OCEAN_BODY_X_MAP
-WHERE o=? AND c=? AND e=? AND a=? AND n=? AND _=? AND b=? AND o=? AND d=? AND y=? AND _=? AND x=? AND _=? AND m=? AND a=? AND p=? AND _=? AND u=? AND i=? AND d=? AND _=? AND p=? AND k=?;
+DELETE FROM `OCEAN_BODY_X_MAP`
+WHERE `ocean_body_x_map_uid_pk`=?;

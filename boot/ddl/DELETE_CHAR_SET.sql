@@ -1,2 +1,2 @@
-DELETE FROM CHAR_SET
-WHERE c=? AND h=? AND a=? AND r=? AND _=? AND s=? AND e=? AND t=? AND _=? AND u=? AND i=? AND d=? AND _=? AND p=? AND k=?;
+DELETE FROM `CHAR_SET`
+WHERE `char_set_uid_pk`=?;

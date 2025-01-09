@@ -31,7 +31,7 @@ from pprint import pformat as pf  # noqa: F401
 from pprint import pprint as pp  # noqa: F401
 
 import data_model as DM
-from data_structs import EntityType, GroupStruct
+from data_structs import EntityType
 from method_files import FileMethods
 from method_shell import ShellMethods
 
@@ -89,16 +89,15 @@ class MapRect(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(MapRect)
+        return DM.cols_to_dict(MapRect)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "map_rect_uid_pk"
-        CK: dict = {"map_shape": EntityType.MAP_SHAPE,
-                    "map_type": EntityType.MAP_TYPE}
+        CK: dict = {"map_shape": EntityType.MAP_SHAPE, "map_type": EntityType.MAP_TYPE}
         ORDER: list = ["map_name ASC"]
 
 
@@ -144,16 +143,15 @@ class MapBox(MapRect):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(MapBox)
+        return DM.cols_to_dict(MapBox)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "map_box_uid_pk"
-        CK: dict = {"map_shape": EntityType.MAP_SHAPE,
-                    "map_type": EntityType.MAP_TYPE}
+        CK: dict = {"map_shape": EntityType.MAP_SHAPE, "map_type": EntityType.MAP_TYPE}
         ORDER: list = ["map_name ASC"]
 
 
@@ -206,11 +204,11 @@ class MapSphere(MapRect):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(MapSphere)
+        return DM.cols_to_dict(MapSphere)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "map_sphere_uid_pk"
@@ -266,11 +264,11 @@ class Grid(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(Grid)
+        return DM.cols_to_dict(Grid)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "grid_uid_pk"
@@ -319,11 +317,11 @@ class GridCell(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(GridCell)
+        return DM.cols_to_dict(GridCell)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "grid_cell_uid_pk"
@@ -367,17 +365,17 @@ class GridInfo(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(GridInfo)
+        return DM.cols_to_dict(GridInfo)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "grid_info_uid_pk"
         FK: dict = {
             "grid_cell_uid_fk": ("GRID_CELL", "grid_cell_uid_pk"),
-            "grid_uid_fk": ("GRID", "grid_uid_pk")
+            "grid_uid_fk": ("GRID", "grid_uid_pk"),
         }
         CK: dict = {"grid_info_data_type": EntityType.DATA_TYPE}
         ORDER: list = ["grid_info_name ASC"]
@@ -416,15 +414,15 @@ class MapXMap(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(MapXMap)
+        return DM.cols_to_dict(MapXMap)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "map_x_map_uid_pk"
-        CK: dict = {"touch_type": EntityType.MAP_TOUCH_TYPE}
+        CK: dict = {"touch_type": EntityType.TOUCH_TYPE}
 
 
 class GridXMap(object):
@@ -444,7 +442,6 @@ class GridXMap(object):
     - delete_dt: Deletion date, indicating when the record was
       marked for deletion
     $$
-
     """
 
     _tablename: str = "GRID_X_MAP"
@@ -455,11 +452,11 @@ class GridXMap(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(GridXMap)
+        return DM.cols_to_dict(GridXMap)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "grid_x_map_uid_pk"
@@ -534,11 +531,11 @@ class CharSet(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(CharSet)
+        return DM.cols_to_dict(CharSet)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "char_set_uid_pk"
@@ -559,12 +556,12 @@ class CharMember(object):
     - char_member_uid_pk: Primary key, unique identifier for each character member
     - char_set_uid_fk: Foreign key referencing the character set this member belongs to
     - char_member_name: Name of the character member
-    - char_member_image: Binary data representing the image of the character if not available in Unicode
+    - char_member_image: Binary data representing the image of
+      the character if not available in Unicode
     - char_member_path: File path to the image or representation of the character
     - char_member_desc: Description providing additional details about the character member
     - delete_dt: Deletion date, indicating when the record was marked for deletion
     $$
-
     """
 
     _tablename: str = "CHAR_MEMBER"
@@ -578,11 +575,11 @@ class CharMember(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(CharMember)
+        return DM.cols_to_dict(CharMember)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "char_member_uid_pk"
@@ -592,7 +589,7 @@ class CharMember(object):
 
 # Pick up here. Note that no SET methods have been defined yet
 # for the following classes, except for association tables, which
-# are handled generically. However, all X classes need to be
+# are biw handled generically. However, all X classes need to be
 # modified to include a touch_type column.
 
 
@@ -604,6 +601,16 @@ class LangFamily(object):
     - phonetics: how the language sounds, e.g. guttural, nasal, etc.
     - cultural influences: e.g. from other languages, or from
       historical events, migration patterns, etc.
+
+    $$
+        - lang_family_uid_pk: Primary key, unique identifier for each language family
+        - char_set_uid_fk: Foreign key referencing the character set used by the language family
+        - lang_family_name: Name of the language family
+        - lang_family_desc: Description of the language family
+        - phonetics: Description of the phonetics of the language family
+        - cultural_influences: Description of the cultural influences on the language family
+        - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
     """
 
     _tablename: str = "LANG_FAMILY"
@@ -617,11 +624,11 @@ class LangFamily(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(LangFamily)
+        return DM.cols_to_dict(LangFamily)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "lang_family_uid_pk"
@@ -645,7 +652,7 @@ class Language(object):
             e.g. single-syllable-only, consonant-vowel-consonant,
             multiples by prefix, etc.
         More possible features:
-    /*
+
     lang_object structure:
     {"glossary":
         {"phrase": "definition", ...},
@@ -681,7 +688,18 @@ class Language(object):
         # how sounds are combined into syllables and words
          {"rule": "explanation", ...},
         {"rule": "explanation", ...},
-    */
+
+    $$
+        - lang_uid_pk: Primary key, unique identifier for each language
+        - lang_family_uid_fk: Foreign key referencing the language family this language belongs to
+        - lang_name: Name of the language
+        - lang_desc: Description of the language
+        - gramatics: Description of the gramatics of the language
+        - lexicals: Description of the lexicals of the language
+        - social_influences: Description of the social influences on the language
+        - word_formations: Description of the word formations of the language
+        - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
     """
 
     _tablename: str = "LANGUAGE"
@@ -697,11 +715,11 @@ class Language(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(Language)
+        return DM.cols_to_dict(Language)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "lang_uid_pk"
@@ -713,12 +731,17 @@ class LangDialect(object):
     """
     Describe basic features of a dialect, without getting too
     complicated.
-    - divergence_factors: how the dialect differs from the
-      main language, e.g. pronunciation, vocabulary, etc.
-    - syncretic_factors: how the dialect is similar to or borrows
-      from neighboring languages, e.g. pronunciation, vocabulary, ..
-    - preservation_factors: how the dialect preserves old features
-      of the main language which are no longer standard
+
+    $$
+        - dialect_uid_pk: Primary key, unique identifier for each dialect
+        - lang_uid_fk: Foreign key referencing the language this dialect belongs to
+        - dialect_name: Name of the dialect
+        - dialect_desc: Description of the dialect
+        - divergence_factors: Description of the divergence factors of the dialect
+        - syncretic_factors: Description of the syncretic factors of the dialect
+        - preservation_factors: Description of the preservation factors of the dialect
+        - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
     """
 
     _tablename: str = "LANG_DIALECT"
@@ -733,11 +756,11 @@ class LangDialect(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(LangDialect)
+        return DM.cols_to_dict(LangDialect)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "dialect_uid_pk"
@@ -754,12 +777,16 @@ class GlossCommon(object):
     there are multiple types of glossary items associated with a subject.
     The primary key of a GlossCommon row is the FK reference for related
     Glossary items. In other words, many(Glossary) --> 1(GlossCommon).
-    - gloss_name (required): either a single word, or title for a longer entry
-    - gloss type (required): a word, phrase, weblink, graphic, data, software
-    - gloss_value (optional): the definition of the word, phrase, etc. or a
-      longer glossary entry, for example, describing a feature of the game
-    - gloss_uri (optional): a URI for the glossary entry, a web page,
-      a local file or external software/plug-in, a sound file, etc.
+
+    $$
+        - gloss_common_uid_pk: Primary key, unique identifier for each common glossary item
+        - dialect_uid_fk: Foreign key referencing the dialect this glossary item belongs to
+        - gloss_type: Type of the glossary item
+        - gloss_name: Name of the glossary item
+        - gloss_value: Value of the glossary item
+        - gloss_uri: URI of the glossary item
+        - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
     """
 
     _tablename: str = "GLOSS_COMMON"
@@ -773,11 +800,11 @@ class GlossCommon(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(GlossCommon)
+        return DM.cols_to_dict(GlossCommon)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "gloss_common_uid_pk"
@@ -790,6 +817,17 @@ class Glossary(object):
     """
     The glossary is a multi-lingual dictionary as well an extension
     for the GlossCommon items.
+
+    $$
+        - glossary_uid_pk: Primary key, unique identifier for each glossary item
+        - gloss_common_uid_fk: Foreign key referencing the common glossary item
+        - dialect_uid_fk: Foreign key referencing the dialect this glossary item belongs to
+        - gloss_type: Type of the glossary item
+        - gloss_name: Name of the glossary item
+        - gloss_value: Value of the glossary item
+        - gloss_uri: URI of the glossary item
+        - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
     """
 
     _tablename: str = "GLOSSARY"
@@ -804,11 +842,11 @@ class Glossary(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(Glossary)
+        return DM.cols_to_dict(Glossary)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "glossary_uid_pk"
@@ -827,7 +865,22 @@ class Universe(object):
     """Define qualities of a game Universe.
     This is the highest, broadest container in the game model.
     A Universe may contain multiple Galactic Clusters.
-    It is conceptualized as a sphere.
+    It is conceptualized for now as a sphere.
+
+    $$
+    - univ_uid_pk: Primary key, unique identifier for each universe
+    - univ_name: Name of the universe
+    - radius_gly: Radius of the universe in gigalightyears
+    - volume_gly3: Volume of the universe in gigalightyears cubed
+    - volume_pc3: Volume of the universe in parsecs cubed
+    - age_gyr: Age of the universe in gigayears
+    - expansion_rate_kmpsec_per_mpc: Expansion rate of the universe in km/sec per megaparsec
+    - total_mass_kg: Total mass of the universe in kilograms
+    - dark_energy_kg: Amount of dark energy in the universe in kilograms
+    - dark_matter_kg: Amount of dark matter in the universe in kilograms
+    - baryonic_matter_kg: Amount of baryonic matter in the universe in kilograms
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
     """
 
     _tablename: str = "UNIVERSE"
@@ -846,11 +899,11 @@ class Universe(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(Universe)
+        return DM.cols_to_dict(Universe)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "univ_uid_pk"
@@ -858,9 +911,20 @@ class Universe(object):
 
 
 class ExternalUniv(object):
-    """The External Universe just defines qualities of the Game
-    Universe that lie outside of the "playable" Universe. An External
+    """The External Universe defines qualities of the Game Universe
+    which lie outside of the "playable" Universe. An External
     Universe is always 1:1 to a Universe. It has no shape, only mass.
+
+    $$
+    - external_univ_uid_pk: Primary key, unique identifier for each external universe
+    - univ_uid_fk: Foreign key linking to the Universe table
+    - external_univ_name: Name of the external universe
+    - mass_kg: Mass of the external universe in kilograms
+    - dark_energy_kg: Amount of dark energy in the external universe in kilograms
+    - dark_matter_kg: Amount of dark matter in the external universe in kilograms
+    - baryonic_matter_kg: Amount of baryonic matter in the external universe in kilograms
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
     """
 
     _tablename: str = "EXTERNAL_UNIVERSE"
@@ -875,11 +939,11 @@ class ExternalUniv(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(ExternalUniv)
+        return DM.cols_to_dict(ExternalUniv)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "external_univ_uid_pk"
@@ -894,55 +958,84 @@ class GalacticCluster(object):
     Conceptualized as a bulging shape, usually ellipsoid, centered in
     a boundary box.
 
-    @DEV:
-    - This and other models use GROUPed data structures.  These are
-      cases where I used customized data structures to represent a
-      database column. This type of thing is not supported natively
-      in SQLite. Consider simplifying and insetad defining columns
-      in the model that are not GROUPed.
-    - An alternative would be to convert the grouped set back into
-      the data structure object when reading from the database.
+    $$
+    - galactic_cluster_uid_pk: Primary key, unique identifier for each galactic cluster
+    - univ_uid_fk: Foreign key linking to the Universe table
+    - galactic_cluster_name: Name of the galactic cluster
+    - center_from_univ_center_gly_x: X coordinate of the center of the cluster in gigalightyears
+    - center_from_univ_center_gly_y: Y coordinate of the center of the cluster in gigalightyears
+    - center_from_univ_center_gly_z: Z coordinate of the center of the cluster in gigalightyears
+    - boundary_gly_x: X coordinate of the boundary of the cluster in gigalightyears
+    - boundary_gly_y: Y coordinate of the boundary of the cluster in gigalightyears
+    - boundary_gly_z: Z coordinate of the boundary of the cluster in gigalightyears
+    - cluster_shape: Shape of the cluster, default is 'ellipsoid'
+    - shape_pc_x: X coordinate of the shape of the cluster in parsecs
+    - shape_pc_y: Y coordinate of the shape of the cluster in parsecs
+    - shape_pc_z: Z coordinate of the shape of the cluster in parsecs
+    - shape_axes_a: Length of the major axis of the cluster in parsecs
+    - shape_axes_b: Length of the minor axis of the cluster in parsecs
+    - shape_axes_c: Length of the tertiary axis of the cluster in parsecs
+    - shape_rot_pitch: Pitch rotation of the cluster in degrees
+    - shape_rot_yaw: Yaw rotation of the cluster in degrees
+    - shape_rot_roll: Roll rotation of the cluster in degrees
+    - volume_pc3: Volume of the cluster in parsecs cubed
+    - mass_kg: Mass of the cluster in kilograms
+    - dark_energy_kg: Amount of dark energy in the cluster in kilograms
+    - dark_matter_kg: Amount of dark matter in the cluster in kilograms
+    - baryonic_matter_kg: Amount of baryonic matter in the cluster in kilograms
+    - timing_pulsar_pulse_per_ms: Timing of the pulsar pulse in milliseconds
+    - timing_pulsar_loc_gly_x: X coordinate of the pulsar location in gigalightyears
+    - timing_pulsar_loc_gly_y: Y coordinate of the pulsar location in gigalightyears
+    - timing_pulsar_loc_gly_z: Z coordinate of the pulsar location in gigalightyears
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
     """
 
     _tablename: str = "GALACTIC_CLUSTER"
     galactic_cluster_uid_pk: str = ""
     univ_uid_fk: str = ""
     galactic_cluster_name: str = ""
-    center_from_univ_center_gly: GroupStruct.CoordXYZ = GroupStruct.CoordXYZ()
-    boundary_gly: GroupStruct.Game3DLoc = GroupStruct.Game3DLoc()
+
+    # Expanded GroupStruct attributes
+    center_from_univ_center_gly_x: float = 0.0
+    center_from_univ_center_gly_y: float = 0.0
+    center_from_univ_center_gly_z: float = 0.0
+    boundary_gly_x: float = 0.0
+    boundary_gly_y: float = 0.0
+    boundary_gly_z: float = 0.0
     cluster_shape: str = "ellipsoid"
-    shape_pc: GroupStruct.CoordXYZ = GroupStruct.CoordXYZ()
-    shape_axes: GroupStruct.AxesABC = GroupStruct.AxesABC()
-    shape_rot: GroupStruct.PitchYawRollAngle = GroupStruct.PitchYawRollAngle()
+    shape_pc_x: float = 0.0
+    shape_pc_y: float = 0.0
+    shape_pc_z: float = 0.0
+    shape_axes_a: float = 0.0
+    shape_axes_b: float = 0.0
+    shape_axes_c: float = 0.0
+    shape_rot_pitch: float = 0.0
+    shape_rot_yaw: float = 0.0
+    shape_rot_roll: float = 0.0
     volume_pc3: float = 0.0
     mass_kg: float = 0.0
     dark_energy_kg: float = 0.0
     dark_matter_kg: float = 0.0
     baryonic_matter_kg: float = 0.0
     timing_pulsar_pulse_per_ms: float = 0.0
-    timing_pulsar_loc_gly: GroupStruct.CoordXYZ = GroupStruct.CoordXYZ()
+    timing_pulsar_loc_gly_x: float = 0.0
+    timing_pulsar_loc_gly_y: float = 0.0
+    timing_pulsar_loc_gly_z: float = 0.0
     delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(GalacticCluster)
+        return DM.cols_to_dict(GalacticCluster)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "galactic_cluster_uid_pk"
         FK: dict = {"univ_uid_fk": ("UNIVERSE", "univ_uid_pk")}
         CK: dict = {"cluster_shape": EntityType.CLUSTER_SHAPE}
-        GROUP: dict = {
-            "center_from_univ_center_gly": GroupStruct.CoordXYZ,
-            "boundary_gly": GroupStruct.Game3DLoc,
-            "shape_pc": GroupStruct.CoordXYZ,
-            "shape_axes": GroupStruct.AxesABC,
-            "shape_rot": GroupStruct.PitchYawRollAngle,
-            "timing_pulsar_loc_gly": GroupStruct.CoordXYZ,
-        }
         ORDER: list = ["galactic_cluster_name ASC"]
 
 
@@ -954,21 +1047,56 @@ class Galaxy(object):
     It has a bulge, typically ellipsoid, in the center and a star
     field area, also ellipsoid, but can include matter outside the
     star field, all the way to edge of its halo.
+    x,y,z coordinates are relative to the Galactic Cluster unless otherwise noted.
 
-    Test data geenration via AI keeps crapping out on this one,
-    the AI generation actually seems OK, but when I do the eval to
-    turn it into code, it barfs on the "z" coordinate of the
-    center_from_univ_center_kpc_z. I don't know why. It looks
-    correct to me, assigned it a float value of, for example, 15.0
-    The SQL identifies these as NUMERIC fields.
-
-    An almost identical "grouped" structure is used in GalacticCluster
-    and its data was generated and applied without any problem. Hmmm..
-    I guess what I am seeing in the debug displays is that, instead of
-    pulling the entire set of values into the test_set, it is breaking
-    it into sub-sets. Like there are too many line breaks left after
-    scrubbing? Nah..  I think I got it.  At some point I am stripping a
-    comma that should not be stripped, when it precedes a line break.
+    $$
+    - galaxy_uid_pk: Primary key, unique identifier for each galaxy
+    - galactic_cluster_uid_fk: Foreign key linking to the Galactic Cluster table
+    - galaxy_name: Name of the galaxy
+    - relative_size: Relative size of the galaxy, default is 'medium'
+    - center_from_univ_center_kpc_x: X coordinate of the center of the galaxy in kiloparsecs
+    - center_from_univ_center_kpc_y: Y coordinate of the center of the galaxy in kiloparsecs
+    - center_from_univ_center_kpc_z: Z coordinate of the center of the galaxy in kiloparsecs
+    - halo_radius_pc: Radius of the halo of the galaxy in parsecs
+    - boundary_pc_x: X coordinate of the boundary of the galaxy in parsecs
+    - boundary_pc_y: Y coordinate of the boundary of the galaxy in parsecs
+    - boundary_pc_z: Z coordinate of the boundary of the galaxy in parsecs
+    - volume_gpc3: Volume of the galaxy in gigaparsecs cubed
+    - mass_kg: Mass of the galaxy in kilograms
+    - bulge_shape: Shape of the bulge of the galaxy, default is 'ellipsoid'
+    - bulge_center_from_center_ly_x: X coordinate of the center of the bulge
+        from the center of the galaxy in lightyears
+    - bulge_center_from_center_ly_y: Y coordinate of the center of the bulge
+        from the center of the galaxy in lightyears
+    - bulge_center_from_center_ly_z: Z coordinate of the center of the bulge
+        from the center of the galaxy in lightyears
+    - bulge_dim_axes_a: Length of the major axis of the bulge in lightyears
+    - bulge_dim_axes_b: Length of the minor axis of the bulge in lightyears
+    - bulge_dim_axes_c: Length of the tertiary axis of the bulge in lightyears
+    - bulge_dim_rot_pitch: Pitch rotation of the bulge in degrees
+    - bulge_dim_rot_yaw: Yaw rotation of the bulge in degrees
+    - bulge_dim_rot_roll: Roll rotation of the bulge in degrees
+    - bulge_black_hole_mass_kg: Mass of the black hole in the bulge in kilograms
+    - bulge_volume_ly3: Volume of the bulge in lightyears cubed
+    - bulge_total_mass_kg: Total mass of the bulge in kilograms
+    - star_field_shape: Shape of the star field of the galaxy, default is 'ellipsoid'
+    - star_field_dim_from_center_ly_x: X coordinate of the center of the star field
+        from the center of the galaxy in lightyears
+    - star_field_dim_from_center_ly_y: Y coordinate of the center of the star field
+        from the center of the galaxy in lightyears
+    - star_field_dim_from_center_ly_z: Z coordinate of the center of the star field
+        from the center of the galaxy in lightyears
+    - star_field_dim_axes_a: Length of the major axis of the star field in lightyears
+    - star_field_dim_axes_b: Length of the minor axis of the star field in lightyears
+    - star_field_dim_axes_c: Length of the tertiary axis of the star field in lightyears
+    - star_field_dim_rot_pitch: Pitch rotation of the star field in degrees
+    - star_field_dim_rot_yaw: Yaw rotation of the star field in degrees
+    - star_field_dim_rot_roll: Roll rotation of the star field in degrees
+    - star_field_vol_ly3: Volume of the star field in lightyears cubed
+    - star_field_mass_kg: Mass of the star field in kilograms
+    - interstellar_mass_kg: Mass of
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
     """
 
     _tablename: str = "GALAXY"
@@ -976,22 +1104,38 @@ class Galaxy(object):
     galactic_cluster_uid_fk: str = ""
     galaxy_name: str = ""
     relative_size: str = "medium"
-    center_from_univ_center_kpc: GroupStruct.CoordXYZ = GroupStruct.CoordXYZ()
+    center_from_univ_center_kpc_x: float = 0.0
+    center_from_univ_center_kpc_y: float = 0.0
+    center_from_univ_center_kpc_z: float = 0.0
     halo_radius_pc: float = 0.0
-    boundary_pc: GroupStruct.Game3DLoc = GroupStruct.Game3DLoc()
+    boundary_pc_x: float = 0.0
+    boundary_pc_y: float = 0.0
+    boundary_pc_z: float = 0.0
     volume_gpc3: float = 0.0
     mass_kg: float = 0.0
     bulge_shape: str = "ellipsoid"
-    bulge_center_from_center_ly: GroupStruct.CoordXYZ = GroupStruct.CoordXYZ()
-    bulge_dim_axes: GroupStruct.AxesABC = GroupStruct.AxesABC()
-    bulge_dim_rot: GroupStruct.PitchYawRollAngle = GroupStruct.PitchYawRollAngle()
+    bulge_center_from_center_ly_x: float = 0.0
+    bulge_center_from_center_ly_y: float = 0.0
+    bulge_center_from_center_ly_z: float = 0.0
+    bulge_dim_axes_a: float = 0.0
+    bulge_dim_axes_b: float = 0.0
+    bulge_dim_axes_c: float = 0.0
+    bulge_dim_rot_pitch: float = 0.0
+    bulge_dim_rot_yaw: float = 0.0
+    bulge_dim_rot_roll: float = 0.0
     bulge_black_hole_mass_kg: float = 0.0
     bulge_volume_ly3: float = 0.0
     bulge_total_mass_kg: float = 0.0
     star_field_shape: str = "ellipsoid"
-    star_field_dim_from_center_ly: GroupStruct.CoordXYZ = GroupStruct.CoordXYZ()
-    star_field_dim_axes: GroupStruct.AxesABC = GroupStruct.AxesABC()
-    star_field_dim_rot: GroupStruct.PitchYawRollAngle = GroupStruct.PitchYawRollAngle()
+    star_field_dim_from_center_ly_x: float = 0.0
+    star_field_dim_from_center_ly_y: float = 0.0
+    star_field_dim_from_center_ly_z: float = 0.0
+    star_field_dim_axes_a: float = 0.0
+    star_field_dim_axes_b: float = 0.0
+    star_field_dim_axes_c: float = 0.0
+    star_field_dim_rot_pitch: float = 0.0
+    star_field_dim_rot_yaw: float = 0.0
+    star_field_dim_rot_roll: float = 0.0
     star_field_vol_ly3: float = 0.0
     star_field_mass_kg: float = 0.0
     interstellar_mass_kg: float = 0.0
@@ -999,11 +1143,11 @@ class Galaxy(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(Galaxy)
+        return DM.cols_to_dict(Galaxy)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "galaxy_uid_pk"
@@ -1014,16 +1158,6 @@ class Galaxy(object):
             "relative_size": EntityType.RELATIVE_SIZE,
             "bulge_shape": EntityType.ASTRO_SHAPE,
             "star_field_shape": EntityType.ASTRO_SHAPE,
-        }
-        GROUP: dict = {
-            "center_from_univ_center_kpc": GroupStruct.CoordXYZ,
-            "boundary_pc": GroupStruct.Game3DLoc,
-            "bulge_center_from_center_ly": GroupStruct.CoordXYZ,
-            "bulge_dim_axes": GroupStruct.AxesABC,
-            "bulge_dim_rot": GroupStruct.PitchYawRollAngle,
-            "star_field_dim_from_center_ly": GroupStruct.CoordXYZ,
-            "star_field_dim_axes": GroupStruct.AxesABC,
-            "star_field_dim_rot": GroupStruct.PitchYawRollAngle,
         }
         ORDER: list = ["galaxy_name ASC"]
 
@@ -1117,6 +1251,49 @@ class StarSystem(object):
     at least one habitable planet, but we can include others.
     Conceptualized as a bulging shape, usually ellipsoid, centered in
     a boundary box.
+    x,y,z coordinates are relative to the Galaxy unless otherwise noted.
+
+    $$
+    - star_system_uid_pk: Primary key, unique identifier for each star system
+    - galaxy_uid_fk: Foreign key linking to the Galaxy table
+    - star_system_name: Name of the star system
+    - is_black_hole: Indicates if the star system contains a black hole
+    - is_pulsar: Indicates if the star system contains a pulsar
+    - boundary_pc_x: X coordinate of the boundary of the star system in parsecs
+    - boundary_pc_y: Y coordinate of the boundary of the star system in parsecs
+    - boundary_pc_z: Z coordinate of the boundary of the star system in parsecs
+    - volume_pc3: Volume of the star system in parsecs cubed
+    - mass_kg: Mass of the star system in kilograms
+    - system_shape: Shape of the star system, default is 'ellipsoid'
+    - center_from_galaxy_center_pc_x: X coordinate of the center of the star system
+        from the center of the galaxy in parsecs
+    - center_from_galaxy_center_pc_y: Y coordinate of the center of the star system
+        from the center of the galaxy in parsecs
+    - center_from_galaxy_center_pc_z: Z coordinate of the center of the star system
+        from the center of the galaxy in parsecs
+    - system_dim_axes_a: Length of the major axis of the star system in parsecs
+    - system_dim_axes_b: Length of the minor axis of the star system in parsecs
+    - system_dim_axes_c: Length of the tertiary axis of the star system in parsecs
+    - system_dim_rot_pitch: Pitch rotation of the star system in degrees
+    - system_dim_rot_yaw: Yaw rotation of the star system in degrees
+    - system_dim_rot_roll: Roll rotation of the star system in degrees
+    - relative_size: Relative size of the star system, default is 'medium'
+    - spectral_class: Spectral class of the star, default is 'G'
+    - aprox_age_gyr: Approximate age of the star system in gigayears
+    - luminosity_class: Luminosity class of the star, default is 'V'
+    - frequency_of_flares: Frequency of solar flares, default is 'rare'
+    - intensity_of_flares: Intensity of solar flares, default is 'low'
+    - frequency_of_comets: Frequency of comets, default is 'rare'
+    - unbound_planets_cnt: Number of unbound planets in the star system
+    - orbiting_planets_cnt: Number of planets orbiting the star
+    - inner_habitable_boundary_au: Inner boundary of the habitable zone in astronomical units
+    - outer_habitable_boundary_au: Outer boundary of the habitable zone in astronomical units
+    - planetary_orbits_shape: Shape of the planetary orbits, default is 'circular'
+    - orbital_stability: Stability of the planetary orbits, default is 'stable'
+    - asteroid_belt_density: Density of the asteroid belt, default is 'sparse'
+    - asteroid_belt_loc: Location of the asteroid belt, default is 'inner'
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
     """
 
     _tablename: str = "STAR_SYSTEM"
@@ -1125,13 +1302,21 @@ class StarSystem(object):
     star_system_name: str = ""
     is_black_hole: bool = False
     is_pulsar: bool = False
-    boundary_pc: GroupStruct.Game3DLoc = GroupStruct.Game3DLoc()
+    boundary_pc_x: float = 0.0
+    boundary_pc_y: float = 0.0
+    boundary_pc_z: float = 0.0
     volume_pc3: float = 0.0
     mass_kg: float = 0.0
     system_shape: str = "ellipsoid"
-    center_from_galaxy_center_pc: GroupStruct.CoordXYZ = GroupStruct.CoordXYZ()
-    system_dim_axes: GroupStruct.AxesABC = GroupStruct.AxesABC()
-    system_dim_rot: GroupStruct.PitchYawRollAngle = GroupStruct.PitchYawRollAngle()
+    center_from_galaxy_center_pc_x: float = 0.0
+    center_from_galaxy_center_pc_y: float = 0.0
+    center_from_galaxy_center_pc_z: float = 0.0
+    system_dim_axes_a: float = 0.0
+    system_dim_axes_b: float = 0.0
+    system_dim_axes_c: float = 0.0
+    system_dim_rot_pitch: float = 0.0
+    system_dim_rot_yaw: float = 0.0
+    system_dim_rot_roll: float = 0.0
     relative_size: str = "medium"
     spectral_class: str = "G"
     aprox_age_gyr: float = 0.0
@@ -1151,11 +1336,11 @@ class StarSystem(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(StarSystem)
+        return DM.cols_to_dict(StarSystem)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "star_system_uid_pk"
@@ -1173,12 +1358,6 @@ class StarSystem(object):
             "intensity_of_flares": EntityType.INTENSITY,
             "frequency_of_comets": EntityType.FREQUENCY,
         }
-        GROUP: dict = {
-            "boundary_pc": GroupStruct.Game3DLoc,
-            "center_from_galaxy_center_pc": GroupStruct.CoordXYZ,
-            "system_dim_axes": GroupStruct.AxesABC,
-            "system_dim_rot": GroupStruct.PitchYawRollAngle,
-        }
         ORDER: list = ["star_system_name ASC"]
 
 
@@ -1193,12 +1372,51 @@ Tracking of seasons and accounting of calendars will also be
 handled on separate tables.  The same is true for tracking
 of eclipses and other astronomical events. In each case, such
 "charts" are contained by a World object.
+
+In some cases, it may be easier to generate the data using an
+AI-assisted algorithm, then design the DB tables based on that.
 """
 
 
 class World(object):
     """
     A World is a planet within a Star System. It may be habitable or not.
+    A World is associated with one Star System, and multiple Worlds can be
+    associated with one Star System.
+
+    A number of the attributes are just left as text descriptions at this
+    point in order to avoid too much complexity. These will be replaced
+    with more specific attributes as the game model is further developed.
+
+    $$
+    - world_uid_pk: Primary key, unique identifier for each world
+    - star_system_uid_fk: Foreign key referencing the Star System table
+    - world_name: Name of the world
+    - world_type: Type of the world, default is 'habitable'
+    - obliquity_dg: Axial tilt of the world in degrees
+    - distance_from_star_au: Distance from the star in astronomical units
+    - distance_from_star_km: Distance from the star in kilometers
+    - radius_km: Radius of the world in kilometers
+    - mass_kg: Mass of the world in kilograms
+    - gravity_m_per_s_per_s: Gravity of the world in meters per second squared
+    - orbit_gdy: Orbital period of the world in galactic days
+    - orbit_gyr: Orbital period of the world in galactic years
+    - is_tidally_locked: Indicates if the world is tidally locked
+    - rotation_gdy: Rotation period of the world in galactic days
+    - rotation_direction: Direction of rotation, default is 'prograde'
+    - orbit_direction: Direction of orbit, default is 'prograde'
+    - moons_cnt: Number of moons orbiting the world
+    - world_desc: Description of the world
+    - atmosphere: Composition of the atmosphere
+    - sky_color: Color of the sky
+    - biosphere: Presence of life forms
+    - sentients: Presence of intelligent life
+    - climate: Climate of the world
+    - tech_level: Technological level of the world
+    - terrain: Terrain of the world
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
+
     """
 
     _tablename: str = "WORLD"
@@ -1231,11 +1449,11 @@ class World(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(World)
+        return DM.cols_to_dict(World)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "world_uid_pk"
@@ -1250,16 +1468,39 @@ class World(object):
 
 class Moon(object):
     """
-    A Moon is any type of satellite around a World.
+    A Moon is any type of permanent satellite around a World that
+    is large enough to be seen from the planet.
     A Moon is associated with one World, and multiple Moons can be
     associated with one World.
+
+    $$
+    - moon_uid_pk: Primary key, unique identifier for each moon
+    - world_uid_fk: Foreign key referencing the World table
+    - moon_name: Name of the moon in "Common" language glossary
+    - moon_desc: Description of the moon
+    - moon_lore: Lore of the moon
+    - center_from_world_center_km: Distance from the center of the world in kilometers
+    - mass_kg: Mass of the moon in kilograms
+    - radius_km: Radius of the moon in kilometers
+    - obliquity_dg: Axial tilt of the moon in degrees
+    - is_tidally_locked: Indicates if the moon is tidally locked
+    - rotation_direction: Direction of rotation, default is 'prograde'
+    - orbit_direction: Direction of orbit, default is 'prograde'
+    - orbit_world_days: Orbital period of the moon in world days
+    - rotation_world_days: Rotation period of the moon in world days
+    - initial_velocity: Initial velocity of the moon in meters per second
+    - angular_velocity: Angular velocity of the moon in radians per second
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
     """
 
     _tablename: str = "MOON"
     moon_uid_pk: str = ""
     world_uid_fk: str = ""
     moon_name: str = ""
-    center_from_world_center_km: GroupStruct.CoordXYZ
+    moon_desc: str = ""
+    moon_lore: str = ""
+    center_from_world_center_km: float = 0.0
     mass_kg: float = 0.0
     radius_km: float = 0.0
     obliquity_dg: float = 0.0  # a/k/a axial tilt
@@ -1274,11 +1515,11 @@ class Moon(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(Moon)
+        return DM.cols_to_dict(Moon)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "moon_uid_pk"
@@ -1287,7 +1528,6 @@ class Moon(object):
             "rotation_direction": EntityType.ASTRO_DIRECTION,
             "orbit_direction": EntityType.ASTRO_DIRECTION,
         }
-        GROUP: dict = {"center_from_world_center_km": GroupStruct.CoordXYZ}
         ORDER: list = ["moon_name ASC"]
 
 
@@ -1305,10 +1545,22 @@ class SolarYear(object):
     a little processing to do so.
     This is astronomical data, not a Calendar definition.
     - solar_year_span: number of solar revolutions in
-      the year. Typically this is 1. But I have cultures
-      (terpins) that count as 1 "year" 4 solar years. This
-      way they don't account for leap days/years in the
-      same way.
+      the year. Typically this is 1. But some game cultures
+      count multiple solar years as 1 "year" on their calendar.
+      And they don't account for leap days/years in the same way.
+
+    $$
+    - solar_year_uid_pk: Primary key, unique identifier for each solar year
+    - world_uid_fk: Foreign key linking to the World table
+    - lang_uid_fk: Foreign key linking to the Language table
+    - solar_year_key: Key for the solar year
+    - version_id: Version of the solar year
+    - solar_year_name: Name of the solar year
+    - solar_year_desc: Description of the solar year
+    - solar_year_span: Number of solar revolutions in the year
+    - days_in_solar_year: Number of days in the solar year
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
     """
 
     _tablename: str = "SOLAR_YEAR"
@@ -1319,16 +1571,17 @@ class SolarYear(object):
     version_id: str = ""
     solar_year_name: str = ""
     solar_year_desc: str = ""
+    solar_year_span: float = 0.0
     days_in_solar_year: float = 0.0
     delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(SolarYear)
+        return DM.cols_to_dict(SolarYear)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "solar_year_uid_pk"
@@ -1336,26 +1589,39 @@ class SolarYear(object):
             "world_uid_fk": ("WORLD", "world_uid_pk"),
             "lang_uid_fk": ("LANGUAGE", "lang_uid_pk"),
         }
-        ORDER: list = ["solar_year_key ASC", "version_id ASC"]
+        ORDER: list = ["solar_year_key ASC"]
 
 
 class Season(object):
     """
-    A Season defines the length of a season as proportion
-    of a Solar year.
-    It is categoriezed as one or more of the seasons in common
+    A Season defines the length of a season as proportion of a Solar year.
+    It is categoriezed as one or more of the four seasons in common
     use on Earth, which are defined as a type category.
     Seaons also vary depending on which hemisphere they relate
     to, also defined as a type.
-    Names of seasons are handled as foreign keys to a common
-    glossary item.
+    Names of seasons are handled as virtual foreign keys to a common
+    glossary item, which means they are optional and and not enforced
+    by a foreign key constraint.
+    - years_in_season: Number of years in the season. This is
+      typically close to 0.25, but can be any value. If it is greater
+      than 1, this indicates that a season is longer than a year, which
+      is bizarre but may be possible in some fantastic game settings.
+
+    $$
+    - season_uid_pk: Primary key, unique identifier for each season
+    - solar_year_uid_fk: Foreign key linking to the Solar Year table
+    - gloss_common_uid_vfk: Virtual foreign key linking to the Common Glossary table
+    - season_type: Type of the season
+    - hemisphere_type: Hemisphere of the season
+    - years_in_season: Number of years in the season
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
     """
 
     _tablename: str = "SEASON"
     season_uid_pk: str = ""
     solar_year_uid_fk: str = ""
-    gloss_common_uid_fk: str = ""
-    version_id: str = ""
+    gloss_common_uid_vfk: str = ""
     season_type: str = ""
     hemisphere_type: str = ""
     years_in_season: float = 0.0
@@ -1363,18 +1629,15 @@ class Season(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(Season)
+        return DM.cols_to_dict(Season)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "season_uid_pk"
-        FK: dict = {
-            "solar_year_uid_fk": ("SOLAR_YEAR", "solar_year_uid_pk"),
-            "gloss_common_uid_fk": ("GLOSS_COMMON", "gloss_common_uid_pk"),
-        }
+        FK: dict = {"solar_year_uid_fk": ("SOLAR_YEAR", "solar_year_uid_pk")}
         CK: dict = {
             "season_type": EntityType.SEASON_TYPE,
             "hemisphere_type": EntityType.HEMISPHERE_TYPE,
@@ -1385,27 +1648,36 @@ class Season(object):
 class LunarYear(object):
     """
     A Lunar Year is always associated with a World, within a
-    given Star System. And with one or more lunar cycles.
-
+    given Star System. And with one __or more__ Moon cycles.
     Which of the World's moons are being referenced is
     hanlded by the LunarYearXMoons association table.
 
     Duration of each moon's revolution around the world and
     its relative position per other satellites will be handled
     by computations. The LunarYear table contains the total
-    number of days in the lunar year, whether it is based on
-    a single satellite or a comoposite. The day is always in
-    relation to the world's rotation w/r/t iits sun.
+    number of World days in the lunar year, whether it is based on
+    a single satellite or a composite. The day is always in
+    relation to the world's rotation w/r/t its sun.
 
     The Lunar Year is astronomical data and not a Calendar.
+    The link to language is optional, a virtual foreign key, and is
+    not enforced by a foreign key constraint.
+
+    $$
+    - lunar_year_uid_pk: Primary key, unique identifier for each lunar year
+    - world_uid_fk: Foreign key linking to the World table
+    - lang_uid_vfk: Virtual foreign key linking to the Language table
+    - lunar_year_name: Name of the lunar year
+    - lunar_year_desc: Description of the lunar year
+    - days_in_lunar_year: Number of days in the lunar year
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
     """
 
     _tablename: str = "LUNAR_YEAR"
     lunar_year_uid_pk: str = ""
     world_uid_fk: str = ""
-    lang_uid_fk: str = ""
-    lunar_year_key: str = ""
-    version_id: str = ""
+    lang_uid_vfk: str = ""
     lunar_year_name: str = ""
     lunar_year_desc: str = ""
     days_in_lunar_year: float = 0.0
@@ -1413,42 +1685,47 @@ class LunarYear(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(LunarYear)
+        return DM.cols_to_dict(LunarYear)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "lunar_year_uid_pk"
-        FK: dict = {
-            "world_uid_fk": ("WORLD", "world_uid_pk"),
-            "lang_uid_fk": ("LANGUAGE", "lang_uid_pk"),
-        }
-        ORDER: list = ["lunar_year_key ASC", "version_id ASC"]
+        FK: dict = {"world_uid_fk": ("WORLD", "world_uid_pk")}
+        ORDER: list = ["lunar_year_key ASC"]
 
 
 class LunarYearXMoon(object):
     """
     Associative keys --
     - LUNAR_YEARs (n) <--> MOONs (n)
-    This table associates Lunar Year astro data with a
-    specific moon.
+    This table associates Lunar Year astro data with a specific moon.
+
+    $$
+    - lunar_year_x_moon_uid_pk: Primary key, unique identifier for each association
+    - lunar_year_uid_fk: Foreign key linking to the Lunar Year table
+    - moon_uid_fk: Foreign key linking to the Moon table
+    - touch_type: Type of association
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
     """
 
     _tablename: str = "LUNAR_YEAR_X_MOON"
     lunar_year_x_moon_uid_pk: str = ""
     lunar_year_uid_fk: str = ""
     moon_uid_fk: str = ""
+    touch_type: str = ""
     delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(LunarYearXMoon)
+        return DM.cols_to_dict(LunarYearXMoon)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "lunar_year_x_moon_uid_pk"
@@ -1456,28 +1733,49 @@ class LunarYearXMoon(object):
             "lunar_year_uid_fk": ("LUNAR_YEAR", "lunar_year_uid_pk"),
             "moon_uid_fk": ("MOON", "moon_uid_pk"),
         }
+        CK: dict = {"touch_type": EntityType.TOUCH_TYPE}
 
 
 class SolarCalendar(object):
     """
     A Solar Calendar is a cultural artifact. It is associated with
-    a Solar Year. The name of the calendar is defined as a link to
-    a common glossary item.
-    - epoch_start_offset: the first year in this system, in relationship
-      to the default "epoch start" year for the game. Need to figure
-      out how/where to define the epoch start for a given world.
+    a Solar Year. The name of the calendar is defined as a virtual
+    (optional) link to a common glossary item but is also recorded as text.
     Months, Weeks, Days, Hours, etc are defined in distinct tables
     that are associated with Solar and/or Lunar Calendars.
+
+    - epoch_start_offset is the first year in this calendrical system,
+      in relationship to the default "epoch start" year for the game.
+      Need to figure out how/where to define the epoch start for a given world.
+
+    $$
+    - solar_calendar_uid_pk: Primary key, unique identifier for each solar calendar
+    - solar_year_uid_fk: Foreign key linking to the Solar Year table
+    - year_name_gloss_common_uid_vfk: Virtual foreign key linking to the Common Glossary table
+    - season_start_uid_fk: Foreign key linking to the Season table
+    - solar_calendar_name: Name of the solar calendar
+    - solar_calendar_desc: Description of the solar calendar
+    - epoch_start_offset: Offset from the epoch start year
+    - months_in_year: Number of months in the year
+    - watches_in_day: Number of watches in the day
+    - hours_in_watch: Number of hours in the watch
+    - minutes_in_hour: Number of minutes in the hour
+    - seconds_in_minute: Number of seconds in the minute
+    - leap_year: Number of leap years
+    - leap_month: Number of leap months
+    - leap_days: Number of leap days
+    - leap_rule: Rule for handling leap years
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
     """
 
     _tablename: str = "SOLAR_CALENDAR"
     solar_calendar_uid_pk: str = ""
     solar_year_uid_fk: str = ""
-    year_name_gloss_common_uid_fk: str = ""
+    year_name_gloss_common_uid_vfk: str = ""
     season_start_uid_fk: str = ""
-    solar_calendar_id: str = ""
+    solar_calendar_name: str = ""
     solar_calendar_desc: str = ""
-    version_id: str = ""
     epoch_start_offset: int = 0
     months_in_year: int = 0
     watches_in_day: int = 0
@@ -1492,62 +1790,62 @@ class SolarCalendar(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(SolarCalendar)
+        return DM.cols_to_dict(SolarCalendar)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "solar_calendar_uid_pk"
         FK: dict = {
             "solar_year_uid_fk": ("SOLAR_YEAR", "solar_year_uid_pk"),
-            "year_name_gloss_common_uid_fk": ("GLOSS_COMMON", "gloss_common_uid_pk"),
             "season_start_uid_fk": ("SEASON", "season_uid_pk"),
         }
         CK: dict = {"leap_rule": EntityType.LEAP_RULE}
-        ORDER: list = ["solar_calendar_id ASC", "version_id ASC"]
+        ORDER: list = ["solar_calendar_id ASC"]
 
 
 class LunarCalendar(object):
     """
     A Lunar Calendar is a cultural artifact associated with
-    a Lunar Year. The name of the calendar is defined as a link to
-    a common glossary item.
-    - epoch_start_offset: the first year in this system, in relationship
-      to the default "epoch start" year for the game. Need to figure
-      out how/where to define the epoch start for a given world.
-    Months, Weeks, Days, Hours, etc are defined in distinct tables
-    that are associated with Solar and/or Lunar Calendars.
+    a Lunar Year. The name of the calendar is defined as an optional link to
+    a common glossary item but is also recorded as text.
 
+    $$
+    - lunar_calendar_uid_pk: Primary key, unique identifier for each lunar calendar
+    - lunar_year_uid_fk: Foreign key linking to the Lunar Year table
+    - lunar_year_name_gloss_common_uid_vfk: Virtual foreign key linking to the Common Glossary table
+    - lunar_calendar_name: Name of the lunar calendar
+    - lunar_calendar_desc: Description of the lunar calendar
+    - epoch_start_offset: Offset from the epoch start year
+    - days_in_month: Number of days in the month
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
     """
 
     _tablename: str = "LUNAR_CALENDAR"
     lunar_calendar_uid_pk: str = ""
     lunar_year_uid_fk: str = ""
-    year_name_gloss_common_uid_fk: str = ""
-    lunar_calendar_id: str = ""
+    lunar_year_name_gloss_common_uid_vfk: str = ""
+    lunar_calendar_name: str = ""
     lunar_calendar_desc: str = ""
-    version_id: str = ""
     epoch_start_offset: int = 0
     days_in_month: int = 0
     delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(LunarCalendar)
+        return DM.cols_to_dict(LunarCalendar)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "lunar_calendar_uid_pk"
-        FK: dict = {
-            "lunar_year_uid_fk": ("LUNAR_YEAR", "lunar_year_uid_pk"),
-            "year_name_gloss_common_uid_fk": ("GLOSS_COMMON", "gloss_common_uid_pk"),
-        }
-        ORDER: list = ["lunar_calendar_id ASC", "version_id ASC"]
+        FK: dict = {"lunar_year_uid_fk": ("LUNAR_YEAR", "lunar_year_uid_pk")}
+        ORDER: list = ["lunar_calendar_id ASC"]
 
 
 class Month(object):
@@ -1556,56 +1854,71 @@ class Month(object):
     association table.
     - is_leap_day_month: true if the month contains leap day/s
     - is_leap_month: true if entire month is leap days
+
+    $$
+    - month_uid_pk: Primary key, unique identifier for each month
+    - month_name_gloss_common_uid_vfk: Virtual foreign key linking to the Common Glossary table
+    - month_name: Name of the month
+    - days_in_month: Number of World days in the month
+    - month_order: Ordinal number of the month
+    - is_leap_day_month: Indicates if the month contains leap day/s
+    - is_leap_month: Indicates if the entire month is leap days
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
     """
 
     _tablename: str = "MONTH"
     month_uid_pk: str = ""
-    month_name_gloss_common_uid_fk: str = ""
-    month_id: str = ""
-    version_id: str = ""
+    month_name_gloss_common_uid_vfk: str = ""
+    month_name: str = ""
     days_in_month: int = 0
-    months_number: int = 0
+    month_order: int = 0
     is_leap_day_month: bool = False
     is_leap_month: bool = False
     delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(Month)
+        return DM.cols_to_dict(Month)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "month_uid_pk"
-        FK: dict = {
-            "month_name_gloss_common_uid_fk": ("GLOSS_COMMON", "gloss_common_uid_pk")
-        }
-        ORDER: list = ["month_id ASC", "version_id ASC"]
+        ORDER: list = ["month_id ASC"]
 
 
 class SolarCalendarXMonth(object):
     """
     Associative keys --
     - SOLAR_CALENDARs (n) <--> MONTHs (n)
-    This table associates Solar Calendar data with a
-    set of Months.
+    This table associates Solar Calendar data with a set of Months.
+
+    $$
+    - solar_calendar_x_moon_uid_pk: Primary key, unique identifier for each association
+    - solar_calendar_uid_fk: Foreign key linking to the Solar Calendar table
+    - month_uid_fk: Foreign key linking to the Month table
+    - touch_type: Type of association
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
     """
 
     _tablename: str = "SOLAR_CALENDAR_X_MONTH"
     solar_calendar_x_moon_uid_pk: str = ""
     solar_calendar_uid_fk: str = ""
     month_uid_fk: str = ""
+    touch_type: str = ""
     delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(SolarCalendarXMonth)
+        return DM.cols_to_dict(SolarCalendarXMonth)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "solar_calendar_x_moon_uid_pk"
@@ -1613,6 +1926,7 @@ class SolarCalendarXMonth(object):
             "solar_calendar_uid_fk": ("SOLAR_CALENDAR", "solar_calendar_uid_pk"),
             "month_uid_fk": ("MONTH", "month_uid_pk"),
         }
+        CK: dict = {"touch_type": EntityType.TOUCH_TYPE}
 
 
 class LunarCalendarXMonth(object):
@@ -1621,21 +1935,30 @@ class LunarCalendarXMonth(object):
     - LUNAR_CALENDARs (n) <--> MONTHs (n)
     This table associates Lunar Calendar data with a
     set of Months.
+
+    $$
+    - lunar_calendar_x_moon_uid_pk: Primary key, unique identifier for each association
+    - lunar_calendar_uid_fk: Foreign key linking to the Lunar Calendar table
+    - month_uid_fk: Foreign key linking to the Month table
+    - touch_type: Type of association
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
     """
 
     _tablename: str = "LUNAR_CALENDAR_X_MONTH"
     lunar_calendar_x_moon_uid_pk: str = ""
     lunar_calendar_uid_fk: str = ""
     month_uid_fk: str = ""
+    touch_type: str = ""
     delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(LunarCalendarXMonth)
+        return DM.cols_to_dict(LunarCalendarXMonth)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "lunar_calendar_x_moon_uid_pk"
@@ -1643,6 +1966,7 @@ class LunarCalendarXMonth(object):
             "lunar_calendar_uid_fk": ("LUNAR_CALENDAR", "lunar_calendar_uid_pk"),
             "month_uid_fk": ("MONTH", "month_uid_pk"),
         }
+        CK: dict = {"touch_type": EntityType.TOUCH_TYPE}
 
 
 class WeekTime(object):
@@ -1653,61 +1977,74 @@ class WeekTime(object):
     shorter than an average month. It is not necessarily
     the 7 days we are accustomed to. It could be a fortnight,
     a special 5 day week, or a 3 day holiday week.
-    - week_time_number: optional; order of week if multiples
+    - week_time_order: optional; order of week if multiple different
+      types of week in a month and they have an order
     - is_leap_week_time: true if the week contains only leap day/s
+
+    $$
+    - week_time_uid_pk: Primary key, unique identifier for each week time
+    - week_time_name_gloss_common_uid_vfk: Virtual foreign key linking to the Common Glossary table
+    - week_time_name: Name of the week time
+    - week_time_desc: Description of the week time
+    - days_in_week_time: Number of days in the week time
+    - week_time_order: Order of the week time
+    - is_leap_week_time: Indicates if the week time contains leap day/s
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
     """
 
     _tablename: str = "WEEK_TIME"
     week_time_uid_pk: str = ""
-    week_time_name_gloss_common_uid_fk: str = ""
+    week_time_name_gloss_common_uid_vfk: str = ""
+    week_time_name: str = ""
     week_time_desc: str = ""
-    week_time_id: str = ""
-    version_id: str = ""
     days_in_week_time: int = 0
-    week_time_number: int = 0
+    week_time_order: int = 0
     is_leap_week_time: bool = False
     delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(WeekTime)
+        return DM.cols_to_dict(WeekTime)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "week_time_uid_pk"
-        FK: dict = {
-            "week_time_name_gloss_common_uid_fk": (
-                "GLOSS_COMMON",
-                "gloss_common_uid_pk",
-            )
-        }
-        ORDER: list = ["week_time_id ASC", "version_id ASC"]
+        ORDER: list = ["week_time_id ASC"]
 
 
 class SolarCalendarXWeekTime(object):
     """
     Associative keys --
     - SOLAR_CALENDARs (n) <--> WEEK_TIMEs (n)
-    This table associates Solar Calendar data with a
-    set of Week Times.
+    This table associates Solar Calendar data with a set of Week Times.
+
+    $$
+    - solar_calendar_x_week_time_uid_pk: Primary key, unique identifier for each association
+    - solar_calendar_uid_fk: Foreign key linking to the Solar Calendar table
+    - week_time_uid_fk: Foreign key linking to the Week Time table
+    - touch_type: Type of association
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
     """
 
     _tablename: str = "SOLAR_CALENDAR_X_WEEK_TIME"
     solar_calendar_x_week_time_uid_pk: str = ""
     solar_calendar_uid_fk: str = ""
     week_time_uid_fk: str = ""
+    touch_type: str = ""
     delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(SolarCalendarXWeekTime)
+        return DM.cols_to_dict(SolarCalendarXWeekTime)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "solar_calendar_x_week_time_uid_pk"
@@ -1715,29 +2052,38 @@ class SolarCalendarXWeekTime(object):
             "solar_calendar_uid_fk": ("SOLAR_CALENDAR", "solar_calendar_uid_pk"),
             "week_time_uid_fk": ("WEEK_TIME", "week_time_uid_pk"),
         }
+        CK: dict = {"touch_type": EntityType.TOUCH_TYPE}
 
 
 class LunarCalendarXWeekTime(object):
     """
     Associative keys --
     - LUNAR_CALENDARs (n) <--> WEEK_TIMEs (n)
-    This table associates Lunar Calendar data with a
-    set of Week Times.
+    This table associates Lunar Calendar data with a set of Week Times.
+
+    $$
+    - lunar_calendar_x_week_time_uid_pk: Primary key, unique identifier for each association
+    - lunar_calendar_uid_fk: Foreign key linking to the Lunar Calendar table
+    - week_time_uid_fk: Foreign key linking to the Week Time table
+    - touch_type: Type of association
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
     """
 
     _tablename: str = "LUNAR_CALENDAR_X_WEEK_TIME"
     lunar_calendar_x_week_time_uid_pk: str = ""
     lunar_calendar_uid_fk: str = ""
     week_time_uid_fk: str = ""
+    touch_type: str = ""
     delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(LunarCalendarXWeekTime)
+        return DM.cols_to_dict(LunarCalendarXWeekTime)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "lunar_calendar_x_week_time_uid_pk"
@@ -1745,12 +2091,12 @@ class LunarCalendarXWeekTime(object):
             "lunar_calendar_uid_fk": ("LUNAR_CALENDAR", "lunar_calendar_uid_pk"),
             "week_time_uid_fk": ("WEEK_TIME", "week_time_uid_pk"),
         }
+        CK: dict = {"touch_type": EntityType.TOUCH_TYPE}
 
 
 class DayTime(object):
     """
-    DayTime is associated with 1..n Weeks via an
-    association table.
+    DayTime is associated with 1..n Weeks via an association table.
     It describes any reckoning of time construed in
     hours that is longer than one hour and not longer
     that a full day. It is not necessarily the 24 hours
@@ -1758,14 +2104,24 @@ class DayTime(object):
     half-day, a 6 hour "watch" and so on.
     - day_time_number: order of day in a week
     - is_leap_day_time: true if the day is only a leap day
+
+    $$
+    - day_time_uid_pk: Primary key, unique identifier for each day time
+    - day_time_name_gloss_common_uid_vfk: Virtual foreign key linking to the Common Glossary table
+    - day_time_name: Name of the day time
+    - day_time_desc: Description of the day time
+    - hours_in_day_time: Number of hours in the day time
+    - day_time_number: Order of the day in a week
+    - is_leap_day_time: Indicates if the day time is only a leap day
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
     """
 
     _tablename: str = "DAY_TIME"
     day_time_uid_pk: str = ""
-    day_time_name_gloss_common_uid_fk: str = ""
+    day_time_name_gloss_common_uid_vfk: str = ""
+    day_time_name: str = ""
     day_time_desc: str = ""
-    day_time_id: str = ""
-    version_id: str = ""
     hours_in_day_time: int = 0
     day_time_number: int = 0
     is_leap_day_time: bool = False
@@ -1773,41 +2129,46 @@ class DayTime(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(DayTime)
+        return DM.cols_to_dict(DayTime)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "day_time_uid_pk"
-        FK: dict = {
-            "day_time_name_gloss_common_uid_fk": ("GLOSS_COMMON", "gloss_common_uid_pk")
-        }
-        ORDER: list = ["day_time_id ASC", "version_id ASC"]
+        ORDER: list = ["day_time_id ASC"]
 
 
 class WeekTimeXDayTime(object):
     """
     Associative keys --
     - WEEK_TIMEs (n) <--> DAY_TIMEs (n)
-    This table associates Week Time data with a
-    set of Day Times.
+    This table associates Week Time data with a set of Day Times.
+
+    $$
+    - week_time_x_day_time_uid_pk: Primary key, unique identifier for each association
+    - week_time_uid_fk: Foreign key linking to the Week Time table
+    - day_time_uid_fk: Foreign key linking to the Day Time table
+    - touch_type: Type of association
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
     """
 
     _tablename: str = "WEEK_TIME_X_DAY_TIME"
     week_time_x_day_time_uid_pk: str = ""
     week_time_uid_fk: str = ""
     day_time_uid_fk: str = ""
+    touch_type: str = ""
     delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(WeekTimeXDayTime)
+        return DM.cols_to_dict(WeekTimeXDayTime)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "week_time_x_day_time_uid_pk"
@@ -1815,14 +2176,15 @@ class WeekTimeXDayTime(object):
             "week_time_uid_fk": ("WEEK_TIME", "week_time_uid_pk"),
             "day_time_uid_fk": ("DAY_TIME", "day_time_uid_pk"),
         }
+        CK: dict = {"touch_type": EntityType.TOUCH_TYPE}
 
 
 # Next: Hours, Scenes, Locations, Buildings, Sets, Characters, Inventories,
 #  Services, etc.
 # Come back and add these (and maybe more) afer doing some more work on tying
 # the front end and middle ware to the new database and data model, including
-# generation of initial set-up data. Maybe do some implementation on the
-# financial app too.
+# generation of initial set-up data.
+
 
 # =============================================================
 # Game Geography
@@ -1838,7 +2200,7 @@ class Lake(object):
     Points stored as JSON with an undetermined length.
     SQL generator code identifies them via a classmethod
     constraint keyed by "JSON".' SQLite supports a JSON
-    data type, but not sure yet what that buys us.
+    data type, but not sure yet what that buys us vs test or blob.
 
     catchment_area_radius_m: area of land where rainfall is
     collected and drained into the lake. Not same as
@@ -1862,11 +2224,39 @@ class Lake(object):
 
     JSON:
     lake_shorline_points: [GeogLatLong, ..]
+
+    $$
+    - lake_uid_pk: Primary key, unique identifier for each lake
+    - gloss_common_uid_vfk: Foreign key linking to the Common Glossary table
+    - lake_name: Name of the lake
+    - lake_shoreline_points_json: JSON of the lake shoreline points
+    - lake_size: Size of the lake
+    - water_type: Type of water
+    - lake_type: Type of lake
+    - is_tidal_influence: Indicates if the lake has tidal influence
+    - lake_surface_m2: Surface area of the lake
+    - max_depth_m: Maximum depth of the lake
+    - avg_depth_m: Average depth of the lake
+    - lake_altitude_m: Altitude of the lake
+    - catchment_area_radius_m: Catchment area radius of the lake
+    - lake_origin: Origin of the lake
+    - flora_and_fauna: Flora and fauna of the lake
+    - water_color: Color of the water
+    - accessibility: Accessibility of the lake
+    - special_features: Special features of the lake
+    - lake_usage: Usage of the lake
+    - lake_lore: Legends or myths of the lake
+    - lake_history: History of the lake
+    - conservation_status: Conservation status of the lake
+    - current_conditions: Current conditions of the lake
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
     """
 
     _tablename: str = "LAKE"
     lake_uid_pk: str = ""
-    gloss_common_uid_fk: str = ""
+    gloss_common_uid_vfk: str = ""
+    lake_name: str = ""
     lake_shoreline_points_json: str = ""
     lake_size: str = "medium"
     water_type: str = "freshwater"
@@ -1883,7 +2273,7 @@ class Lake(object):
     accessibility: str = ""
     special_features: str = ""
     lake_usage: str = ""
-    legends_or_myths: str = ""
+    lake_lore: str = ""
     lake_history: str = ""
     conservation_status: str = ""
     current_conditions: str = ""
@@ -1891,15 +2281,14 @@ class Lake(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(Lake)
+        return DM.cols_to_dict(Lake)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "lake_uid_pk"
-        FK: dict = {"gloss_common_uid_fk": ("GLOSS_COMMON", "gloss_common_uid_pk")}
         JSON: list = ["lake_shoreline_points_json"]
         CK: dict = {
             "lake_size": EntityType.LAKE_SIZE,
@@ -1913,21 +2302,30 @@ class LakeXMap(object):
     """
     Associative keys --
     - LAKEs (n) <--> MAPs (n)
+
+    $$
+    - lake_x_map_pk: Primary key, unique identifier for each association
+    - lake_uid_fk: Foreign key linking to the Lake table
+    - map_uid_fk: Foreign key linking to the Map table
+    - touch_type: Type of association
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
     """
 
     _tablename: str = "LAKE_X_MAP"
     lake_x_map_pk: str = ""
     lake_uid_fk: str = ""
     map_uid_fk: str = ""
+    touch_type: str = ""
     delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(LakeXMap)
+        return DM.cols_to_dict(LakeXMap)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "lake_x_map_pk"
@@ -1935,6 +2333,7 @@ class LakeXMap(object):
             "lake_uid_fk": ("LAKE", "lake_uid_pk"),
             "map_uid_fk": ("MAP", "map_uid_pk"),
         }
+        CK: dict = {"touch_type": EntityType.TOUCH_TYPE}
         ORDER: list = ["lake_uid_fk ASC", "map_uid_fk ASC"]
 
 
@@ -1967,11 +2366,35 @@ class River(object):
     "features": [{"uid": int,
                   "type": EntityType.RIVER_FEATURE,
                    "loc": lat-long}, ...]
+
+    $$
+    - river_uid_pk: Primary key, unique identifier for each river
+    - gloss_common_uid_vfk: Foreign key linking to the Common Glossary table
+    - river_name: Name of the river
+    - river_course_points_json: JSON of the river course points
+    - river_bank_points_json: JSON of the river bank points
+    - river_type: Type of river
+    - avg_width_m: Average width of the river
+    - avg_depth_m: Average depth of the river
+    - total_length_km: Total length of the river
+    - drainage_basin_km: Drainage basin of the river
+    - avg_velocity_m_per_h: Average velocity of the river
+    - gradient_m_per_km: Gradient of the river
+    - river_hazards_json: JSON of the river hazards
+    - river_features_json: JSON of the river features
+    - river_nav_type: Type of river navigation
+    - flora_and_fauna: Flora and fauna of the river
+    - water_quality: Quality of the water
+    - historical_events: Historical events of the river
+    - current_conditions: Current conditions of the river
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
     """
 
     _tablename: str = "RIVER"
     river_uid_pk: str = ""
-    gloss_common_uid_fk: str = ""
+    gloss_common_uid_vfk: str = ""
+    river_name: str = ""
     river_course_points_json: str = ""
     river_bank_points_json: str = ""
     river_type: str = "perrenial"
@@ -1992,15 +2415,14 @@ class River(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(River)
+        return DM.cols_to_dict(River)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "river_uid_pk"
-        FK: dict = {"gloss_common_uid_fk": ("GLOSS_COMMON", "gloss_common_uid_pk")}
         CK: dict = {
             "river_type": EntityType.RIVER_TYPE,
             "river_nav_type": EntityType.RIVER_NAV_TYPE,
@@ -2018,21 +2440,30 @@ class RiverXMap(object):
     """
     Associative keys --
     - RIVERs (n) <--> MAPs (n)
+
+    $$
+    - river_x_map_uid_pk: Primary key, unique identifier for each association
+    - river_uid_fk: Foreign key linking to the River table
+    - map_uid_fk: Foreign key linking to the Map table
+    - touch_type: Type of association
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
     """
 
     _tablename: str = "RIVER_X_MAP"
     river_x_map_uid_pk: str = ""
     river_uid_fk: str = ""
     map_uid_fk: str = ""
+    touch_type: str = ""
     delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(RiverXMap)
+        return DM.cols_to_dict(RiverXMap)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "river_x_map_uid_pk"
@@ -2040,15 +2471,42 @@ class RiverXMap(object):
             "river_uid_fk": ("RIVER", "river_uid_pk"),
             "map_uid_fk": ("MAP", "map_uid_pk"),
         }
+        CK: dict = {"touch_type": EntityType.TOUCH_TYPE}
         ORDER: list = ["river_x_map_uid_pk ASC"]
 
 
 class OceanBody(object):
-    """For bodies of water associated with oceans."""
+    """For bodies of water associated with oceans.
+
+    $$
+    - ocean_body_uid_pk: Primary key, unique identifier for each ocean body
+    - gloss_common_uid_vfk: Foreign key linking to the Common Glossary table
+    - ocean_body_name: Name of the ocean body
+    - body_shoreline_points_json: JSON of the body shoreline points
+    - is_coastal: Indicates if the body is coastal
+    - is_frozen: Indicates if the body is frozen
+    - ocean_body_type: Type of ocean body
+    - water_type: Type of water
+    - is_tidal_influence: Indicates if the body has tidal influence
+    - tidal_flows_per_day: Number of tidal flows per day
+    - avg_high_tide_m: Average high tide
+    - avg_low_tide_m: Average low tide
+    - max_high_tide_m: Maximum high tide
+    - ocean_wave_type: Type of ocean wave
+    - body_surface_area_m2: Surface area of the body
+    - body_surface_altitude_m: Altitude of the body
+    - max_depth_m: Maximum depth of the body
+    - avg_depth_m: Average depth of the body
+    - ocean_hazards_json: JSON of the ocean hazards
+    - ocean_features_json: JSON of the ocean features
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
+    """
 
     _tablename: str = "OCEAN_BODY"
     ocean_body_uid_pk: str = ""
-    gloss_common_uid_fk: str = ""
+    gloss_common_uid_vfk: str = ""
+    ocean_body_name: str = ""
     body_shoreline_points_json: str = ""
     is_coastal: bool = True
     is_frozen: bool = False
@@ -2070,15 +2528,14 @@ class OceanBody(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(OceanBody)
+        return DM.cols_to_dict(OceanBody)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "ocean_body_uid_pk"
-        FK: dict = {"gloss_common_uid_fk": ("GLOSS_COMMON", "gloss_common_uid_pk")}
         CK: dict = {
             "ocean_body_type": EntityType.OCEAN_BODY_TYPE,
             "water_type": EntityType.WATER_TYPE,
@@ -2097,21 +2554,30 @@ class OceanBodyXMap(object):
     """
     Associative keys --
     - OCEAN_BODY (n) <--> MAP (n)
+
+    $$
+    - ocean_body_x_map_uid_pk: Primary key, unique identifier for each association
+    - ocean_body_uid_fk: Foreign key linking to the Ocean Body table
+    - map_uid_fk: Foreign key linking to the Map table
+    - touch_type: Type of association
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
     """
 
     _tablename: str = "OCEAN_BODY_X_MAP"
     ocean_body_x_map_uid_pk: str = ""
     ocean_body_uid_fk: str = ""
     map_uid_fk: str = ""
+    touch_type: str = ""
     delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(OceanBodyXMap)
+        return DM.cols_to_dict(OceanBodyXMap)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "ocean_body_x_map_uid_pk"
@@ -2119,6 +2585,7 @@ class OceanBodyXMap(object):
             "ocean_body_uid_fk": ("OCEAN_BODY", "ocean_body_uid_pk"),
             "map_uid_fk": ("MAP", "map_uid_pk"),
         }
+        CK: dict = {"touch_type": EntityType.TOUCH_TYPE}
         ORDER: list = ["ocean_body_x_map_uid_pk ASC"]
 
 
@@ -2126,21 +2593,30 @@ class OceanBodyXRiver(object):
     """
     Associative keys --
     - OCEAN_BODY (n) <--> RIVER (n)
+
+    $$
+    - ocean_body_x_river_uid_pk: Primary key, unique identifier for each association
+    - ocean_body_uid_fk: Foreign key linking to the Ocean Body table
+    - river_uid_fk: Foreign key linking to the River table
+    - touch_type: Type of association
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
     """
 
     _tablename: str = "OCEAN_BODY_X_RIVER"
     ocean_body_x_river_uid_pk: str = ""
     ocean_body_uid_fk: str = ""
     river_uid_fk: str = ""
+    touch_type: str = ""
     delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(OceanBodyXRiver)
+        return DM.cols_to_dict(OceanBodyXRiver)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "ocean_body_x_river_uid_pk"
@@ -2148,6 +2624,7 @@ class OceanBodyXRiver(object):
             "ocean_body_uid_fk": ("OCEAN_BODY", "ocean_body_uid_pk"),
             "river_uid_fk": ("RIVER", "river_uid_pk"),
         }
+        CK: dict = {"touch_type": EntityType.TOUCH_TYPE}
         ORDER: list = ["ocean_body_x_river_uid_pk ASC"]
 
 
@@ -2155,11 +2632,25 @@ class LandBody(object):
     """
     Use this for geographic features that are not water.
     Including: continents, islands, geographic regions.
+
+    $$
+    - land_body_uid_pk: Primary key, unique identifier for each land body
+    - gloss_common_uid_vfk: Foreign key linking to the Common Glossary table
+    - land_body_name: Name of the land body
+    - body_landline_points_json: JSON of the land body line points
+    - land_body_type: Type of land body
+    - land_body_surface_area_m2: Surface area of the land body
+    - land_body_surface_avg_altitude_m: Average altitude of the land body
+    - max_altitude_m: Maximum altitude of the land body
+    - min_altitude_m: Minimum altitude of the land body
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
     """
 
     _tablename: str = "LAND_BODY"
     land_body_uid_pk: str = ""
-    gloss_common_uid_fk: str = ""
+    gloss_common_uid_vfk: str = ""
+    land_body_name: str = ""
     body_landline_points_json: str = ""
     land_body_type: str = ""
     land_body_surface_area_m2: float = 0.0
@@ -2170,15 +2661,14 @@ class LandBody(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(LandBody)
+        return DM.cols_to_dict(LandBody)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "land_body_uid_pk"
-        FK: dict = {"gloss_common_uid_fk": ("GLOSS_COMMON", "gloss_common_uid_pk")}
         CK: dict = {"land_body_type": EntityType.LAND_BODY_TYPE}
         ORDER: list = ["land_body_uid_pk ASC"]
 
@@ -2187,21 +2677,30 @@ class LandBodyXMap(object):
     """
     Associative keys --
     - LAND_BODY (n) <--> MAP (n)
+
+    $$
+    - land_body_x_map_uid_pk: Primary key, unique identifier for each association
+    - land_body_uid_fk: Foreign key linking to the Land Body table
+    - map_uid_fk: Foreign key linking to the Map table
+    - touch_type: Type of association
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
     """
 
     _tablename: str = "LAND_BODY_X_MAP"
     land_body_x_map_uid_pk: str = ""
     land_body_uid_fk: str = ""
     map_uid_fk: str = ""
+    touch_type: str = ""
     delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(LandBodyXMap)
+        return DM.cols_to_dict(LandBodyXMap)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "land_body_x_map_uid_pk"
@@ -2209,6 +2708,7 @@ class LandBodyXMap(object):
             "land_body_uid_fk": ("LAND_BODY", "land_body_uid_pk"),
             "map_uid_fk": ("MAP", "map_uid_pk"),
         }
+        CK: dict = {"touch_type": EntityType.TOUCH_TYPE}
         ORDER: list = ["land_body_x_map_uid_pk ASC"]
 
 
@@ -2218,6 +2718,15 @@ class LandBodyXLandBody(object):
     - LAND_BODY (n) <--> LAND_BODY (n)
     - relation:
         - body 1 --> body 2
+
+    $$
+    - land_body_x_land_body_uid_pk: Primary key, unique identifier for each association
+    - land_body_1_uid_fk: Foreign key linking to the Land Body table
+    - land_body_2_uid_fk: Foreign key linking to the Land Body table
+    - land_land_relation_type: Type of land-land relation
+    - touch_type: Type of association
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
     """
 
     _tablename: str = "LAND_BODY_X_LAND_BODY"
@@ -2225,15 +2734,16 @@ class LandBodyXLandBody(object):
     land_body_1_uid_fk: str = ""
     land_body_2_uid_fk: str = ""
     land_land_relation_type: str = ""
+    touch_type: str = ""
     delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(LandBodyXLandBody)
+        return DM.cols_to_dict(LandBodyXLandBody)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "land_body_x_land_body_uid_pk"
@@ -2241,7 +2751,10 @@ class LandBodyXLandBody(object):
             "land_body_1_uid_fk": ("LAND_BODY", "land_body_uid_pk"),
             "land_body_2_uid_fk": ("LAND_BODY", "land_body_uid_pk"),
         }
-        CK: dict = {"land_land_relation_type": EntityType.LAND_LAND_RELATION_TYPE}
+        CK: dict = {
+            "land_land_relation_type": EntityType.LAND_LAND_RELATION_TYPE,
+            "touch_type": EntityType.TOUCH_TYPE,
+        }
         ORDER: list = ["land_body_x_land_body_uid_pk ASC"]
 
 
@@ -2249,6 +2762,15 @@ class LandBodyXOceanBody(object):
     """
     Associative keys --
     - LAND_BODY (n) <--> OCEAN_BODY (n)
+
+    $$
+    - land_body_x_ocean_body_uid_pk: Primary key, unique identifier for each association
+    - land_body_uid_fk: Foreign key linking to the Land Body table
+    - ocean_body_uid_fk: Foreign key linking to the Ocean Body table
+    - land_ocean_relation_type: Type of land-ocean relation
+    - touch_type: Type of association
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
     """
 
     _tablename: str = "LAND_BODY_X_OCEAN_BODY"
@@ -2256,15 +2778,16 @@ class LandBodyXOceanBody(object):
     land_body_uid_fk: str = ""
     ocean_body_uid_fk: str = ""
     land_ocean_relation_type: str = ""
+    touch_type: str = ""
     delete_dt: str = ""
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(LandBodyXOceanBody)
+        return DM.cols_to_dict(LandBodyXOceanBody)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "land_body_x_ocean_body_uid_pk"
@@ -2272,5 +2795,8 @@ class LandBodyXOceanBody(object):
             "land_body_uid_fk": ("LAND_BODY", "land_body_uid_pk"),
             "ocean_body_uid_fk": ("OCEAN_BODY", "ocean_body_uid_pk"),
         }
-        CK: dict = {"land_ocean_relation_type": EntityType.LAND_OCEAN_RELATION_TYPE}
+        CK: dict = {
+            "land_ocean_relation_type": EntityType.LAND_OCEAN_RELATION_TYPE,
+            "touch_type": EntityType.TOUCH_TYPE,
+        }
         ORDER: list = ["land_body_x_ocean_body_uid_pk ASC"]

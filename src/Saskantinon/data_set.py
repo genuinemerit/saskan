@@ -8,11 +8,11 @@ Saskan Data Management middleware.
 """
 
 import json
-import method_files as FM
-import method_shell as SM
 import data_model_app as DMA
 import data_model_story as DMS
 
+from method_files import FileMethods
+from method_shell import ShellMethods
 from collections import OrderedDict
 from pprint import pformat as pf  # noqa: F401
 from pprint import pprint as pp  # noqa: F401
@@ -20,6 +20,8 @@ from data_base import DataBase
 from data_get import GetData
 from data_structs import Colors
 
+FM = FileMethods()
+SM = ShellMethods()
 GD = GetData()
 
 
@@ -160,10 +162,11 @@ class SetData:
         :param p_context: A dictionary containing context values.
         :return: True if all operations succeed, False otherwise.
         """
-        DB, tbl_nm, tbl_data, tbl_cols = self._prep_data_set(DMA.Texts())
+        tbl_nm, tbl_data, tbl_cols = self._prep_data_set(DMA.Texts())
         language_code = self.CONTEXT["lang"]
         for text_name, text_value in tbl_data.items():
-            tbl_cols.update(
+            t_cols = tbl_cols.copy()
+            t_cols.update(
                 {
                     "lang_code": language_code,
                     "text_name": text_name,
@@ -176,9 +179,10 @@ class SetData:
             )
             if data and not self._virtual_delete(tbl_nm, data[0]):
                 return False
-            del tbl_cols["text_uid_pk"]
+
+            del t_cols["text_uid_pk"]
             if not self.DB.execute_insert(
-                tbl_nm, (SM.get_uid(), tuple(tbl_cols.values()))
+                tbl_nm, (SM.get_uid(), tuple(t_cols.values()))
             ):
                 return False
         return True
@@ -738,19 +742,13 @@ class SetData:
 
         return True
 
-    # There are bunch of association tables that link various entities together.
-    # Maybe there is a way to optimize/abstract the SET methods for these tables
-    # so that there does not have to be specific method for each one of them?
-    # Typically they consist of two foreign keys and a PK, all UIDs.
-    # Occasionally they also have a touch_type value like 'overlaps', 'contains',
-    # used with maps.
-
     def set_x_associations(self, p_model: object, p_x_values: dict) -> bool:
         """Define a assoociations for an X (association) table record.
+        Generic method for setting values in an association table.
         :param p_model: object - Data model object for an association table.
         :param p_x_values: dict - Dictionary of values, in this format:
                     {"col_nm_1": "uid", "col_nm_2": "uid", "touch_type": "type"}
-                    where the column names are the foreign keys in the association table
+                    where the column names are the 2 foreign keys in the association table
                     and the touch type is optional.
         Note that the p_x_values are for a single record.
         @DEV:

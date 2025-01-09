@@ -1,2 +1,2 @@
-DELETE FROM GALACTIC_CLUSTER
-WHERE g=? AND a=? AND l=? AND a=? AND c=? AND t=? AND i=? AND c=? AND _=? AND c=? AND l=? AND u=? AND s=? AND t=? AND e=? AND r=? AND _=? AND u=? AND i=? AND d=? AND _=? AND p=? AND k=?;
+DELETE FROM `GALACTIC_CLUSTER`
+WHERE `galactic_cluster_uid_pk`=?;

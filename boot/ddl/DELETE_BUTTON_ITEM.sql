@@ -1,2 +1,2 @@
-DELETE FROM BUTTON_ITEM
-WHERE b=? AND u=? AND t=? AND t=? AND o=? AND n=? AND _=? AND i=? AND t=? AND e=? AND m=? AND _=? AND u=? AND i=? AND d=? AND _=? AND p=? AND k=?;
+DELETE FROM `BUTTON_ITEM`
+WHERE `button_item_uid_pk`=?;

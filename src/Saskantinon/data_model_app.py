@@ -44,6 +44,35 @@ SM = ShellMethods()
 # =============================================================
 # System Maintenance
 # =============================================================
+class Metadata:
+    """Metadata augemnting the database's standard meta.
+    Mainly field definitions.
+    $$
+    - meta_uid_pk: Primary key
+    - name_space: [app|story]
+    - model_name: name of the data model class
+    - tbl_name: name of the SQL table
+    - col_name: name of the SQL column
+    - col_def: definition of the SQL column
+    - delete_ts: date/time of virtual deletion
+    $$
+    """
+
+    _tablename: str = "METADATA"
+    meta_uid_pk: str = ""  # Primary key
+    name_space: str = ""
+    model_name: str = ""
+    tbl_name: str = ""
+    col_name: str = ""
+    col_def: str = ""
+    delete_ts: str = ""
+
+    class Constraints:
+        PK: str = "meta_uid_pk"
+        ORDER: list = ["tbl_name ASC", "col_name ASC"]
+        CK: dict = {"name_space": EntityType.NAME_SPACE}
+
+
 class Backup(object):
     """Store metadata about DB backup, restore, archive, export.
     $$
@@ -68,11 +97,11 @@ class Backup(object):
 
     def to_dict(self) -> dict:
         """Convert attributes to OrderedDict."""
-        return DM.orm_to_dict(Backup)
+        return DM.cols_to_dict(Backup)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "bkup_uid_pk"
@@ -104,11 +133,11 @@ class Texts(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(Texts)
+        return DM.cols_to_dict(Texts)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "text_uid_pk"
@@ -157,11 +186,11 @@ class Frames(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(Frames)
+        return DM.cols_to_dict(Frames)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "frame_uid_pk"
@@ -201,11 +230,11 @@ class MenuBars(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(MenuBars)
+        return DM.cols_to_dict(MenuBars)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "menu_bar_uid_pk"
@@ -239,11 +268,11 @@ class Menus(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(Menus)
+        return DM.cols_to_dict(Menus)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "menu_uid_pk"
@@ -286,11 +315,11 @@ class MenuItems(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(MenuItems)
+        return DM.cols_to_dict(MenuItems)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "item_uid_pk"
@@ -327,11 +356,11 @@ class Windows(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(Windows)
+        return DM.cols_to_dict(Windows)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "win_uid_pk"
@@ -374,11 +403,11 @@ class Links(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(Links)
+        return DM.cols_to_dict(Links)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "link_uid_pk"
@@ -430,11 +459,11 @@ class ButtonSingle(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(ButtonSingle)
+        return DM.cols_to_dict(ButtonSingle)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "button_single_uid_pk"
@@ -482,11 +511,11 @@ class ButtonMulti(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(ButtonMulti)
+        return DM.cols_to_dict(ButtonMulti)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "button_multi_uid_pk"
@@ -532,15 +561,13 @@ class ButtonItem(object):
 
     def to_dict(self) -> dict:
         """Convert object to dict."""
-        return DM.orm_to_dict(ButtonItem)
+        return DM.cols_to_dict(ButtonItem)
 
     def from_dict(self, p_dict: dict, p_row: int) -> dict:
         """Load DB SELECT results into memory."""
-        return DM.orm_from_dict(self, p_dict, p_row)
+        return DM.rec_to_dict(self, p_dict, p_row)
 
     class Constraints(object):
         PK: str = "button_item_uid_pk"
         FK: dict = {"button_multi_uid_fk": ("BUTTON_MULTI", "button_multi_uid_pk")}
         ORDER: list = ["button_name ASC"]
-
-

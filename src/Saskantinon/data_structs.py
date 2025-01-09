@@ -608,15 +608,6 @@ class EntityType(object):
     ]
     LINK_PROTOCOL = ["https", "http", "ftp", "sftp", "ssh", "wc"]
     LUMINOSITY_CLASS = ["I", "II", "III", "IV", "V"]
-    MAP_TOUCH_TYPE = [
-        "contains",
-        "is_contained_by",
-        "borders",
-        "overlaps",
-        "informs",
-        "layers_above",
-        "layers_below",
-    ]
     MAP_SHAPE = ["rectangle", "box", "sphere"]
     MAP_TYPE = [
         "geo",
@@ -675,6 +666,10 @@ class EntityType(object):
         "video/mp4",
         "video/ogg",
         "video/webm",
+    ]
+    NAME_SPACE = [
+        "app",
+        "story"
     ]
     OCEAN_BODY_TYPE = [
         "fjord",
@@ -783,6 +778,15 @@ class EntityType(object):
     ]
     SPECTRAL_CLASS = ["O", "B", "A", "F", "G", "K", "M"]
     STABILITY = ["stable", "unstable"]
+    TOUCH_TYPE = [
+        "contains",
+        "is_contained_by",
+        "borders",
+        "overlaps",
+        "informs",
+        "layers_above",
+        "layers_below",
+    ]
     WATER_TYPE = ["freshwater", "saline", "brackish"]
     WORLD_TYPE = [
         "habitable",

@@ -36,9 +36,13 @@ import data_model as DM
 from data_base import DataBase
 from data_set import SetData
 
-from method_files import FileMethods as FM
-from method_shell import ShellMethods as SM
+from method_files import FileMethods
+from method_shell import ShellMethods
+from data_structs import Colors
 
+FM = FileMethods()
+SM = ShellMethods()
+DSC = Colors()
 SD = SetData()
 
 
@@ -73,7 +77,7 @@ class BootSaskan(object):
         """Run all boot steps."""
         self.boot_database()
         self.boot_app_data()
-        self.boot_story_data()
+        # self.boot_story_data()
 
     def boot_context(self):
         """
@@ -107,30 +111,23 @@ class BootSaskan(object):
         Create SQL files and initialize the SQLite3 database and tables.
         Writes to: /boot/ddl/*.sql, /db/dml/*.sql, /db/SASKAN.db, and /db/SASKAN.bak
         """
-        if self._generate_sql_files():
-            print("SQL files (re-)generated.")
-            if self._initialize_database():
-                print("Database created.")
-
-    def _generate_sql_files(self):
-        """Generate SQL files needed for database setup."""
-        return DM.create_sql(self.DB)
-
-    def _initialize_database(self):
-        """Create the database and its tables."""
-        return DM.create_db(self.DB)
+        if DM.create_sql(self.DB):
+            print(f"{DSC.CL_DARKCYAN}SQL files generated.{DSC.CL_END}")
+            if DM.create_db(self.DB):
+                print(f"{DSC.CL_DARKCYAN}Database created.{DSC.CL_END}")
 
     def boot_app_data(self):
         """
         Populate database tables for GUI, API's, etc.
         :write:  /db/SASKAN.db
         """
-        self.DB.execute_ddl(
+        if self.DB.execute_ddl(
             ["DROP_METADATA", "CREATE_METADATA", "INSERT_METADATA"], False
-        )
+        ):
+            print(f"{DSC.CL_DARKCYAN}METADATA populated.{DSC.CL_END}")
 
-        if SD.set_texts(self.CONTEXT):
-            print("TEXTS populated.")
+        if SD.set_texts():
+            print(f"{DSC.CL_DARKCYAN}TEXTS populated.{DSC.CL_END}")
 
         def populate_components(frame_id):
             components = [
@@ -144,12 +141,13 @@ class BootSaskan(object):
 
             for component_name, set_function in components:
                 if set_function(frame_id, self.CONTEXT):
-                    print(f"{component_name} populated for `{frame_id}` app.")
+                    print(f"{DSC.CL_DARKCYAN}{component_name} populated for" +
+                          f"`{frame_id}` app.{DSC.CL_END}")
 
         for frame_id in ["saskan", "admin"]:
             populate_components(frame_id)
 
-        print("App data populated.")
+        print(f"{DSC.CL_DARKCYAN}App data populated.{DSC.CL_END}")
 
     def boot_story_data(self):
         """

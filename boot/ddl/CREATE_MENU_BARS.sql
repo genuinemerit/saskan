@@ -7,5 +7,4 @@ mbar_h NUMERIC DEFAULT 0.0,
 mbar_x NUMERIC DEFAULT 0.0,
 mbar_y NUMERIC DEFAULT 0.0,
 delete_dt TEXT DEFAULT '',
-FOREIGN KEY (frame_uid_fk) REFERENCES FRAMES(frame_uid_pk) ON DELETE CASCADE,
-PRIMARY KEY (menu_bar_uid_pk));
+FOREIGN KEY (frame_uid_fk) REFERENCES FRAMES(frame_uid_pk) ON DELETE CASCADE,PRIMARY KEY (menu_bar_uid_pk));

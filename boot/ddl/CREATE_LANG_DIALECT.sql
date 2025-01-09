@@ -7,5 +7,4 @@ divergence_factors TEXT DEFAULT '',
 syncretic_factors TEXT DEFAULT '',
 preservation_factors TEXT DEFAULT '',
 delete_dt TEXT DEFAULT '',
-FOREIGN KEY (lang_uid_fk) REFERENCES LANGUAGE(lang_uid_pk) ON DELETE CASCADE,
-PRIMARY KEY (dialect_uid_pk));
+FOREIGN KEY (lang_uid_fk) REFERENCES LANGUAGE(lang_uid_pk) ON DELETE CASCADE,PRIMARY KEY (dialect_uid_pk));

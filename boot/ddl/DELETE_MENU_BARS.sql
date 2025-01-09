@@ -1,2 +1,2 @@
-DELETE FROM MENU_BARS
-WHERE m=? AND e=? AND n=? AND u=? AND _=? AND b=? AND a=? AND r=? AND _=? AND u=? AND i=? AND d=? AND _=? AND p=? AND k=?;
+DELETE FROM `MENU_BARS`
+WHERE `menu_bar_uid_pk`=?;

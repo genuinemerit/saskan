@@ -1,2 +1,2 @@
-DELETE FROM STAR_SYSTEM
-WHERE s=? AND t=? AND a=? AND r=? AND _=? AND s=? AND y=? AND s=? AND t=? AND e=? AND m=? AND _=? AND u=? AND i=? AND d=? AND _=? AND p=? AND k=?;
+DELETE FROM `STAR_SYSTEM`
+WHERE `star_system_uid_pk`=?;

@@ -1,2 +1,2 @@
-DELETE FROM WORLD
-WHERE w=? AND o=? AND r=? AND l=? AND d=? AND _=? AND u=? AND i=? AND d=? AND _=? AND p=? AND k=?;
+DELETE FROM `WORLD`
+WHERE `world_uid_pk`=?;

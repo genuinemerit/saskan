@@ -1,2 +1,2 @@
-DELETE FROM GLOSSARY
-WHERE g=? AND l=? AND o=? AND s=? AND s=? AND a=? AND r=? AND y=? AND _=? AND u=? AND i=? AND d=? AND _=? AND p=? AND k=?;
+DELETE FROM `GLOSSARY`
+WHERE `glossary_uid_pk`=?;

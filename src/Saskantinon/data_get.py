@@ -6,14 +6,13 @@
 Saskan Data Management middleware.
 """
 
-import method_files as FM
-
-# import method_shell as SM
-
+from method_files import FileMethods
 from data_base import DataBase
-from data_structs import Colors as DSC  # type: ignore
+from data_structs import Colors as DSC
 from pprint import pformat as pf  # noqa: F401
 from pprint import pprint as pp  # noqa: F401
+
+FM = FileMethods()
 
 
 class GetData:

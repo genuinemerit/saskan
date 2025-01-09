@@ -1,2 +1,2 @@
-DELETE FROM DAY_TIME
-WHERE d=? AND a=? AND y=? AND _=? AND t=? AND i=? AND m=? AND e=? AND _=? AND u=? AND i=? AND d=? AND _=? AND p=? AND k=?;
+DELETE FROM `DAY_TIME`
+WHERE `day_time_uid_pk`=?;

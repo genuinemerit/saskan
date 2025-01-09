@@ -8,8 +8,7 @@ item_order INTEGER DEFAULT 0,
 item_name TEXT DEFAULT '',
 key_binding TEXT DEFAULT '',
 help_text TEXT DEFAULT '',
-enabled_default BOOLEAN DEFAULT 1,
+enabled_by_default BOOLEAN DEFAULT 1,
 delete_dt TEXT DEFAULT '',
 CHECK (lang_code IN ('en')),
-FOREIGN KEY (menu_uid_fk) REFERENCES MENUS(menu_uid_pk) ON DELETE CASCADE,
-PRIMARY KEY (item_uid_pk));
+FOREIGN KEY (menu_uid_fk) REFERENCES MENUS(menu_uid_pk) ON DELETE CASCADE,PRIMARY KEY (item_uid_pk));

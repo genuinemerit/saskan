@@ -1,2 +1,2 @@
-DELETE FROM OCEAN_BODY
-WHERE o=? AND c=? AND e=? AND a=? AND n=? AND _=? AND b=? AND o=? AND d=? AND y=? AND _=? AND u=? AND i=? AND d=? AND _=? AND p=? AND k=?;
+DELETE FROM `OCEAN_BODY`
+WHERE `ocean_body_uid_pk`=?;

@@ -41,10 +41,11 @@ class FileMethods(object):
     def scan_dir(cls, p_dir_path: str, p_file_pattern: str = "") -> list:
         """
         Scan a directory for files matching a specific pattern.
+        This method returns PosixPath objects, not strings.
 
         :param p_dir_path: Path to the directory.
         :param p_file_pattern: Pattern to match the file names. Allow * as wildcard.
-        :return: List of file paths matching the pattern.
+        :return: List of file paths (PosixPath structures) matching the pattern.
         """
         srch = p_file_pattern.split("*")
         try:
@@ -69,7 +70,7 @@ class FileMethods(object):
         try:
             path_obj = Path(p_path)
             if path_obj.exists() and path_obj.is_dir():
-                return [f for f in path_obj.iterdir()]
+                return [str(f) for f in path_obj.iterdir()]
         except Exception as err:
             raise err
         return None

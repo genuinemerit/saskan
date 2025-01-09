@@ -1,2 +1,2 @@
-DELETE FROM GRID_CELL
-WHERE g=? AND r=? AND i=? AND d=? AND _=? AND c=? AND e=? AND l=? AND l=? AND _=? AND u=? AND i=? AND d=? AND _=? AND p=? AND k=?;
+DELETE FROM `GRID_CELL`
+WHERE `grid_cell_uid_pk`=?;

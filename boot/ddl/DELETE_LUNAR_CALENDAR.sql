@@ -1,2 +1,2 @@
-DELETE FROM LUNAR_CALENDAR
-WHERE l=? AND u=? AND n=? AND a=? AND r=? AND _=? AND c=? AND a=? AND l=? AND e=? AND n=? AND d=? AND a=? AND r=? AND _=? AND u=? AND i=? AND d=? AND _=? AND p=? AND k=?;
+DELETE FROM `LUNAR_CALENDAR`
+WHERE `lunar_calendar_uid_pk`=?;

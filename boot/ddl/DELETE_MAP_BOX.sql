@@ -1,2 +1,2 @@
-DELETE FROM MAP_BOX
-WHERE m=? AND a=? AND p=? AND _=? AND b=? AND o=? AND x=? AND _=? AND u=? AND i=? AND d=? AND _=? AND p=? AND k=?;
+DELETE FROM `MAP_BOX`
+WHERE `map_box_uid_pk`=?;

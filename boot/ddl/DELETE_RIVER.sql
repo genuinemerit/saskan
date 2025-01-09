@@ -1,2 +1,2 @@
-DELETE FROM RIVER
-WHERE r=? AND i=? AND v=? AND e=? AND r=? AND _=? AND u=? AND i=? AND d=? AND _=? AND p=? AND k=?;
+DELETE FROM `RIVER`
+WHERE `river_uid_pk`=?;

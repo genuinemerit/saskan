@@ -28,5 +28,4 @@ delete_dt TEXT DEFAULT '',
 CHECK (world_type IN ('habitable', 'gas giant', 'rocky', 'desert', 'oceanic', 'ice planet', 'molten', 'other')),
 CHECK (rotation_direction IN ('prograde', 'retrograde')),
 CHECK (orbit_direction IN ('prograde', 'retrograde')),
-FOREIGN KEY (star_system_uid_fk) REFERENCES STAR_SYSTEM(star_system_uid_pk) ON DELETE CASCADE,
-PRIMARY KEY (world_uid_pk));
+FOREIGN KEY (star_system_uid_fk) REFERENCES STAR_SYSTEM(star_system_uid_pk) ON DELETE CASCADE,PRIMARY KEY (world_uid_pk));

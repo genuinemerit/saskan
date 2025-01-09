@@ -66,11 +66,16 @@ from collections import OrderedDict
 from pathlib import Path
 from pprint import pformat as pf  # noqa: F401
 from pprint import pprint as pp  # noqa: F401
+from method_files import FileMethods
+from method_shell import ShellMethods
+from data_structs import Colors
 
-import method_files as FM
-import method_shell as SM
 import data_model_app as DMA
 import data_model_story as DMS
+
+FM = FileMethods()
+SM = ShellMethods()
+DSC = Colors()
 
 
 # =============================================================
@@ -140,6 +145,7 @@ def create_sql(DB: object) -> bool:
         # Metadata table must be the first table in the list
         data_models = {
             "app": [
+                DMA.Metadata,
                 DMA.Backup,
                 DMA.Texts,
                 DMA.Frames,
@@ -209,18 +215,24 @@ def create_sql(DB: object) -> bool:
                 success = DB.generate_sql(model, category)
                 if not success:
                     raise Exception(
-                        f"Error generating SQL for model {model} in category {category}"
+                        DSC.CL_RED +
+                        f"Error generating SQL for model {model} in category {category}" +
+                        DSC.CL_END
                     )
 
     except Exception as e:
         # Log exception or handle it
-        print(f"An error occurred while generating SQL files: {SM.show_trace(e)}")
+        print(
+            DSC.CL_RED +
+            "An error occurred while generating SQL files:" + DSC.CL_END +
+            f"{SM.show_trace(e)}"
+            )
         return False
 
     return True
 
 
-def create_db(DB: object, p_backup: bool = True):
+def create_db(DB: object, p_backup: bool = True) -> bool:
     """
     Drop and recreate empty all DB tables.
     This is a destructive operation.
@@ -231,24 +243,39 @@ def create_db(DB: object, p_backup: bool = True):
     - Logged records appear in .BAK, not in refreshed .DB
     :param DB: Instantied DataBase() Class.
     :param p_backup: Booean flag. If True, backup and archive the .DB
+    :return: True if successful, False otherwise
     """
     if p_backup:
-        bkup_path = Path(DB.HOFIN_BAK)
+        bkup_path = Path(DB.SASKAN_BAK)
         if bkup_path.exists():
-            DB.archive_db(DB.HOFIN_BAK)
-        db_path = Path(DB.HOFIN_DB)
+            DB.archive_db(DB.SASKAN_BAK)
+            print(
+                DSC.CL_DARKCYAN +
+                "Backup DB was archived" +
+                DSC.CL_END)
+        db_path = Path(DB.SASKAN_DB)
         if db_path.exists():
-            DB.backup_db(db_path, DB.HOFIN_BAK)
+            DB.backup_db(db_path, DB.SASKAN_BAK)
+            print(DSC.CL_DARKCYAN +
+                  "Main DB was backed up" +
+                  DSC.CL_END)
 
     # Use a single call to execute_ddl with concatenated SQL lists for efficiency
-    drop_sql_list = [sql.name for sql in FM.scan_dir(DB.DDL, "DROP*")]
-    create_sql_list = [sql.name for sql in FM.scan_dir(DB.DDL, "CREATE*")]
+    drop_sql_list = [str(sql.name) for sql in FM.scan_dir(DB.DDL, "DROP*")]
+    create_sql_list = [str(sql.name) for sql in FM.scan_dir(DB.DDL, "CREATE*")]
 
     # Execute DROP statements without foreign key constraints
     ok = DB.execute_ddl(drop_sql_list, p_foreign_keys_on=False)
     if ok:
-        print("Database tables dropped.")
+        print(
+            DSC.CL_DARKCYAN +
+            "Database tables dropped." +
+            DSC.CL_END)
         # Execute CREATE statements with foreign key constraints
         ok = DB.execute_ddl(create_sql_list, p_foreign_keys_on=True)
         if ok:
-            print("Database tables created.")
+            print(
+                DSC.CL_DARKCYAN +
+                "Database tables created." +
+                DSC.CL_END)
+    return ok

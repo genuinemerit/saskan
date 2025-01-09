@@ -1,2 +1,2 @@
-DELETE FROM SEASON
-WHERE s=? AND e=? AND a=? AND s=? AND o=? AND n=? AND _=? AND u=? AND i=? AND d=? AND _=? AND p=? AND k=?;
+DELETE FROM `SEASON`
+WHERE `season_uid_pk`=?;

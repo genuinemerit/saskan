@@ -13,18 +13,19 @@ For setting and getting data, see data_get, data_set
 """
 import data_model as DM
 import data_structs as DS
-import method_files as FM
-import method_shell as SM
 import pendulum
 import shutil
 import sqlite3 as sq3
 import re
 
+from method_files import FileMethods
+from method_shell import ShellMethods
 from collections import OrderedDict
-# from copy import copy
 from os import path
 from pprint import pprint as pp  # noqa: F401
 
+FM = FileMethods()
+SM = ShellMethods()
 DSC = DS.Colors()
 
 
@@ -173,16 +174,13 @@ class DataBase(object):
         sqlns = []
 
         for col_nm, def_value in p_col_fields.items():
-            sql, col_names = self.set_sql_column_group(col_nm, p_constraints, col_names)
-
-            if not sql:
-                col_names.append(col_nm)
-                data_type_sql = self.set_sql_data_type(col_nm, def_value, p_constraints)
-                default_sql = self.set_sql_default(
-                    def_value, data_type_sql.split(" ")[1]
-                )
-                comment_sql = self.set_sql_comment(def_value)
-                sql = f"{col_nm}{data_type_sql}{default_sql}{comment_sql},\n"
+            col_names.append(col_nm)
+            data_type_sql = self.set_sql_data_type(col_nm, def_value, p_constraints)
+            default_sql = self.set_sql_default(
+                def_value, data_type_sql.split(" ")[1]
+            )
+            comment_sql = self.set_sql_comment(def_value)
+            sql = f"{col_nm}{data_type_sql}{default_sql}{comment_sql},\n"
 
             sqlns.append(sql)
 
@@ -270,8 +268,13 @@ class DataBase(object):
             sql = f"SELECT {columns}\nFROM `{p_table_name}`"
 
             # Add ORDER BY clause if it's present in constraints
+            # Example of order constraint is...  ORDER: list = ["text_name ASC", "lang_code ASC"]
+            # When generating the SQL, only the column name should be enclosed in backticks,
+            # not the ASC or DESC keywords.
             if "ORDER" in p_constraints:
-                order_by = ", ".join(f"`{col}`" for col in p_constraints["ORDER"])
+                order_by = ", ".join(
+                    f"`{col.split()[0]}` {col.split()[1]}" for col in p_constraints["ORDER"]
+                )
                 sql += f"\nORDER BY {order_by}"
 
             sql += ";\n"
@@ -311,8 +314,13 @@ class DataBase(object):
             )
 
             # Add ORDER BY clause if it's present in constraints.
+            # Example of order constraint is...  ORDER: list = ["text_name ASC", "lang_code ASC"]
+            # When generating the SQL, only the column name should be enclosed in backticks,
+            # not the ASC or DESC keywords.
             if "ORDER" in p_constraints:
-                order_by = ", ".join(f"`{col}`" for col in p_constraints["ORDER"])
+                order_by = ", ".join(
+                    f"`{col.split()[0]}` {col.split()[1]}" for col in p_constraints["ORDER"]
+                )
                 sql += f"\nORDER BY {order_by}"
 
             sql += ";\n"
@@ -549,6 +557,11 @@ class DataBase(object):
             SQL = SQL[:-1] + ";"
 
             # Write the updated SQL back to the file
+            # scrub the SQL to ensure that there is a comma at the end of every VALUES line
+            # and that the last line ends with a semicolon.
+            SQL = SQL.replace(")", "),").replace("),,", "),").replace("),;", ");")
+            SQL = SQL.replace("), VAL", ") VAL")
+
             FM.write_file(sql_file_path, SQL)
             return True
 
@@ -772,7 +785,7 @@ class DataBase(object):
         :return: A dictionary with column names as keys and lists of column data as values.
         """
         # Connect to the database
-        self.connect_db(self.HOFIN_DB, p_foreign_keys_on=p_foreign_keys_on)
+        self.connect_db(self.SASKAN_DB, p_foreign_keys_on=p_foreign_keys_on)
 
         # Prepare and validate SQL code
         sql = p_sql_code.strip()
@@ -816,7 +829,7 @@ class DataBase(object):
         :return: Dictionary with column names as keys and lists of column data as values.
         """
         # Connect to the database
-        self.connect_db(self.HOFIN_DB, p_foreign_keys_on=True)
+        self.connect_db(self.SASKAN_DB, p_foreign_keys_on=True)
 
         # Prepare SQL statement
         sql = self.get_sql_file(self.DML, f"SELECT_ALL_{p_table_nm.upper()}")
@@ -849,7 +862,7 @@ class DataBase(object):
         :return: Dictionary with column names as keys and lists of column data as values.
         """
         # Connect to the database
-        self.connect_db(self.HOFIN_DB, p_foreign_keys_on=True)
+        self.connect_db(self.SASKAN_DB, p_foreign_keys_on=True)
 
         # Prepare SQL statement
         sql = self.get_sql_file(self.DML, f"SELECT_ALL_{p_table_nm.upper()}_CLEAN")
@@ -883,7 +896,7 @@ class DataBase(object):
         :return: Dictionary with column names as keys and their corresponding data values.
         """
         # Connect to the database
-        self.connect_db(self.HOFIN_DB, p_foreign_keys_on=True)
+        self.connect_db(self.SASKAN_DB, p_foreign_keys_on=True)
 
         # Prepare SQL statement
         sql = self.get_sql_file(self.DML, f"SELECT_BY_PK_{p_dmo._tablename}")
@@ -916,12 +929,13 @@ class DataBase(object):
         - SQL names must be passed in as a list, even if just one script.
         - No dynamic parameters.
         - Executed as one transaction. If anything fails, all roll back.
+        - Will print error messages but not raise exceptions.
 
         :param p_sql_list: List of external SQL file names.
         :param p_foreign_keys_on: Set foreign key pragma ON or OFF.
         :return: True if transaction succeeds, False if it fails.
         """
-        self.connect_db(self.HOFIN_DB, p_foreign_keys_on)
+        self.connect_db(self.SASKAN_DB, p_foreign_keys_on)
         try:
             self.cur.execute("BEGIN")
             for p_sql_nm in p_sql_list:
@@ -933,8 +947,10 @@ class DataBase(object):
             # Rollback the transaction if any operation fails
             self.db_conn.rollback()
             print(f"{DSC.CL_RED}{DSC.CL_BOLD}Rolled back: {e}{DSC.CL_END}")
-            print(f"Transaction failed on processing of: {p_sql_nm}...")
+            print(f"Transaction failed on processing of:{DSC.CL_END}{DSC.CL_YELLOW} {p_sql_nm}...")
             pp(("sql code: ", sql))
+            print(f"{DSC.CL_END}")
+            print(f"{DSC.CL_DARKCYAN}Processing continues...{DSC.CL_END}")
             return False
         finally:
             self.disconnect_db()
@@ -947,20 +963,40 @@ class DataBase(object):
         - A full list of values satisfying one row is passed in.
         - Caller knows what values to provide and in what order.
 
+        If the insert fails, the method will print an error message and return False
+        but will not raise an exception.
+
         :param p_tbl_nm: Name of database table.
         :param p_values: n-tuple of values to insert.
         :return: True if insertion succeeds, False otherwise.
         """
-        self.connect_db(self.HOFIN_DB, p_foreign_keys_on=True)
+        self.connect_db(self.SASKAN_DB, p_foreign_keys_on=True)
         SQL = self.get_sql_file(self.DML, f"INSERT_{p_tbl_nm}")
         try:
-            self.cur.execute(SQL, p_values)
+            # The p_values tuple structure may contain first the UID, then the rest
+            # of the values enclosed in a sub-tuple.
+            # For example: (UID, (val1, val2, val3, ...))
+            # Or it may already be a flat tuple.
+            # For an insert, we need to flatten this structure into a single-level
+            # tuple to send to self.cur.execute() if it has a sub-tuple.
+            # Otherwise, we can just use the p_values tuple as is.
+
+            if isinstance(p_values[1], tuple):
+                # Flatten the structure if the second element is a tuple
+                flattened_values = (p_values[0], *p_values[1])
+            else:
+                # Use the original tuple as it is already flat
+                flattened_values = p_values
+
+            self.cur.execute(SQL, flattened_values)
+
             self.db_conn.commit()
             return True
         except sq3.Error as e:
             print(f"{DSC.CL_RED}{DSC.CL_BOLD}Error in execute_insert: {e}{DSC.CL_END}")
-            print(f"SQL: {SQL}")
-            print(f"p_values: {p_values}")
+            print(f"{DSC.CL_YELLOW}SQL: {SQL}")
+            print(f"values: {flattened_values}{DSC.CL_END}")
+            print(f"{DSC.CL_DARKCYAN}Processing continues...{DSC.CL_END}")
             return False
         finally:
             self.disconnect_db()
@@ -978,7 +1014,7 @@ class DataBase(object):
         :param p_values: n-tuple of values to update.
         :return: True if update succeeds, False otherwise.
         """
-        self.connect_db(self.HOFIN_DB, p_foreign_keys_on=True)
+        self.connect_db(self.SASKAN_DB, p_foreign_keys_on=True)
         SQL = self.get_sql_file(self.DML, f"UPDATE_{p_tbl_nm}")
         try:
             # Ensure p_key_val is added at the end for the WHERE clause
@@ -1006,7 +1042,7 @@ class DataBase(object):
         - May need to set p_foreign_keys_on to False?
         - Will delete-cascade logic work in SQLite? Test this.
         """
-        self.connect_db(self.HOFIN_DB, p_foreign_keys_on=True)
+        self.connect_db(self.SASKAN_DB, p_foreign_keys_on=True)
         SQL = self.get_sql_file(self.DDL, p_sql_nm)
         try:
             self.cur.execute(SQL, (p_key_val,))
@@ -1029,7 +1065,7 @@ class DataBase(object):
         :param p_col_nm: Name of the column to check.
         :return: List of valid CHECK constraint values or an empty list if none are found.
         """
-        self.connect_db(self.HOFIN_DB, p_foreign_keys_on=True)
+        self.connect_db(self.SASKAN_DB, p_foreign_keys_on=True)
         try:
             self.cur.execute(
                 "SELECT sql FROM sqlite_master WHERE type='table' AND name=?;",
@@ -1074,7 +1110,7 @@ class DataBase(object):
                 f"Archive {arcv_dttm}",
                 arcv_dttm,
                 "archive",
-                p_db,
+                str(p_db),
                 arcv_nm,
                 "",
             ),
@@ -1111,7 +1147,7 @@ class DataBase(object):
                 f"Backup {bkup_dttm}",
                 bkup_dttm,
                 "backup",
-                p_db,
+                str(p_db),
                 p_bak,
                 "",
             ),

@@ -1,2 +1,2 @@
-DELETE FROM SOLAR_YEAR
-WHERE s=? AND o=? AND l=? AND a=? AND r=? AND _=? AND y=? AND e=? AND a=? AND r=? AND _=? AND u=? AND i=? AND d=? AND _=? AND p=? AND k=?;
+DELETE FROM `SOLAR_YEAR`
+WHERE `solar_year_uid_pk`=?;

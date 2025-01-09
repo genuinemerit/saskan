@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS RIVER (
 river_uid_pk TEXT DEFAULT '',
-gloss_common_uid_fk TEXT DEFAULT '',
+gloss_common_uid_vfk TEXT DEFAULT '',
+river_name TEXT DEFAULT '',
 river_course_points_json JSON DEFAULT '',
 river_bank_points_json JSON DEFAULT '',
 river_type TEXT DEFAULT 'perrenial',
@@ -20,5 +21,4 @@ current_conditions TEXT DEFAULT '',
 delete_dt TEXT DEFAULT '',
 CHECK (river_type IN ('perrenial', 'periodic', 'episodic', 'exotic', 'tributary', 'distributary', 'underground', 'aqueduct', 'canal', 'rapids', 'winding', 'stream', 'glacier')),
 CHECK (river_nav_type IN ('small craft', 'large craft', 'none')),
-FOREIGN KEY (gloss_common_uid_fk) REFERENCES GLOSS_COMMON(gloss_common_uid_pk) ON DELETE CASCADE,
 PRIMARY KEY (river_uid_pk));

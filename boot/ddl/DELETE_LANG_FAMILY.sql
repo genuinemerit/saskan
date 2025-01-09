@@ -1,2 +1,2 @@
-DELETE FROM LANG_FAMILY
-WHERE l=? AND a=? AND n=? AND g=? AND _=? AND f=? AND a=? AND m=? AND i=? AND l=? AND y=? AND _=? AND u=? AND i=? AND d=? AND _=? AND p=? AND k=?;
+DELETE FROM `LANG_FAMILY`
+WHERE `lang_family_uid_pk`=?;

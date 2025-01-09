@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS OCEAN_BODY (
 ocean_body_uid_pk TEXT DEFAULT '',
-gloss_common_uid_fk TEXT DEFAULT '',
+gloss_common_uid_vfk TEXT DEFAULT '',
+ocean_body_name TEXT DEFAULT '',
 body_shoreline_points_json TEXT DEFAULT '',
 is_coastal BOOLEAN DEFAULT 1,
 is_frozen BOOLEAN DEFAULT 0,
@@ -22,5 +23,4 @@ delete_dt TEXT DEFAULT '',
 CHECK (ocean_body_type IN ('fjord', 'sea', 'ocean', 'harbor', 'lagoon', 'bay', 'gulf', 'sound', 'bight', 'delta', 'estuary', 'strait', 'ice field', 'ice sheet', 'ice shelf', 'iceberg', 'ice floe', 'ice pack', 'roadstead', 'tidal pool', 'salt marsh')),
 CHECK (water_type IN ('freshwater', 'saline', 'brackish')),
 CHECK (ocean_wave_type IN ('low', 'medium', 'high', 'none')),
-FOREIGN KEY (gloss_common_uid_fk) REFERENCES GLOSS_COMMON(gloss_common_uid_pk) ON DELETE CASCADE,
 PRIMARY KEY (ocean_body_uid_pk));

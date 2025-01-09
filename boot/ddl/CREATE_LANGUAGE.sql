@@ -8,5 +8,4 @@ lexicals TEXT DEFAULT '',
 social_influences TEXT DEFAULT '',
 word_formations TEXT DEFAULT '',
 delete_dt TEXT DEFAULT '',
-FOREIGN KEY (lang_family_uid_fk) REFERENCES LANG_FAMILY(lang_family_uid_pk) ON DELETE CASCADE,
-PRIMARY KEY (lang_uid_pk));
+FOREIGN KEY (lang_family_uid_fk) REFERENCES LANG_FAMILY(lang_family_uid_pk) ON DELETE CASCADE,PRIMARY KEY (lang_uid_pk));

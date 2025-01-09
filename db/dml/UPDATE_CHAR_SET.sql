@@ -1,6 +1,6 @@
-UPDATE CHAR_SET SET
-font_name=?,
-char_set_type=?,
-char_set_desc=?,
-delete_dt=?
-WHERE c=? AND h=? AND a=? AND r=? AND _=? AND s=? AND e=? AND t=? AND _=? AND u=? AND i=? AND d=? AND _=? AND p=? AND k=?;
+UPDATE `CHAR_SET` SET
+`font_name`=?,
+`char_set_type`=?,
+`char_set_desc`=?,
+`delete_dt`=?
+WHERE `char_set_uid_pk`=?;
