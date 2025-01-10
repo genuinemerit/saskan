@@ -25,6 +25,11 @@ SM = ShellMethods()
 GD = GetData()
 
 
+class SetDataError(Exception):
+    """Custom error class for SetData errors."""
+    pass
+
+
 class SetData:
     """
     Provide methods for setting data in the database.
@@ -60,26 +65,33 @@ class SetData:
         del rec[uid_key]
         return self.DB.execute_update(p_table_nm, uid, tuple(rec.values()))
 
-    def _prep_data_set(self, data_model: object) -> tuple:
+    def _prep_data_set(self, data_model: object, use_config=True) -> tuple:
         """
         Prepare data sets for a given table, based on data model and
-        its related JSON boot->config file.
+        its related JSON boot->config file, if requested.
+        Return a prepared set of things to help optimize SET operations
 
-        :param DM: An instance of a data model class.
+        :param data_model: An instance of a data model class.
+        :param use_config: bool - Use a JSON config file if True.
         :returns: A tuple containing:
                   - Table name (str)
-                  - Table data (dict) from JSON configuration
+                  - Table data (dict) from JSON configuration or empty dict
                   - Column names for the selected model (ordered dict)
         """
-        # Extract table name and determine configuration path
+        # Extract table name
         tbl_nm = data_model._tablename
-        # Retrieve configuration file path
-        config_path = self.CONTEXT["cfg"].get(tbl_nm.lower(), "")
-        # Load table data from JSON file if a valid configuration path is provided
-        tbl_data = FM.get_json_file(config_path) if config_path else {}
+        if use_config:
+            # Retrieve configuration file path
+            config_path = self.CONTEXT["cfg"].get(tbl_nm.lower(), "")
+            # Load table data from JSON file if a valid config path provided
+            tbl_data = FM.get_json_file(config_path) if config_path else {}
+            if not tbl_data:
+                print(f"{Colors.CL_YELLOW}WARNING{Colors.CL_END}: " +
+                      f"No config data found for {tbl_nm} at {config_path}.")
+        else:
+            tbl_data: dict = {}
         # Convert model to an ordered dictionary of tbl_cols
         tbl_cols = OrderedDict(data_model.to_dict()[tbl_nm])
-        # Return a prepared set of things to help optimize SET operations
         return (tbl_nm, tbl_data, tbl_cols)
 
     def boot_user_data(self, p_userdata_path: str = None) -> None:
@@ -204,13 +216,14 @@ class SetData:
         # Iterate over each frame configuration
         for frame_id, frame_config in table_data.items():
 
+            t_cols = table_cols.copy()
             existing_data = GD.get_by_match(table_name, {"frame_id": frame_id})
             if existing_data and not self._virtual_delete(table_name, existing_data[0]):
                 return False
 
-            table_cols.pop("frame_uid_pk")
+            t_cols.pop("frame_uid_pk")
             # Populate table columns with frame configuration
-            table_cols.update(
+            t_cols.update(
                 {
                     "frame_id": frame_id,
                     "lang_code": self.CONTEXT["lang"],
@@ -227,7 +240,7 @@ class SetData:
                 }
             )
             if not self.DB.execute_insert(
-                table_name, (SM.get_uid(), tuple(table_cols.values()))
+                table_name, (SM.get_uid(), tuple(t_cols.values()))
             ):
                 return False
 
@@ -243,6 +256,7 @@ class SetData:
 
         for frame_id, mb_config in table_data.items():
 
+            t_cols = table_cols.copy()
             data = GD.get_by_match("FRAMES", {"frame_id": frame_id})
             if not data:
                 print(f"{Colors.CL_RED}ERROR{Colors.CL_END}: Link to FRAMES not found.")
@@ -251,11 +265,10 @@ class SetData:
             existing_data = GD.get_by_match(table_name, {"frame_id": frame_id})
             if existing_data and not self._virtual_delete(table_name, existing_data[0]):
                 return False
-
-            table_cols.pop("menu_bars_uid_pk")
-            table_cols.update(
+            t_cols.pop("menu_bar_uid_pk")
+            t_cols.update(
                 {
-                    "frame_uid_fk": data[0]["frame_uid_pk"],
+                    "frame_uid_fk": data["frame_uid_pk"],
                     "frame_id": frame_id,
                     "mbar_margin": mb_config["menu_bars"]["margin"],
                     "mbar_h": mb_config["menu_bars"]["h"],
@@ -265,7 +278,7 @@ class SetData:
                 }
             )
             if not self.DB.execute_insert(
-                table_name, (SM.get_uid(), tuple(table_cols.values()))
+                table_name, (SM.get_uid(), tuple(t_cols.values()))
             ):
                 return False
 
@@ -297,9 +310,10 @@ class SetData:
                 )
                 return False
 
-            # Hnadle values specific to a menu,
-            # except for menu items, which are stored separately (see set_menu_items)
+            # Hnadle values specific to a menu, which is just a name.
+            # Menu items are configured separately, see set_menu_items())
             for menu_id, vals in menu_config.items():
+                t_cols = table_cols.copy()
                 existing_data = GD.get_by_match(
                     table_name, {"frame_id": frame_id, "menu_id": menu_id}
                 )
@@ -308,19 +322,19 @@ class SetData:
                 ):
                     return False
 
-                table_cols.pop("menus_uid_pk")
-                table_cols.update(
+                t_cols.pop("menu_uid_pk")
+                t_cols.update(
                     {
-                        "frame_uid_fk": menu_config[0]["frame_uid_pk"],
-                        "menu_bar_uid_fk": menu_config[0]["menu_bar_uid_pk"],
+                        "menu_bar_uid_fk": linked_data["menu_bar_uid_pk"],
+                        "frame_id": frame_id,
                         "lang_code": self.CONTEXT["lang"],
                         "menu_id": menu_id,
-                        "Menu_name": vals["name"],
+                        "menu_name": vals["name"],
                         "delete_dt": "",
                     }
                 )
                 if not self.DB.execute_insert(
-                    table_name, (SM.get_uid(), tuple(table_cols.values()))
+                    table_name, (SM.get_uid(), tuple(t_cols.values()))
                 ):
                     return False
 
@@ -336,61 +350,49 @@ class SetData:
         table_name, table_data, table_cols = self._prep_data_set(DMA.MenuItems())
 
         # Handle frame-level / linked values
-        for frame_id, menu_config in table_data.items():
+        for frame_id, mi_config in table_data.items():
 
             # Handle menu-level values
-            for menu_id, menu_vals in menu_config["menus"].items():
-
+            for menu_id, mi_vals in mi_config.items():
                 linked_data = GD.get_by_match(
-                    "MENUS", {"lang_code": menu_vals["lang_code"], "menu_id": menu_id}
-                )
+                    "MENUS", {"frame_id": frame_id, "menu_id": menu_id})
                 if not linked_data:
-                    print(
-                        f"{Colors.CL_RED}ERROR{Colors.CL_END}: Link to MENUS not found."
-                    )
+                    print(f"{Colors.CL_RED}ERROR{Colors.CL_END}: Link to MENUS not found.")
                     return False
-
-                existing_data = GD.get_by_match(
-                    table_name, {"menu_uid_fk": linked_data[0]["menu_uid_pk"]}
-                )
-                if existing_data and not self._virtual_delete(
-                    table_name, existing_data[0]
-                ):
-                    return False
+                lang_code = (
+                    linked_data["lang_code"] if "lang_code" in linked_data else "en")
 
                 # Handle item-level values
                 item_order = 0
-                for item_id, item_vals in menu_vals["items"].items():
-                    table_cols.pop("item_uid_pk")
+                for item_id, item_vals in mi_vals.items():
+                    existing_data = GD.get_by_match(
+                        table_name, {"menu_uid_fk": linked_data["menu_uid_pk"],
+                                     "item_id": item_id})
+                    if existing_data and not self._virtual_delete(table_name, existing_data[0]):
+                        return False
+                    t_cols = table_cols.copy()
                     help_text = (
-                        item_vals[item_id]["help_text"]
-                        if "help_text" in item_vals[item_id]
-                        else ""
-                    )
-                    enabled_default = (
-                        item_vals[item_id]["enabled"]
-                        if "enabled" in item_vals[item_id]
-                        else True
-                    )
-                    table_cols.pop("item_uid_pk")
-                    table_cols.update(
+                        item_vals["help_text"] if "help_text" in item_vals.keys() else "")
+                    enabled_by_default = (
+                        item_vals["enabled"] if "enabled" in item_vals.keys() else True)
+                    t_cols.pop("item_uid_pk")
+                    t_cols.update(
                         {
-                            "menu_uid_fk": linked_data[0]["menu_uid_pk"],
-                            "lang_code": menu_vals["lang_code"],
+                            "menu_uid_fk": linked_data["menu_uid_pk"],
+                            "lang_code": lang_code,
                             "frame_id": frame_id,
                             "item_id": item_id,
                             "item_order": item_order,
-                            "item_name": item_vals[item_id]["name"],
-                            "key_binding": item_vals[item_id]["key_b"],
+                            "item_name": item_vals["name"],
+                            "key_binding": item_vals["key_b"],
                             "help_text": help_text,
-                            "enabled_default": enabled_default,
+                            "enabled_by_default": enabled_by_default,
                             "delete_dt": "",
                         }
                     )
                     item_order += 1
-                    if not self.DB.execute_insert(
-                        table_name, (SM.get_uid(), tuple(table_cols.values()))
-                    ):
+                    if not self.DB.execute_insert(table_name,
+                                                  (SM.get_uid(), tuple(t_cols.values()))):
                         return False
 
         return True
@@ -410,19 +412,18 @@ class SetData:
                 return False
 
             for win_id, win_vals in win_config.items():
+                t_cols = table_cols.copy()
                 existing_data = GD.get_by_match(
                     table_name,
-                    {"frame_uid_fk": linked_data[0]["frame_uid_fk"], "win_id": win_id},
+                    {"frame_uid_fk": linked_data["frame_uid_pk"], "win_id": win_id},
                 )
-                if existing_data and not self._virtual_delete(
-                    table_name, existing_data[0]
-                ):
+                if existing_data and not self._virtual_delete(table_name, existing_data[0]):
                     return False
 
-                table_cols.pop("win_uid_pk")
-                table_cols.update(
+                t_cols.pop("win_uid_pk")
+                t_cols.update(
                     {
-                        "frame_uid_fk": linked_data[0]["frame_uid_fk"],
+                        "frame_uid_fk": linked_data["frame_uid_pk"],
                         "frame_id": frame_id,
                         "lang_code": win_vals["lang_code"],
                         "win_id": win_id,
@@ -432,7 +433,7 @@ class SetData:
                     }
                 )
                 if not self.DB.execute_insert(
-                    table_name, (SM.get_uid(), tuple(table_cols.values()))
+                    table_name, (SM.get_uid(), tuple(t_cols.values()))
                 ):
                     return False
 
@@ -452,23 +453,22 @@ class SetData:
                 return False
 
             for link_id, link_vals in link_config.items():
+
+                t_cols = table_cols.copy()
                 existing_data = GD.get_by_match(
                     table_name, {"frame_id": frame_id, "link_id": link_id}
                 )
-                if existing_data and not self._virtual_delete(
-                    table_name, existing_data[0]
-                ):
+                if existing_data and not self._virtual_delete(table_name, existing_data[0]):
                     return False
 
-                table_cols.pop("link_uid_pk")
-                link_value = (
-                    self.CONTEXT[link_vals["value"].split("%")[1]]
-                    if "%" in link_vals["value"]
-                    else link_vals["value"]
+                t_cols.pop("link_uid_pk")
+                link_uri = (
+                    self.CONTEXT[link_vals["uri"].split("%")[1]]
+                    if "%" in link_vals["uri"] else link_vals["uri"]
                 )
                 # after updating tables to handle BLOBs, this will need to be updated
                 # to load the icon image from a file and store it in the DB
-                table_cols.update(
+                t_cols.update(
                     {
                         "lang_code": self.CONTEXT["lang"],
                         "link_id": link_id,
@@ -476,13 +476,14 @@ class SetData:
                         "link_protocol": link_vals["protocol"],
                         "mime_type": link_vals["mime_type"],
                         "link_name": link_vals["name"],
-                        "link_value": link_value,
+                        "link_uri": link_uri,
                         "link_icon": link_vals["icon"],
+                        "link_icon_path": link_vals["icon_path"],
                         "delete_dt": "",
                     }
                 )
                 if not self.DB.execute_insert(
-                    table_name, (SM.get_uid(), tuple(table_cols.values()))
+                    table_name, (SM.get_uid(), tuple(t_cols.values()))
                 ):
                     return False
 
@@ -495,16 +496,32 @@ class SetData:
     # Eventually, they will be populated either from a config file, a spreadsheet,
     # or a CLI or GUI front-end.
 
+    def _set_map(self, p_table_name: str, p_map_name: str, t_cols) -> bool:
+        """Code shared by the set_rect_maps, set_box_maps, and set_sphere_maps methods.
+        :param p_table_name: str - Name of the table to update.
+        :param p_map_name: str - Name of the map to set.
+        :param t_cols: dict - Dictionary of column values for the map.
+        """
+        existing_data = GD.get_by_match(p_table_name, {"map_name": p_map_name})
+        if existing_data and not self._virtual_delete(p_table_name, existing_data[0]):
+            raise SetDataError(f"{Colors.CL_RED}Error applying virtual delete " +
+                               f"on {p_table_name}{Colors.CL_END}.")
+        if not self.DB.execute_insert(p_table_name, (SM.get_uid(), tuple(t_cols.values()))):
+            raise SetDataError(f"{Colors.CL_RED}Error inserting data " +
+                               f"into {p_table_name}{Colors.CL_END}.")
+        return True
+
     def set_rect_maps(self) -> bool:
         """Define a rectangular map for game use.
         @DEV:
         - Likely there will be a fixed,pre-defined number of RECT (2D) style maps.
         - These will be defined in a config file or spreadsheet, probably not via a front-end.
         """
-        table_name, _, table_cols = self._prep_data_set(DMA.MapRect())
+        table_name, _, table_cols = self._prep_data_set(DMS.MapRect(), False)
         map_name = "Saskan Lands Political Regions"
-        table_cols.pop("map_rect_uid_pk")
-        table_cols.update(
+        t_cols = table_cols.copy()
+        t_cols.pop("map_rect_uid_pk")
+        t_cols.update(
             {
                 "map_shape": "rectangle",
                 "map_type": "political",
@@ -517,14 +534,7 @@ class SetData:
                 "delete_dt": "",
             }
         )
-        existing_data = GD.get_by_match(table_name, {"map_name": map_name})
-        if existing_data and not self._virtual_delete(table_name, existing_data[0]):
-            return False
-        if not self.DB.execute_insert(
-            table_name, (SM.get_uid(), tuple(table_cols.values()))
-        ):
-            return False
-        return True
+        return self._set_map(table_name, map_name, t_cols)
 
     def set_box_maps(self) -> bool:
         """Define a box map for game use.
@@ -532,12 +542,12 @@ class SetData:
         - Likely there will be a fixed,pre-defined number of BOX (3D) style maps.
         - These will be defined in a config file or spreadsheet, probably not via a front-end.
         """
-        table_name, _, table_cols = self._prep_data_set(DMA.MapBox())
+        table_name, _, table_cols = self._prep_data_set(DMS.MapBox(), False)
         map_name = "Saskan Lands Geography"
-        table_cols.pop("map_box_uid_pk")
-        table_cols.update(
+        t_cols = table_cols.copy()
+        t_cols.pop("map_box_uid_pk")
+        t_cols.update(
             {
-                "map_box_uid_pk": SM.get_uid(),
                 "map_shape": "box",
                 "map_type": "geo",
                 "map_name": map_name,
@@ -551,14 +561,7 @@ class SetData:
                 "delete_dt": "",
             }
         )
-
-        existing_data = GD.get_by_match(table_name, {"map_name": map_name})
-        if existing_data and not self._virtual_delete(table_name, existing_data[0]):
-            return False
-        if not self.DB.execute_insert(SM.get_uid(), tuple(table_cols.values())):
-            return False
-
-        return True
+        return self._set_map(table_name, map_name, t_cols)
 
     def set_sphere_maps(self) -> bool:
         """Define a spherical map for game use.
@@ -566,30 +569,31 @@ class SetData:
         - Likely there will be a fixed,pre-defined number of SPHERE (3D) style maps.
         - These will be defined in a config file or spreadsheet, probably not via a front-end.
         """
-        table_name, _, table_cols = self._prep_data_set(DMA.MapSphere())
+        table_name, _, table_cols = self._prep_data_set(DMS.MapSphere(), False)
         map_name = "Gavor-Havorra Planetary Map"
-        table_cols.pop("map_sphere_uid_pk")
-        table_cols.update = {
-            "map_shape": "sphere",
-            "map_type": "geo",
-            "map_name": map_name,
-            "map_desc": "Continents, oceans, and land masses of Gavor-Havorra.",
-            "origin_lat": 0.0,
-            "origin_lon": 0.0,
-            "z_value": 0.0,
-            "unit_of_measure": "KM",
-            "sphere_radius": 6371.0,
-            "delete_dt": "",
-        }
+        t_cols = table_cols.copy()
+        t_cols.pop("map_sphere_uid_pk")
+        t_cols.update(
+            {
+                "map_shape": "sphere",
+                "map_type": "geo",
+                "map_name": map_name,
+                "map_desc": "Continents, oceans, and land masses of Gavor-Havorra.",
+                "origin_lat": 0.0,
+                "origin_lon": 0.0,
+                "z_value": 0.0,
+                "unit_of_measure": "KM",
+                "sphere_radius": 6371.0,
+                "delete_dt": "",
+            }
+        )
+        return self._set_map(table_name, map_name, t_cols)
 
-        existing_data = GD.get_by_match(table_name, {"map_name": map_name})
-        if existing_data and not self._virtual_delete(table_name, existing_data[0]):
-            return False
-
-        if not self.DB.execute_insert(SM.get_uid(), tuple(table_cols.values())):
-            return False
-
-        return True
+    # Clean up the other prototype story-table SET methods similar to
+    # the set_rect_maps method above. Consolidate the common code into further
+    # helper methods as needed, and so it is still very readable.
+    # Then proceed with prototyping additional config files, init files,
+    # maybe CLI and GUI inputs.
 
     def set_grids(self) -> bool:
         """Define a Grids structure for game use.
@@ -598,7 +602,7 @@ class SetData:
         Likely only support a fixed number of pre-defined grids, hard-coded or
         provided via a config file not a front-end.
         """
-        table_name, _, table_cols = self._prep_data_set(DMA.Grid())
+        table_name, _, table_cols = self._prep_data_set(DMS.Grid())
         grid_name = "30x_40y_30zu_30zd"
         table_cols.pop("grid_uid_pk")
         table_cols.update(
@@ -616,7 +620,7 @@ class SetData:
         if existing_data and not self._virtual_delete(table_name, existing_data[0]):
             return False
 
-        if not self.DB.execute_insert(SM.get_uid(), tuple(table_cols.values())):
+        if not self.DB.execute_insert(table_name, (SM.get_uid(), tuple(table_cols.values()))):
             return False
 
         return True
@@ -639,7 +643,7 @@ class SetData:
           generated by a script, but I want to preserve the ability to manually
           set or reset the name of a specific grid-cell.
         """
-        table_name, _, table_cols = self._prep_data_set(DMA.GridCell())
+        table_name, _, table_cols = self._prep_data_set(DMS.GridCell())
 
         linked_data = GD.get_by_match("GRID", {"grid_name": p_grid_name})
         if not linked_data:
@@ -674,9 +678,7 @@ class SetData:
                 }
             )
 
-            if not self.DB.execute_insert(
-                table_name, (SM.get_uid(), tuple(cell_cols.values()))
-            ):
+            if not self.DB.execute_insert(table_name, (SM.get_uid(), tuple(cell_cols.values()))):
                 return False
 
         return True

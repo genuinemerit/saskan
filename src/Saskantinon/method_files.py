@@ -7,14 +7,16 @@ class:     FileMethods/0
 author:    GM <genuinemerit @ pm.me>
 """
 import json
-import method_shell as SM
 import pandas as pd
 import pickle
 import shutil
+from method_shell import ShellMethods
 from numbers_parser import Document as NumbersDoc
 from os import remove, symlink, makedirs
 from pathlib import Path
 from pprint import pprint as pp  # noqa: F401
+
+SM = ShellMethods()
 
 
 class FileMethods(object):

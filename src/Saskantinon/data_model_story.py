@@ -74,7 +74,6 @@ class MapRect(object):
     $$
 
     """
-
     _tablename: str = "MAP_RECT"
     map_rect_uid_pk: str = ""
     map_shape: str = ""

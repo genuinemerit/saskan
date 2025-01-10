@@ -6,7 +6,7 @@ INSERT INTO `LINKS` (
 `link_protocol`,
 `mime_type`,
 `link_name`,
-`link_value`,
+`link_uri`,
 `link_icon`,
 `link_icon_path`,
 `delete_dt`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);

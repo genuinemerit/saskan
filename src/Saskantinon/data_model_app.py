@@ -380,7 +380,7 @@ class Links(object):
     - link_protocol: Protocol type (e.g., HTTP, HTTPS) used by the link
     - mime_type: MIME type specifying the nature of the link content
     - link_name: Descriptive name of the link
-    - link_value: The actual URI or address represented by the link
+    - link_uri: The actual URI or address represented by the link
     - link_icon: Icon representing the link visually (stored as BLOB)
     - link_icon_path: Path to the icon file
     - delete_dt: Deletion date, indicating when the record was marked for deletion
@@ -396,7 +396,7 @@ class Links(object):
     link_protocol: str = ""
     mime_type: str = ""
     link_name: str = ""
-    link_value: str = ""
+    link_uri: str = ""
     link_icon: bytes = b""
     link_icon_path: str = ""
     delete_dt: str = ""

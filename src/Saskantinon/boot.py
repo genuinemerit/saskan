@@ -46,6 +46,11 @@ DSC = Colors()
 SD = SetData()
 
 
+class BootError(Exception):
+    """Custom error class for BootError errors."""
+    pass
+
+
 class BootSaskan(object):
     """Configure and boot Saskantinon and Saskantinize.
     Generate SQL files.
@@ -77,7 +82,7 @@ class BootSaskan(object):
         """Run all boot steps."""
         self.boot_database()
         self.boot_app_data()
-        # self.boot_story_data()
+        self.boot_story_data()
 
     def boot_context(self):
         """
@@ -101,7 +106,8 @@ class BootSaskan(object):
             "web": "static/web",
             "wiki": "github.com/genuinemerit/saskan-wiki/",
         }
-        for cfg in ["frames", "links", "menus", "texts", "widgets", "windows"]:
+        for cfg in ["frames", "menu_bars", "menus", "menu_items",
+                    "texts", "widgets", "windows", "links"]:
             context["cfg"][cfg] = "boot/config/" + cfg + ".json"
         FM.write_file(self.CONTEXT_FILE_PATH, json.dumps(context))
         return context
@@ -121,109 +127,88 @@ class BootSaskan(object):
         Populate database tables for GUI, API's, etc.
         :write:  /db/SASKAN.db
         """
-        if self.DB.execute_ddl(
-            ["DROP_METADATA", "CREATE_METADATA", "INSERT_METADATA"], False
-        ):
+        if self.DB.execute_ddl(["DROP_METADATA", "CREATE_METADATA", "INSERT_METADATA"], False):
             print(f"{DSC.CL_DARKCYAN}METADATA populated.{DSC.CL_END}")
 
         if SD.set_texts():
             print(f"{DSC.CL_DARKCYAN}TEXTS populated.{DSC.CL_END}")
 
-        def populate_components(frame_id):
-            components = [
-                ("FRAMES", SD.set_frames),
-                ("MENU_BARS", SD.set_menu_bars),
-                ("MENUS", SD.set_menus),
-                ("MENU_ITEMS", SD.set_menu_items),
-                ("WINDOWS", SD.set_windows),
-                ("LINKS", SD.set_links),
-            ]
-
-            for component_name, set_function in components:
-                if set_function(frame_id, self.CONTEXT):
-                    print(f"{DSC.CL_DARKCYAN}{component_name} populated for" +
-                          f"`{frame_id}` app.{DSC.CL_END}")
-
-        for frame_id in ["saskan", "admin"]:
-            populate_components(frame_id)
-
-        print(f"{DSC.CL_DARKCYAN}App data populated.{DSC.CL_END}")
+        components = [
+            ("FRAMES", SD.set_frames),
+            ("MENU_BARS", SD.set_menu_bars),
+            ("MENUS", SD.set_menus),
+            ("MENU_ITEMS", SD.set_menu_items),
+            ("WINDOWS", SD.set_windows),
+            ("LINKS", SD.set_links),
+        ]
+        for component_name, set_function in components:
+            if set_function():
+                print(f"{DSC.CL_DARKCYAN}{component_name} populated{DSC.CL_END}")
+        print(f"{DSC.CL_DARKCYAN}{DSC.CL_BOLD}App data populated.{DSC.CL_END}")
 
     def boot_story_data(self):
         """
         Populate database tables for game, story, and world-building.
-        N.B. - For now this includes some meaningless test data.
-        Modify that to use TEST modules or various types of data INIT modules.
+        N.B. - For now this includes some test data.
+        @DEV:
+        - Modify that to use TEST modules or some kind of data INIT modules.
+        - Modify to use config files for static data.
+        - Consider using alternative config files for different scenarios.
+        - Consider implementing CLI-based inputs.
+        - Consider using a GUI for data entry.
         :write: /db/SASKAN.db
         """
+        fail = f"{DSC.CL_RED}Failure populating story data{DSC.CL_END}"
         if not self._populate_maps():
-            print("Failed to populate maps.")
-            return
-
-        if not self._populate_grids():
-            print("Failed to populate grids.")
-            return
-
-        if not self._populate_cross_maps():
-            print("Failed to populate cross maps.")
-            return
-
-        if not self._populate_story_data():
-            print("Failed to populate story data.")
-            return
+            raise BootError(fail)
+            # self._populate_grids()
+            # self._populate_cross_maps()
+            # self._populate_story_data()
+        print(f"{DSC.CL_DARKCYAN}{DSC.CL_BOLD}Story data populated{DSC.CL_END}")
 
     def _populate_maps(self):
         """Populate map-related data."""
-        try:
-            if not SD.set_rect_maps(self.CONTEXT):
-                return False
-            if not SD.set_box_maps(self.CONTEXT):
-                return False
-            if not SD.set_sphere_maps(self.CONTEXT):
-                return False
-            print("MAPS populated.")
-            return True
-        except Exception as e:
-            print(f"Error populating maps: {e}")
-            return False
+        fail = f"{DSC.CL_RED}Error populating MAPS{DSC.CL_END}"
+        if not SD.set_rect_maps():
+            raise BootError(fail)
+        if not SD.set_box_maps():
+            raise BootError(fail)
+        if not SD.set_sphere_maps():
+            raise BootError(fail)
+        print(f"{DSC.CL_DARKCYAN}MAPS populated{DSC.CL_END}")
+        return True
 
     def _populate_grids(self):
         """Populate grid-related data."""
         try:
-            if not SD.set_grids(self.CONTEXT):
-                return False
-            if not SD.set_grid_cells(self.CONTEXT):
-                return False
-            if not SD.set_grid_infos(self.CONTEXT):
-                return False
-            print("GRIDS populated.")
+            SD.set_grids()
+            SD.set_grid_cells()
+            SD.set_grid_infos()
+            print(f"{DSC.CL_DARKCYAN}GRIDS populated{DSC.CL_END}")
             return True
         except Exception as e:
-            print(f"Error populating grids: {e}")
+            print(f"{DSC.CL_RED}Error populating grids:{DSC.CL_END} {e}")
             return False
 
     def _populate_cross_maps(self):
         """Populate cross-map related data."""
         try:
-            if not SD.set_map_x_maps(self.CONTEXT):
-                return False
-            if not SD.set_grid_x_maps(self.CONTEXT):
-                return False
-            print("MAP_X_MAP and GRID_X_MAP populated.")
+            SD.set_map_x_maps()
+            SD.set_grid_x_maps()
+            print(f"{DSC.CL_DARKCYAN}MAP_X_MAP and GRID_X_MAP populated{DSC.CL_END}")
             return True
         except Exception as e:
-            print(f"Error populating cross maps: {e}")
+            print(f"{DSC.CL_RED}Error populating cross maps:{DSC.CL_END} {e}")
             return False
 
     def _populate_story_data(self):
         """Populate character sets and other story data."""
         try:
-            if not SD.set_char_sets(self.CONTEXT):
-                return False
-            print("Story data populated.")
+            SD.set_char_sets()
+            print(f"{DSC.CL_DARKCYAN}CHAR_SET populated{DSC.CL_END}")
             return True
         except Exception as e:
-            print(f"Error populating story data: {e}")
+            print(f"{DSC.CL_RED}Error populating character sets:{DSC.CL_END} {e}")
             return False
 
 
