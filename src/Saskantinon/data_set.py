@@ -7,7 +7,7 @@
 Saskan Data Management middleware.
 """
 
-import json
+# import json
 import data_model_app as DMA
 import data_model_story as DMS
 
@@ -51,20 +51,6 @@ class SetData:
         self.USERDATA = FM.get_json_file("static/context/userdata.json")
         self.DB = DataBase(self.CONTEXT)
 
-    def _virtual_delete(self, p_table_nm: str, p_rec: dict) -> bool:
-        """
-        Mark a record as deleted by setting the delete_dt column to the current time.
-        :param p_table_nm: Name of the table to update.
-        :param p_rec: Dict of current record values.
-        :return: True if the operation is successful, False otherwise.
-        """
-        rec = p_rec.copy()
-        rec["delete_dt"] = SM.get_iso_time_stamp()
-        uid_key = f"{p_table_nm}_uid_pk"
-        uid = rec[uid_key]
-        del rec[uid_key]
-        return self.DB.execute_update(p_table_nm, uid, tuple(rec.values()))
-
     def _prep_data_set(self, data_model: object, use_config=True) -> tuple:
         """
         Prepare data sets for a given table, based on data model and
@@ -94,90 +80,46 @@ class SetData:
         tbl_cols = OrderedDict(data_model.to_dict()[tbl_nm])
         return (tbl_nm, tbl_data, tbl_cols)
 
-    def boot_user_data(self, p_userdata_path: str = None) -> None:
+    def _virtual_delete(self, p_table_nm: str, p_rec: dict) -> bool:
         """
-        Define root path for where user data files will be collected.
-        If no valid path is provided, defaults to "~/Documents/hofin_userdata".
-
-        @DEV:
-        - This may not be useful in Sasakantinon. Pulled it in from Home-Finance app.
-
-        :param p_userdata_path: Path to userdata files root directory or None.
-        :writes: /static/context/userdata.json
-        """
-        default_path = "/Documents/hofin_userdata"
-        home = SM.get_os_home()
-
-        # Determine the absolute path for userdata
-        if not p_userdata_path or not FM.is_file_or_dir(p_userdata_path):
-            userdata_path = home + default_path
-        else:
-            userdata_path = FM.get_absolute_path(p_userdata_path)
-
-        # Write userdata path to context file
-        context_data = {"userdata_path": userdata_path}
-        FM.write_file("static/context/userdata.json", json.dumps(context_data))
-        print(f"{Colors.CL_GREEN}Userdata path set to{Colors.CL_END}: {userdata_path}")
-
-        # Ensure the userdata directory exists
-        if not FM.is_file_or_dir(userdata_path):
-            FM.make_dir(userdata_path)
-
-        # Update instance variables
-        self.USERDATA = context_data
-
-    # Template for an insert/update method where value/s passed in as string
-    # Eventually these will have a CLI and/or GUI front-end to get the values
-
-    def set_user_name(self, p_user_name: str) -> bool:
-        """
-        Set a user name.
-        1) Mark previous record deleted on DB if it exists.
-        2) Insert new record to DB table.
-
-        :param p_user_name: user name or nickname
+        Mark a record as deleted by setting the delete_dt column to the current time.
+        :param p_table_nm: Name of the table to update.
+        :param p_rec: Dict of current record values.
         :return: True if the operation is successful, False otherwise.
-
-        @DEV:
-        - Extend to handle other optional inputs like email, phone, etc.
-                    data["user_name"][i],
-                    data["user_email"][i],
-                    data["user_phone"][i],
-                    data["user_key"][i],
-        @NB: This is a simple example. In a real app, this would likely
-             be a more complex record. This is a place-holder. At present,
-             no USER_NAME table or model is defined.
         """
-        tbl_nm = "USER_NAME"
-        # Attempt to delete existing record if it exists
-        data = GD.get_by_match(tbl_nm, {"user_name": p_user_name})
+        rec = p_rec.copy()
+        rec["delete_dt"] = SM.get_iso_time_stamp()
+        uid_key = f"{p_table_nm}_uid_pk"
+        uid = rec[uid_key]
+        del rec[uid_key]
+        return self.DB.execute_update(p_table_nm, uid, tuple(rec.values()))
 
-        if data and not self._virtual_delete(tbl_nm, data[0]):
-            return False
+    def _set_insert(self, p_table_name: str, p_del_match: dict, t_cols) -> bool:
+        """Code shared by the set_rect_maps, set_box_maps, and set_sphere_maps methods.
+        :param p_table_name: str - Name of the table to update.
+        :param p_del_match: dict - Dictionary of values to match on for virtual delete/update.
+        :param t_cols: dict - Dictionary of column values for the map.
+        """
+        existing_data = GD.get_by_match(p_table_name, p_del_match)
+        if existing_data and not self._virtual_delete(p_table_name, existing_data[0]):
+            raise SetDataError(f"{Colors.CL_RED}Error applying virtual delete " +
+                               f"on {p_table_name}{Colors.CL_END}.")
+        if not self.DB.execute_insert(p_table_name, (SM.get_uid(), tuple(t_cols.values()))):
+            raise SetDataError(f"{Colors.CL_RED}Error inserting data " +
+                               f"into {p_table_name}{Colors.CL_END}.")
+        return True
 
-        # Insert new user name record
-        return self.DB.execute_insert(
-            tbl_nm, (SM.get_uid(), p_user_name, "", "", "", "")
-        )
-
-    # App Scaffolding Tables - DB tables pre-populated from Config data.
-    # Config-sourced insert/update where each line of the config file is a record
     def set_texts(self) -> bool:
         """
-        Retrieve a config file and use it to populate the designated table.
-        and use it to populate the TEXTS table. Update existing entries
-        or insert new ones based on their presence in the database.
-
-        Some config files and tables, like `texts` and 'TEXTS` are very
-        simple. Each line of the config file relates to a single record on DB.
-
-        :param p_context: A dictionary containing context values.
-        :return: True if all operations succeed, False otherwise.
+        Retrieve config file and use it to populate designated table.
+        In some configs each line of the file relates to a single record on DB.
+        :return: True if all operations succeed; Raises error otherwise.
         """
-        tbl_nm, tbl_data, tbl_cols = self._prep_data_set(DMA.Texts())
+        table_name, table_data, table_cols = self._prep_data_set(DMA.Texts())
         language_code = self.CONTEXT["lang"]
-        for text_name, text_value in tbl_data.items():
-            t_cols = tbl_cols.copy()
+        for text_name, text_value in table_data.items():
+            t_cols = table_cols.copy()
+            t_cols.pop("text_uid_pk")
             t_cols.update(
                 {
                     "lang_code": language_code,
@@ -186,43 +128,21 @@ class SetData:
                     "delete_dt": "",
                 }
             )
-            data = GD.get_by_match(
-                tbl_nm, {"lang_code": language_code, "text_name": text_name}
-            )
-            if data and not self._virtual_delete(tbl_nm, data[0]):
-                return False
-
-            del t_cols["text_uid_pk"]
-            if not self.DB.execute_insert(
-                tbl_nm, (SM.get_uid(), tuple(t_cols.values()))
-            ):
-                return False
+            del_match = {"lang_code": language_code, "text_name": text_name}
+            self._set_insert(table_name, del_match, t_cols)
         return True
-
-    # Config-sourced insert/update where config file has two layers of data:
-    # 1) The natural key (but not a PK) which is the index for...
-    # 2) the rest of the data to be inserted on that row.
 
     def set_frames(self) -> bool:
         """
-        Populate the FRAMES table using configuration data for all frames.
-
-        :return: bool - Returns True if the operation is successful for all frames,
-                        otherwise False.
+        Populate the FRAMES table using config data.
+        A "frame" is the highest-level container, named like "saskan" or "admin".
+        Some config files have multiple layers of data, with values are grouped by ID.
+        :return: True if all operations succeed; Raises error otherwise.
         """
-        # Prepare the data set for the FRAMES table
         table_name, table_data, table_cols = self._prep_data_set(DMA.Frames())
-
-        # Iterate over each frame configuration
         for frame_id, frame_config in table_data.items():
-
             t_cols = table_cols.copy()
-            existing_data = GD.get_by_match(table_name, {"frame_id": frame_id})
-            if existing_data and not self._virtual_delete(table_name, existing_data[0]):
-                return False
-
             t_cols.pop("frame_uid_pk")
-            # Populate table columns with frame configuration
             t_cols.update(
                 {
                     "frame_id": frame_id,
@@ -239,36 +159,26 @@ class SetData:
                     "delete_dt": "",
                 }
             )
-            if not self.DB.execute_insert(
-                table_name, (SM.get_uid(), tuple(t_cols.values()))
-            ):
-                return False
-
+            del_match = {"frame_id": frame_id}
+            self._set_insert(table_name, del_match, t_cols)
         return True
 
     def set_menu_bars(self) -> bool:
         """
         Populate the MENU_BARS table using configuration data for all frames.
         Fail if natural link to FRAMES is not found.
-        :returns: bool - True if operation is successful for all frames, otherwise False.
+        :return: True if all operations succeed; Raises error otherwise.
         """
         table_name, table_data, table_cols = self._prep_data_set(DMA.MenuBars())
-
         for frame_id, mb_config in table_data.items():
-
+            linked_data = GD.get_by_match("FRAMES", {"frame_id": frame_id})
+            if not linked_data:
+                raise SetDataError(f"{Colors.CL_RED}Link to FRAMES not found.{Colors.CL_END}")
             t_cols = table_cols.copy()
-            data = GD.get_by_match("FRAMES", {"frame_id": frame_id})
-            if not data:
-                print(f"{Colors.CL_RED}ERROR{Colors.CL_END}: Link to FRAMES not found.")
-                return False
-
-            existing_data = GD.get_by_match(table_name, {"frame_id": frame_id})
-            if existing_data and not self._virtual_delete(table_name, existing_data[0]):
-                return False
             t_cols.pop("menu_bar_uid_pk")
             t_cols.update(
                 {
-                    "frame_uid_fk": data["frame_uid_pk"],
+                    "frame_uid_fk": linked_data["frame_uid_pk"],
                     "frame_id": frame_id,
                     "mbar_margin": mb_config["menu_bars"]["margin"],
                     "mbar_h": mb_config["menu_bars"]["h"],
@@ -277,51 +187,24 @@ class SetData:
                     "delete_dt": "",
                 }
             )
-            if not self.DB.execute_insert(
-                table_name, (SM.get_uid(), tuple(t_cols.values()))
-            ):
-                return False
-
+            del_match = {"frame_id": frame_id}
+            self._set_insert(table_name, del_match, t_cols)
         return True
-
-    # Config-sourced insert/update where config file has multiple layers of data
-    #  belonging to different, but linked, tables.
-    # 1) A high-level category, typically a frame_id like 'saskan' or 'admin', which has...
-    # 2) mulitple sub-id's such as a menu_id, which has...
-    # 3) a set of values to be inserted on that row to MENUS table, but which...
-    # 4) can include a category name, like "items", which groups values to store
-    #     on another, linked, record.
 
     def set_menus(self) -> bool:
         """
         Populate the MENUS table using configuration data for all frames.
+        Some config files have two levels of identifiers, like "frame_id" and "menu_id".
         Fail if natural link to MENU_BARS is not found.
-        :returns: bool - True if operation is successful for all frames, otherwise False.
+        :return: True if all operations succeed; Raises error otherwise.
         """
         table_name, table_data, table_cols = self._prep_data_set(DMA.Menus())
-
-        # Handle frame-level / linked values
         for frame_id, menu_config in table_data.items():
-
             linked_data = GD.get_by_match("MENU_BARS", {"frame_id": frame_id})
             if not linked_data:
-                print(
-                    f"{Colors.CL_RED}ERROR{Colors.CL_END}: Link to MENU_BARS not found."
-                )
-                return False
-
-            # Hnadle values specific to a menu, which is just a name.
-            # Menu items are configured separately, see set_menu_items())
+                raise SetDataError(f"{Colors.CL_RED}Link to MENU_BARS not found.{Colors.CL_END}")
             for menu_id, vals in menu_config.items():
                 t_cols = table_cols.copy()
-                existing_data = GD.get_by_match(
-                    table_name, {"frame_id": frame_id, "menu_id": menu_id}
-                )
-                if existing_data and not self._virtual_delete(
-                    table_name, existing_data[0]
-                ):
-                    return False
-
                 t_cols.pop("menu_uid_pk")
                 t_cols.update(
                     {
@@ -333,48 +216,29 @@ class SetData:
                         "delete_dt": "",
                     }
                 )
-                if not self.DB.execute_insert(
-                    table_name, (SM.get_uid(), tuple(t_cols.values()))
-                ):
-                    return False
-
+                del_match = {"frame_id": frame_id, "menu_id": menu_id}
+                self._set_insert(table_name, del_match, t_cols)
         return True
 
     def set_menu_items(self) -> bool:
         """
         Populate the MENU_ITEMS table using menus configuration data for all frames.
         Fail if natural link to MENUS is not found.
-        :returns: bool - True if operation is successful for all frames, otherwise False.
+        :return: True if all operations succeed; Raises error otherwise.
         """
-
         table_name, table_data, table_cols = self._prep_data_set(DMA.MenuItems())
-
-        # Handle frame-level / linked values
         for frame_id, mi_config in table_data.items():
-
-            # Handle menu-level values
             for menu_id, mi_vals in mi_config.items():
-                linked_data = GD.get_by_match(
-                    "MENUS", {"frame_id": frame_id, "menu_id": menu_id})
+                linked_data = GD.get_by_match("MENUS", {"frame_id": frame_id, "menu_id": menu_id})
                 if not linked_data:
-                    print(f"{Colors.CL_RED}ERROR{Colors.CL_END}: Link to MENUS not found.")
-                    return False
-                lang_code = (
-                    linked_data["lang_code"] if "lang_code" in linked_data else "en")
-
-                # Handle item-level values
+                    raise SetDataError(f"{Colors.CL_RED}Link to MENUS not found.{Colors.CL_END}")
+                lang_code = (linked_data["lang_code"] if "lang_code" in linked_data else "en")
                 item_order = 0
                 for item_id, item_vals in mi_vals.items():
-                    existing_data = GD.get_by_match(
-                        table_name, {"menu_uid_fk": linked_data["menu_uid_pk"],
-                                     "item_id": item_id})
-                    if existing_data and not self._virtual_delete(table_name, existing_data[0]):
-                        return False
                     t_cols = table_cols.copy()
-                    help_text = (
-                        item_vals["help_text"] if "help_text" in item_vals.keys() else "")
-                    enabled_by_default = (
-                        item_vals["enabled"] if "enabled" in item_vals.keys() else True)
+                    help_text = (item_vals["help_text"] if "help_text" in item_vals.keys() else "")
+                    enabled_by_default = (item_vals["enabled"]
+                                          if "enabled" in item_vals.keys() else True)
                     t_cols.pop("item_uid_pk")
                     t_cols.update(
                         {
@@ -390,36 +254,24 @@ class SetData:
                             "delete_dt": "",
                         }
                     )
+                    del_match = {"menu_uid_fk": linked_data["menu_uid_pk"], "item_id": item_id}
+                    self._set_insert(table_name, del_match, t_cols)
                     item_order += 1
-                    if not self.DB.execute_insert(table_name,
-                                                  (SM.get_uid(), tuple(t_cols.values()))):
-                        return False
-
         return True
 
     def set_windows(self) -> bool:
         """
         Populate WINDOWS table using configuration data for all frames.
         Fail if natural link to FRAMES is not found.
-        :returns: bool - True if operation is successful for all windows, otherwise False.
+        :return: True if all operations succeed; Raises error otherwise.
         """
         table_name, table_data, table_cols = self._prep_data_set(DMA.Windows())
-
         for frame_id, win_config in table_data.items():
             linked_data = GD.get_by_match("FRAMES", {"frame_id": frame_id})
             if not linked_data:
-                print(f"{Colors.CL_RED}ERROR{Colors.CL_END}: Link to FRAMES not found.")
-                return False
-
+                raise SetDataError(f"{Colors.CL_RED}Link to FRAMES not found.{Colors.CL_END}")
             for win_id, win_vals in win_config.items():
                 t_cols = table_cols.copy()
-                existing_data = GD.get_by_match(
-                    table_name,
-                    {"frame_uid_fk": linked_data["frame_uid_pk"], "win_id": win_id},
-                )
-                if existing_data and not self._virtual_delete(table_name, existing_data[0]):
-                    return False
-
                 t_cols.pop("win_uid_pk")
                 t_cols.update(
                     {
@@ -432,42 +284,30 @@ class SetData:
                         "delete_dt": "",
                     }
                 )
-                if not self.DB.execute_insert(
-                    table_name, (SM.get_uid(), tuple(t_cols.values()))
-                ):
-                    return False
-
+                del_match = {"frame_uid_fk": linked_data["frame_uid_pk"], "win_id": win_id}
+                self._set_insert(table_name, del_match, t_cols)
         return True
 
     def set_links(self) -> bool:
         """
         Populate LINKS table using configuration data for all frames.
         Fail if natural link to FRAMES is not found.
-        :returns: bool - True if operation is successful for all Links, otherwise False.
+        :return: True if all operations succeed; Raises error otherwise.
+        @DEV:
+        - Load icon images into DB as a BLOB
         """
         table_name, table_data, table_cols = self._prep_data_set(DMA.Links())
         for frame_id, link_config in table_data.items():
             linked_data = GD.get_by_match("FRAMES", {"frame_id": frame_id})
             if not linked_data:
-                print(f"{Colors.CL_RED}ERROR{Colors.CL_END}: Link to FRAMES not found.")
-                return False
-
+                raise SetDataError(f"{Colors.CL_RED}Link to FRAMES not found.{Colors.CL_END}")
             for link_id, link_vals in link_config.items():
-
                 t_cols = table_cols.copy()
-                existing_data = GD.get_by_match(
-                    table_name, {"frame_id": frame_id, "link_id": link_id}
-                )
-                if existing_data and not self._virtual_delete(table_name, existing_data[0]):
-                    return False
-
                 t_cols.pop("link_uid_pk")
                 link_uri = (
                     self.CONTEXT[link_vals["uri"].split("%")[1]]
                     if "%" in link_vals["uri"] else link_vals["uri"]
                 )
-                # after updating tables to handle BLOBs, this will need to be updated
-                # to load the icon image from a file and store it in the DB
                 t_cols.update(
                     {
                         "lang_code": self.CONTEXT["lang"],
@@ -482,40 +322,18 @@ class SetData:
                         "delete_dt": "",
                     }
                 )
-                if not self.DB.execute_insert(
-                    table_name, (SM.get_uid(), tuple(t_cols.values()))
-                ):
-                    return False
-
+                del_match = {"frame_id": frame_id, "link_id": link_id}
+                self._set_insert(table_name, del_match, t_cols)
         return True
 
     # Story-related Tables
     # ====================
-    # At this point, there are not config data files for these types of tables.
-    # For prototyping, most values are are hard-coded in these functions.
-    # Eventually, they will be populated either from a config file, a spreadsheet,
-    # or a CLI or GUI front-end.
-
-    def _set_map(self, p_table_name: str, p_map_name: str, t_cols) -> bool:
-        """Code shared by the set_rect_maps, set_box_maps, and set_sphere_maps methods.
-        :param p_table_name: str - Name of the table to update.
-        :param p_map_name: str - Name of the map to set.
-        :param t_cols: dict - Dictionary of column values for the map.
-        """
-        existing_data = GD.get_by_match(p_table_name, {"map_name": p_map_name})
-        if existing_data and not self._virtual_delete(p_table_name, existing_data[0]):
-            raise SetDataError(f"{Colors.CL_RED}Error applying virtual delete " +
-                               f"on {p_table_name}{Colors.CL_END}.")
-        if not self.DB.execute_insert(p_table_name, (SM.get_uid(), tuple(t_cols.values()))):
-            raise SetDataError(f"{Colors.CL_RED}Error inserting data " +
-                               f"into {p_table_name}{Colors.CL_END}.")
-        return True
 
     def set_rect_maps(self) -> bool:
-        """Define a rectangular map for game use.
-        @DEV:
-        - Likely there will be a fixed,pre-defined number of RECT (2D) style maps.
-        - These will be defined in a config file or spreadsheet, probably not via a front-end.
+        """Define rectangular maps for game use.
+        Using hard-coded values for now. Eventually, these will be defined in a config file,
+        maybe also via a GUI or CLI.
+        :return: True if all operations succeed; Raises error otherwise.
         """
         table_name, _, table_cols = self._prep_data_set(DMS.MapRect(), False)
         map_name = "Saskan Lands Political Regions"
@@ -534,13 +352,14 @@ class SetData:
                 "delete_dt": "",
             }
         )
-        return self._set_map(table_name, map_name, t_cols)
+        del_match = {"map_name": map_name}
+        return self._set_insert(table_name, del_match, t_cols)
 
     def set_box_maps(self) -> bool:
-        """Define a box map for game use.
-        @DEV:
-        - Likely there will be a fixed,pre-defined number of BOX (3D) style maps.
-        - These will be defined in a config file or spreadsheet, probably not via a front-end.
+        """Define a box (3D-ish, layered) maps for game use.
+        Using hard-coded values for now. Eventually, these will be defined in a config file,
+        maybe also via a GUI or CLI.
+        :return: True if all operations succeed; Raises error otherwise.
         """
         table_name, _, table_cols = self._prep_data_set(DMS.MapBox(), False)
         map_name = "Saskan Lands Geography"
@@ -561,13 +380,14 @@ class SetData:
                 "delete_dt": "",
             }
         )
-        return self._set_map(table_name, map_name, t_cols)
+        del_match = {"map_name": map_name}
+        return self._set_insert(table_name, del_match, t_cols)
 
     def set_sphere_maps(self) -> bool:
-        """Define a spherical map for game use.
-        @DEV:
-        - Likely there will be a fixed,pre-defined number of SPHERE (3D) style maps.
-        - These will be defined in a config file or spreadsheet, probably not via a front-end.
+        """Define spherical maps for game use.
+        Using hard-coded values for now. Eventually, these will be defined in a config file,
+        maybe also via a GUI or CLI.
+        :return: True if all operations succeed; Raises error otherwise.
         """
         table_name, _, table_cols = self._prep_data_set(DMS.MapSphere(), False)
         map_name = "Gavor-Havorra Planetary Map"
@@ -587,22 +407,16 @@ class SetData:
                 "delete_dt": "",
             }
         )
-        return self._set_map(table_name, map_name, t_cols)
-
-    # Clean up the other prototype story-table SET methods similar to
-    # the set_rect_maps method above. Consolidate the common code into further
-    # helper methods as needed, and so it is still very readable.
-    # Then proceed with prototyping additional config files, init files,
-    # maybe CLI and GUI inputs.
+        del_match = {"map_name": map_name}
+        return self._set_insert(table_name, del_match, t_cols)
 
     def set_grids(self) -> bool:
-        """Define a Grids structure for game use.
-        @DEV:
-        Hard-coded values are for test purposes.
-        Likely only support a fixed number of pre-defined grids, hard-coded or
-        provided via a config file not a front-end.
+        """Define Grids structures for game use.
+        Using hard-coded values for now. Eventually, these will be defined in a config file,
+        maybe also via a GUI or CLI.
+        :return: True if all operations succeed; Raises error otherwise.
         """
-        table_name, _, table_cols = self._prep_data_set(DMS.Grid())
+        table_name, _, table_cols = self._prep_data_set(DMS.Grid(), False)
         grid_name = "30x_40y_30zu_30zd"
         table_cols.pop("grid_uid_pk")
         table_cols.update(
@@ -615,60 +429,49 @@ class SetData:
                 "delete_dt": "",
             }
         )
-
-        existing_data = GD.get_by_match(table_name, {"grid_name": grid_name})
-        if existing_data and not self._virtual_delete(table_name, existing_data[0]):
-            return False
-
-        if not self.DB.execute_insert(table_name, (SM.get_uid(), tuple(table_cols.values()))):
-            return False
-
+        del_match = {"grid_name": grid_name}
+        return self._set_insert(table_name, del_match, table_cols)
         return True
 
-    def set_grid_cells(self, p_grid_name: str, p_grid_data: list) -> bool:
-        """Define a set of Grid Cells for game use.
+    def set_grid_cells(self) -> bool:
+        """Define a set of Grid Cells for game use. This data uniquely identifies
+        a cell in a grid by its x, y, and z coordinates, an ID, and a Name.
+        Additional detailed content can be added to the GRID_INFO table.
         Fail if natural key to GRID is not found.
-        For this method we have to pass in values.
-        :param p_grid_name: str - Name of the grid to which the cells belong.
-        :param p_grid_data: list of dicts of grid cell data:
-                            - grid_cell_name: str
-                            - x_col_ix: int
-                            - y_row_ix: int
-                            - z_up_down_ix: int (negative for down)
-        @DEV:
-        - Modify this table/model to include grid_name as a natural key.
-        - TBD, but likely the inputs will be from a config file or spreadsheet
-          since GRID_CELL is really just and extenion of a GRID, providing handy
-          ways to reference each cell within a grid. The values could even be
-          generated by a script, but I want to preserve the ability to manually
-          set or reset the name of a specific grid-cell.
+
+        Shape of the config data - prototyped for now - is:
+        grid_name: str - Name of the grid on GRID table to which the cells belong.
+        grid_data: list of dicts of grid cell data, Each dict has the format:
+                   {grid_cell_name: str,
+                    x_col_ix: int, y_row_ix: int, z_up_down_ix: int (negative for down)}
+        The grid cell name is a story name. The x, y, and z values are the indices, from
+        which an ID is generated. The z value is negative for down, positive for up.
+        These values could  be generated by an in-game algorithm, set in a config,
+          modified interactively, etc.
+        :return: True if all operations succeed; Raises error otherwise.
         """
-        table_name, _, table_cols = self._prep_data_set(DMS.GridCell())
-
-        linked_data = GD.get_by_match("GRID", {"grid_name": p_grid_name})
+        table_name, _, table_cols = self._prep_data_set(DMS.GridCell(), False)
+        grid_name = "30x_40y_30zu_30zd"
+        grid_data = [
+            {"grid_cell_name": "Selaron Town", "x_col_ix": 25, "y_row_ix": 12, "z_up_down_ix": 0},
+            {"grid_cell_name": "Morilly Town", "x_col_ix": 15, "y_row_ix": 23, "z_up_down_ix": 0},
+            {"grid_cell_name": "Wildwind Town", "x_col_ix": 12, "y_row_ix": 27, "z_up_down_ix": 0},
+        ]
+        linked_data = GD.get_by_match("GRID", {"grid_name": grid_name})
         if not linked_data:
-            print(f"{Colors.CL_RED}ERROR{Colors.CL_END}: Link to GRID not found.")
-            return False
-
-        for cells in p_grid_data:
+            raise SetDataError(f"{Colors.CL_RED}Link to GRID not found.{Colors.CL_END}")
+        for cells in grid_data:
             cell_cols = table_cols.copy()
             grid_cell_id = (
                 f"{cells['x_col_ix']}x_"
                 + f"{cells['y_row_ix']}y_"
                 + f"{cells['z_up_down_ix']}z"
             )
-
-            existing_data = GD.get_by_match(
-                table_name, {"grid_name": p_grid_name, "grid_cell_id": grid_cell_id}
-            )
-            if existing_data and not self._virtual_delete(table_name, existing_data[0]):
-                return False
-
             cell_cols.pop("grid_cell_uid_pk")
             cell_cols.update(
                 {
-                    "grid_uid_fk": linked_data[0]["grid_uid_pk"],
-                    "grid_name": p_grid_name,
+                    "grid_uid_fk": linked_data["grid_uid_pk"],
+                    "grid_name": grid_name,
                     "grid_cell_name": cells["grid_cell_name"],
                     "x_col_ix": cells["x_col_ix"],
                     "y_row_ix": cells["y_row_ix"],
@@ -677,11 +480,15 @@ class SetData:
                     "delete_dt": "",
                 }
             )
-
-            if not self.DB.execute_insert(table_name, (SM.get_uid(), tuple(cell_cols.values()))):
-                return False
-
+            del_match = {"grid_name": grid_name, "grid_cell_id": grid_cell_id}
+            self._set_insert(table_name, del_match, cell_cols)
         return True
+
+    # Pick up here... assume all inputs are from a config file for now.
+    # Prototype with hard-coded values if config files not ready yet.
+    # Eventually, some "config" files will be generated by in-game code,
+    # so those should be stored somewhere other than the config or static
+    # directories. Probably under "db" or "data" directory.
 
     def set_grid_infos(
         self, p_grid_name: str, p_grid_cell_name, p_info_data: list
@@ -704,7 +511,7 @@ class SetData:
             - or maybe better, provide a separate column for each value data type:
               INT, FLOAT, STR, BLOB, JSON
         """
-        table_name, _, table_cols = self._prep_data_set(DMS.GridInfo())
+        table_name, _, table_cols = self._prep_data_set(DMS.GridInfo(), False)
 
         linked_data = GD.get_by_match("GRID", {"grid_name": p_grid_name})
         if not linked_data:
@@ -756,7 +563,7 @@ class SetData:
         @DEV:
         - Modify the X records so that they always have an optional touch_type value.
         """
-        table_name, _, table_cols = self._prep_data_set(p_model)
+        table_name, _, table_cols = self._prep_data_set(p_model, False)
 
         # If the column names sent as params are not in the model, fail.
         if not all([col in table_cols for col in p_x_values.keys()]):
@@ -811,7 +618,7 @@ class SetData:
         - Hard-coded for now. Eventually, these will be defined in a config file or spreadsheet.
         - May also have a front-end for defining and modifying these.
         """
-        table_name, _, table_cols = self._prep_data_set(DMS.CharSet())
+        table_name, _, table_cols = self._prep_data_set(DMS.CharSet(), False)
 
         charsets: list = [
             {

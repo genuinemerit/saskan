@@ -75,7 +75,6 @@ import data_model_story as DMS
 
 FM = FileMethods()
 SM = ShellMethods()
-DSC = Colors()
 
 
 # =============================================================
@@ -119,6 +118,11 @@ def rec_to_dict(DM: object, p_dict: dict, p_row: int) -> dict:
     return rec
 
 
+class CreateSQLError(Exception):
+    """Custom error class for BootError errors."""
+    pass
+
+
 # =======================================================
 # DB/DM DDL Calls
 # - Create DDL and DML SQL files
@@ -135,100 +139,89 @@ def create_sql(DB: object) -> bool:
     # Combine DDL and DML directories for efficient processing
     directories = [DB.DDL, DB.DML]
 
-    try:
-        # Delete all *.sql files in specified directories
-        for directory in directories:
-            for sql_file in FM.scan_dir(directory, "*.sql"):
-                FM.delete_file(sql_file)
+    # Delete all *.sql files in specified directories
+    for directory in directories:
+        for sql_file in FM.scan_dir(directory, "*.sql"):
+            FM.delete_file(sql_file)
 
-        # Define data models for processing with their respective categories
-        # Metadata table must be the first table in the list
-        data_models = {
-            "app": [
-                DMA.Metadata,
-                DMA.Backup,
-                DMA.Texts,
-                DMA.Frames,
-                DMA.MenuBars,
-                DMA.Menus,
-                DMA.MenuItems,
-                DMA.Windows,
-                DMA.Links,
-                DMA.ButtonSingle,
-                DMA.ButtonMulti,
-                DMA.ButtonItem,
-            ],
-            "story": [
-                DMS.MapRect,
-                DMS.MapBox,
-                DMS.MapSphere,
-                DMS.Grid,
-                DMS.GridCell,
-                DMS.GridInfo,
-                DMS.MapXMap,
-                DMS.GridXMap,
-                DMS.CharSet,
-                DMS.CharMember,
-                DMS.LangFamily,
-                DMS.Language,
-                DMS.LangDialect,
-                DMS.GlossCommon,
-                DMS.Glossary,
-                DMS.Universe,
-                DMS.ExternalUniv,
-                DMS.GalacticCluster,
-                DMS.Galaxy,
-                DMS.StarSystem,
-                DMS.World,
-                DMS.Moon,
-                DMS.Lake,
-                DMS.LakeXMap,
-                DMS.River,
-                DMS.RiverXMap,
-                DMS.OceanBody,
-                DMS.OceanBodyXMap,
-                DMS.OceanBodyXRiver,
-                DMS.LandBody,
-                DMS.LandBodyXMap,
-                DMS.LandBodyXLandBody,
-                DMS.LandBodyXOceanBody,
-                DMS.SolarYear,
-                DMS.Season,
-                DMS.LunarYear,
-                DMS.LunarYearXMoon,
-                DMS.SolarCalendar,
-                DMS.LunarCalendar,
-                DMS.Month,
-                DMS.LunarCalendarXMonth,
-                DMS.SolarCalendarXMonth,
-                DMS.WeekTime,
-                DMS.LunarCalendarXWeekTime,
-                DMS.SolarCalendarXWeekTime,
-                DMS.DayTime,
-                DMS.WeekTimeXDayTime,
-            ],
-        }
+    # Define data models for processing with their respective categories
+    # Metadata table must be the first table in the list
+    data_models = {
+        "app": [
+            DMA.Metadata,
+            DMA.Backup,
+            DMA.Texts,
+            DMA.Frames,
+            DMA.MenuBars,
+            DMA.Menus,
+            DMA.MenuItems,
+            DMA.Windows,
+            DMA.Links,
+            DMA.ButtonSingle,
+            DMA.ButtonMulti,
+            DMA.ButtonItem,
+        ],
+        "story": [
+            DMS.MapRect,
+            DMS.MapBox,
+            DMS.MapSphere,
+            DMS.Grid,
+            DMS.GridCell,
+            DMS.GridInfo,
+            DMS.MapXMap,
+            DMS.GridXMap,
+            DMS.CharSet,
+            DMS.CharMember,
+            DMS.LangFamily,
+            DMS.Language,
+            DMS.LangDialect,
+            DMS.GlossCommon,
+            DMS.Glossary,
+            DMS.Universe,
+            DMS.ExternalUniv,
+            DMS.GalacticCluster,
+            DMS.Galaxy,
+            DMS.StarSystem,
+            DMS.World,
+            DMS.Moon,
+            DMS.Lake,
+            DMS.LakeXMap,
+            DMS.River,
+            DMS.RiverXMap,
+            DMS.OceanBody,
+            DMS.OceanBodyXMap,
+            DMS.OceanBodyXRiver,
+            DMS.LandBody,
+            DMS.LandBodyXMap,
+            DMS.LandBodyXLandBody,
+            DMS.LandBodyXOceanBody,
+            DMS.SolarYear,
+            DMS.Season,
+            DMS.LunarYear,
+            DMS.LunarYearXMoon,
+            DMS.SolarCalendar,
+            DMS.LunarCalendar,
+            DMS.Month,
+            DMS.LunarCalendarXMonth,
+            DMS.SolarCalendarXMonth,
+            DMS.WeekTime,
+            DMS.LunarCalendarXWeekTime,
+            DMS.SolarCalendarXWeekTime,
+            DMS.DayTime,
+            DMS.WeekTimeXDayTime,
+        ],
+    }
+    # Generate SQL for each model category
+    for category, models in data_models.items():
+        for model in models:
+            success = DB.generate_sql(model, category)
+            if not success:
+                fail = (f"{Colors.CL_RED}Error generating SQL for model {model}" +
+                        f" in category {category}{Colors.CL_END}")
+                raise CreateSQLError(fail)
+                return False
 
-        # Generate SQL for each model category
-        for category, models in data_models.items():
-            for model in models:
-                success = DB.generate_sql(model, category)
-                if not success:
-                    raise Exception(
-                        DSC.CL_RED +
-                        f"Error generating SQL for model {model} in category {category}" +
-                        DSC.CL_END
-                    )
-
-    except Exception as e:
-        # Log exception or handle it
-        print(
-            DSC.CL_RED +
-            "An error occurred while generating SQL files:" + DSC.CL_END +
-            f"{SM.show_trace(e)}"
-            )
-        return False
-
+    print(f"{Colors.CL_DARKCYAN}{Colors.CL_BOLD}SQL files generated.{Colors.CL_END}")
     return True
 
 
@@ -249,33 +242,20 @@ def create_db(DB: object, p_backup: bool = True) -> bool:
         bkup_path = Path(DB.SASKAN_BAK)
         if bkup_path.exists():
             DB.archive_db(DB.SASKAN_BAK)
-            print(
-                DSC.CL_DARKCYAN +
-                "Backup DB was archived" +
-                DSC.CL_END)
+            print(f"{Colors.CL_DARKCYAN}Backup DB was archived{Colors.CL_END}")
         db_path = Path(DB.SASKAN_DB)
         if db_path.exists():
             DB.backup_db(db_path, DB.SASKAN_BAK)
-            print(DSC.CL_DARKCYAN +
-                  "Main DB was backed up" +
-                  DSC.CL_END)
-
-    # Use a single call to execute_ddl with concatenated SQL lists for efficiency
+            print(f"{Colors.CL_DARKCYAN}Main DB was backed up{Colors.CL_END}")
+    # Use a single call to execute_ddl with concatenated SQL lists
     drop_sql_list = [str(sql.name) for sql in FM.scan_dir(DB.DDL, "DROP*")]
     create_sql_list = [str(sql.name) for sql in FM.scan_dir(DB.DDL, "CREATE*")]
-
     # Execute DROP statements without foreign key constraints
     ok = DB.execute_ddl(drop_sql_list, p_foreign_keys_on=False)
     if ok:
-        print(
-            DSC.CL_DARKCYAN +
-            "Database tables dropped." +
-            DSC.CL_END)
+        print(f"{Colors.CL_DARKCYAN}Database tables dropped.{Colors.CL_END}")
         # Execute CREATE statements with foreign key constraints
         ok = DB.execute_ddl(create_sql_list, p_foreign_keys_on=True)
         if ok:
-            print(
-                DSC.CL_DARKCYAN +
-                "Database tables created." +
-                DSC.CL_END)
+            print(f"{Colors.CL_DARKCYAN}{Colors.CL_BOLD}Database tables created.{Colors.CL_END}")
     return ok

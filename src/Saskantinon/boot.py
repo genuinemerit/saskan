@@ -42,7 +42,6 @@ from data_structs import Colors
 
 FM = FileMethods()
 SM = ShellMethods()
-DSC = Colors()
 SD = SetData()
 
 
@@ -62,29 +61,24 @@ class BootSaskan(object):
         Initialize database and load necessary data.
         """
         self._initialize_file_paths()
-        self.CONTEXT = self.boot_context()
+        self.CONTEXT = self._boot_context()
         self.DB = DataBase(self.CONTEXT)
+
+    # Init methods, called from init
+
+    def _get_userdata_path(self):
+        """Get the user data path from arguments or use default."""
+        if len(sys.argv) > 1:
+            return sys.argv[1]
+        return f"{SM.get_os_home()}/Documents/hofin_user_files"
 
     def _initialize_file_paths(self):
         """Set up file paths for context and user data."""
         self.CONTEXT_FILE_PATH = "static/context/context.json"
         self.USERDATA_CONTEXT_FILE = "static/context/userdata.json"
-        self.USERDATA_PATH = self.get_userdata_path()
+        self.USERDATA_PATH = self._get_userdata_path()
 
-    def get_userdata_path(self):
-        """Get the user data path from arguments or use default."""
-        if len(sys.argv) > 1:
-            return sys.argv[1]
-
-        return f"{SM.get_os_home()}/Documents/hofin_user_files"
-
-    def boot_saskan(self):
-        """Run all boot steps."""
-        self.boot_database()
-        self.boot_app_data()
-        self.boot_story_data()
-
-    def boot_context(self):
+    def _boot_context(self):
         """
         Create static context data file.
         This allows us to bootstrap the database and recreate
@@ -112,28 +106,32 @@ class BootSaskan(object):
         FM.write_file(self.CONTEXT_FILE_PATH, json.dumps(context))
         return context
 
-    def boot_database(self):
-        """
-        Create SQL files and initialize the SQLite3 database and tables.
-        Writes to: /boot/ddl/*.sql, /db/dml/*.sql, /db/SASKAN.db, and /db/SASKAN.bak
+    # Boot methods, called from main
+
+    def boot_saskan(self):
+        """Run all boot steps:
+        - Create SQL files and initialize the SQLite3 database and tables.
+          Writes to: /boot/ddl/*.sql, /db/dml/*.sql, /db/SASKAN.db, and /db/SASKAN.bak
+        - Populate the database with base app and story data.
         """
         if DM.create_sql(self.DB):
-            print(f"{DSC.CL_DARKCYAN}SQL files generated.{DSC.CL_END}")
             if DM.create_db(self.DB):
-                print(f"{DSC.CL_DARKCYAN}Database created.{DSC.CL_END}")
+                self.boot_app_data()
+                self.boot_story_data()
+            else:
+                print(f"{Colors.RED}Database creation failed{Colors.CL_END}")
 
     def boot_app_data(self):
         """
         Populate database tables for GUI, API's, etc.
         :write:  /db/SASKAN.db
         """
-        if self.DB.execute_ddl(["DROP_METADATA", "CREATE_METADATA", "INSERT_METADATA"], False):
-            print(f"{DSC.CL_DARKCYAN}METADATA populated.{DSC.CL_END}")
-
-        if SD.set_texts():
-            print(f"{DSC.CL_DARKCYAN}TEXTS populated.{DSC.CL_END}")
-
+        if not self.DB.execute_ddl(["DROP_METADATA", "CREATE_METADATA", "INSERT_METADATA"], False):
+            raise BootError(f"{Colors.CL_RED}Error populating METADATA{Colors.CL_END}")
+        else:
+            print(f"{Colors.CL_DARKCYAN}METADATA populated.{Colors.CL_END}")
         components = [
+            ("TEXTS", SD.set_texts),
             ("FRAMES", SD.set_frames),
             ("MENU_BARS", SD.set_menu_bars),
             ("MENUS", SD.set_menus),
@@ -143,8 +141,10 @@ class BootSaskan(object):
         ]
         for component_name, set_function in components:
             if set_function():
-                print(f"{DSC.CL_DARKCYAN}{component_name} populated{DSC.CL_END}")
-        print(f"{DSC.CL_DARKCYAN}{DSC.CL_BOLD}App data populated.{DSC.CL_END}")
+                print(f"{Colors.CL_DARKCYAN}{component_name} populated.{Colors.CL_END}")
+            else:
+                raise BootError(f"{Colors.CL_RED}Error populating {component_name}{Colors.CL_END}")
+        print(f"{Colors.CL_DARKCYAN}{Colors.CL_BOLD}App data populated.{Colors.CL_END}")
 
     def boot_story_data(self):
         """
@@ -158,58 +158,59 @@ class BootSaskan(object):
         - Consider using a GUI for data entry.
         :write: /db/SASKAN.db
         """
-        fail = f"{DSC.CL_RED}Failure populating story data{DSC.CL_END}"
-        if not self._populate_maps():
-            raise BootError(fail)
-            # self._populate_grids()
-            # self._populate_cross_maps()
-            # self._populate_story_data()
-        print(f"{DSC.CL_DARKCYAN}{DSC.CL_BOLD}Story data populated{DSC.CL_END}")
+        self.populate_maps_and_grids()
+        # self.populate_grids()
+        # self.populate_cross_maps()
+        # self.populate_story_data()
+        print(f"{Colors.CL_DARKCYAN}{Colors.CL_BOLD}Story data populated{Colors.CL_END}")
 
-    def _populate_maps(self):
-        """Populate map-related data."""
-        fail = f"{DSC.CL_RED}Error populating MAPS{DSC.CL_END}"
-        if not SD.set_rect_maps():
-            raise BootError(fail)
-        if not SD.set_box_maps():
-            raise BootError(fail)
-        if not SD.set_sphere_maps():
-            raise BootError(fail)
-        print(f"{DSC.CL_DARKCYAN}MAPS populated{DSC.CL_END}")
+    def populate_maps_and_grids(self):
+        """Populate maps, grids and _x_map associations.
+        """
+        components = [
+            ("MAP_RECT", SD.set_rect_maps),
+            ("MAP_BOX", SD.set_box_maps),
+            ("MAP_SPHERE", SD.set_sphere_maps),
+            ("GRID", SD.set_grids),
+            ("GRID_CELL", SD.set_grid_cells),
+        ]
+        for component_name, set_function in components:
+            if set_function():
+                print(f"{Colors.CL_DARKCYAN}{component_name} populated.{Colors.CL_END}")
+            else:
+                raise BootError(f"{Colors.CL_RED}Error populating {component_name}{Colors.CL_END}")
+        print(f"{Colors.CL_DARKCYAN}>> MAPS and GRIDS populated{Colors.CL_END}")
         return True
 
-    def _populate_grids(self):
+    def populate_grids(self):
         """Populate grid-related data."""
-        try:
-            SD.set_grids()
-            SD.set_grid_cells()
-            SD.set_grid_infos()
-            print(f"{DSC.CL_DARKCYAN}GRIDS populated{DSC.CL_END}")
-            return True
-        except Exception as e:
-            print(f"{DSC.CL_RED}Error populating grids:{DSC.CL_END} {e}")
-            return False
+        fail = f"{Colors.CL_RED}Error populating GRIDS{Colors.CL_END}"
+        if not SD.set_grids():
+            raise BootError(fail)
+        if not SD.set_grid_cells():
+            raise BootError(fail)
+        if not SD.set_grid_infos():
+            raise BootError(fail)
+        print(f"{Colors.CL_DARKCYAN}GRIDS populated{Colors.CL_END}")
+        return True
 
-    def _populate_cross_maps(self):
+    def populate_cross_maps(self):
         """Populate cross-map related data."""
-        try:
-            SD.set_map_x_maps()
-            SD.set_grid_x_maps()
-            print(f"{DSC.CL_DARKCYAN}MAP_X_MAP and GRID_X_MAP populated{DSC.CL_END}")
-            return True
-        except Exception as e:
-            print(f"{DSC.CL_RED}Error populating cross maps:{DSC.CL_END} {e}")
-            return False
+        fail = f"{Colors.CL_RED}Error populating _X_MAPS{Colors.CL_END}"
+        if not SD.set_map_x_maps():
+            raise BootError(fail)
+        if not SD.set_grid_x_maps():
+            raise BootError(fail)
+        print(f"{Colors.CL_DARKCYAN}MAP_X_MAP and GRID_X_MAP populated{Colors.CL_END}")
+        return True
 
-    def _populate_story_data(self):
+    def populate_story_data(self):
         """Populate character sets and other story data."""
-        try:
-            SD.set_char_sets()
-            print(f"{DSC.CL_DARKCYAN}CHAR_SET populated{DSC.CL_END}")
-            return True
-        except Exception as e:
-            print(f"{DSC.CL_RED}Error populating character sets:{DSC.CL_END} {e}")
-            return False
+        fail = f"{Colors.CL_RED}Error populating CHAR_SET{Colors.CL_END}"
+        if not SD.set_story_data():
+            raise BootError(fail)
+        print(f"{Colors.CL_DARKCYAN}CHAR_SET populated{Colors.CL_END}")
+        return True
 
 
 if __name__ == "__main__":
