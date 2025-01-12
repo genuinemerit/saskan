@@ -779,6 +779,7 @@ class EntityType(object):
     SPECTRAL_CLASS = ["O", "B", "A", "F", "G", "K", "M"]
     STABILITY = ["stable", "unstable"]
     TOUCH_TYPE = [
+        "",
         "contains",
         "is_contained_by",
         "borders",

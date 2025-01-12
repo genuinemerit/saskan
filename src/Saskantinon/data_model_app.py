@@ -26,6 +26,27 @@ like frames, buttons, menus and links.
   The data types and default values are extracted directly by the DataBase() class
   reading the "magic" __dict__ attribute of the classes.
 
+        @DEV:
+        - Review the data model regarding use of _id and _name fields.
+        Probably need to tweak some things to be consistent and follow this pattern:
+            - UID - system-generated unique identifier, the only type of value used for a PK or FK.
+                  - When a record is marked deleted, its replacement gets a new UID.
+                  - A UID PK is unique across the entire database.
+                  - A UID FK always points to a UID PK and is never null.
+            - ID - a string that, in combo with a blank delete_dt, uniquely identifies a record
+                 in a table. An ID + empty delete_dt is unique within a table. THe content of an
+                 ID is neutral w/ respect to languages. Can be used as a natural foreign key, often
+                 in combo with a delete_dt, or delete_dt + lang-code. Note that my matching
+                 method needs to be able to handle this. Does it always expect empty delete_dt,
+                 then allow one or two other columns to be used for matching. That's what I want.
+            - NAME - Similar to ID, but content is lang-specific. Used for display purposes,
+                    and _not_ necessarily unique in a table. For example, the closet in a room could
+                    be labeled "closet" in both English and Spanish, but "armoire" in French.
+                    Matching using a natural key, NAME could be used in combo with a lang code,
+                    but correct practice is using id and lang code, with expectation that the
+                    ID is non-volatile, while the NAME is volatile. The ID is _like_ it is
+                    indexed uniquely, even though it is not. Whereas NAME should be treated like any
+                    other non-indexed column.
 # =============================================================
 """
 
@@ -73,7 +94,7 @@ class Metadata:
         CK: dict = {"name_space": EntityType.NAME_SPACE}
 
 
-class Backup(object):
+class Backup():
     """Store metadata about DB backup, restore, archive, export.
     $$
     - bkup_uid_pk: Primary key
@@ -103,13 +124,13 @@ class Backup(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "bkup_uid_pk"
         ORDER: list = ["bkup_dttm DESC", "bkup_name ASC"]
         CK: dict = {"bkup_type": EntityType.BACKUP_TYPE}
 
 
-class Texts(object):
+class Texts():
     """Define static text strings used in the app GUI.
     - Language code of the text, eg, 'en', 'de', 'fr'
     - Name/ID/label of a text string, not unique. shared
@@ -139,7 +160,7 @@ class Texts(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "text_uid_pk"
         CK: dict = {"lang_code": EntityType.LANG_CODE}
         ORDER: list = ["text_name ASC", "lang_code ASC"]
@@ -148,7 +169,7 @@ class Texts(object):
 # If it turns out the be useful, may want to add an "APP" structure
 
 
-class Frames(object):
+class Frames():
     """Define the values for frames i.e., the outermost window.
     - Optionally may have info-bar and page-header
 
@@ -192,13 +213,13 @@ class Frames(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "frame_uid_pk"
         CK: dict = {"lang_code": EntityType.LANG_CODE}
         ORDER: list = ["frame_id ASC"]
 
 
-class MenuBars(object):
+class MenuBars():
     """Define dimensions for Menu Bars used in frames.
     - frame_id: Match to FRAMES record(s)
 
@@ -236,13 +257,13 @@ class MenuBars(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "menu_bar_uid_pk"
         FK: dict = {"frame_uid_fk": ("FRAMES", "frame_uid_pk")}
         ORDER: list = ["frame_id ASC"]
 
 
-class Menus(object):
+class Menus():
     """Define the values for Menus, i.e., name of a dropdown.
 
     $$
@@ -274,14 +295,14 @@ class Menus(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "menu_uid_pk"
         FK: dict = {"menu_bar_uid_fk": ("MENU_BARS", "menu_bar_uid_pk")}
         CK: dict = {"lang_code": EntityType.LANG_CODE}
         ORDER: list = ["menu_id ASC", "lang_code ASC", "menu_name ASC"]
 
 
-class MenuItems(object):
+class MenuItems():
     """Define the values for Menu Items, i.e., each item on a Dropdown.
 
     $$
@@ -321,14 +342,14 @@ class MenuItems(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "item_uid_pk"
         FK: dict = {"menu_uid_fk": ("MENUS", "menu_uid_pk")}
         CK: dict = {"lang_code": EntityType.LANG_CODE}
         ORDER: list = ["item_id ASC", "lang_code ASC", "item_name ASC"]
 
 
-class Windows(object):
+class Windows():
     """Define the values for screens within the game.
 
     $$
@@ -362,14 +383,14 @@ class Windows(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "win_uid_pk"
         FK: dict = {"frame_uid_fk": ("FRAMES", "frame_uid_pk")}
         CK: dict = {"lang_code": EntityType.LANG_CODE}
         ORDER: list = ["win_id ASC", "lang_code ASC"]
 
 
-class Links(object):
+class Links():
     """Define the values for URIs used in the app.
 
     $$
@@ -409,7 +430,7 @@ class Links(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "link_uid_pk"
         CK: dict = {
             "link_protocol": EntityType.LINK_PROTOCOL,
@@ -419,7 +440,7 @@ class Links(object):
         ORDER: list = ["frame_id ASC", "link_id ASC", "lang_code ASC"]
 
 
-class ButtonSingle(object):
+class ButtonSingle():
     """Define the values for binary buttons used in the app.
 
     $$
@@ -465,7 +486,7 @@ class ButtonSingle(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "button_single_uid_pk"
         FK: dict = {
             "frame_uid_fk": ("FRAMES", "frame_uid_pk"),
@@ -475,7 +496,7 @@ class ButtonSingle(object):
         ORDER: list = ["button_name ASC"]
 
 
-class ButtonMulti(object):
+class ButtonMulti():
     """Define values for multi-choice button group.
 
     $$
@@ -517,7 +538,7 @@ class ButtonMulti(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "button_multi_uid_pk"
         FK: dict = {
             "frame_uid_fk": ("FRAMES", "frame_uid_pk"),
@@ -527,7 +548,7 @@ class ButtonMulti(object):
         ORDER: list = ["button_name ASC"]
 
 
-class ButtonItem(object):
+class ButtonItem():
     """Define values for button item within a check or radio button group.
 
     $$
@@ -567,7 +588,7 @@ class ButtonItem(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "button_item_uid_pk"
         FK: dict = {"button_multi_uid_fk": ("BUTTON_MULTI", "button_multi_uid_pk")}
         ORDER: list = ["button_name ASC"]

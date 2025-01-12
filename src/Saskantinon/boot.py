@@ -35,6 +35,7 @@ import data_model as DM
 
 from data_base import DataBase
 from data_set import SetData
+from data_get import GetData
 
 from method_files import FileMethods
 from method_shell import ShellMethods
@@ -43,6 +44,7 @@ from data_structs import Colors
 FM = FileMethods()
 SM = ShellMethods()
 SD = SetData()
+GD = GetData()
 
 
 class BootError(Exception):
@@ -50,7 +52,7 @@ class BootError(Exception):
     pass
 
 
-class BootSaskan(object):
+class BootSaskan():
     """Configure and boot Saskantinon and Saskantinize.
     Generate SQL files.
     Create and populate database.
@@ -129,7 +131,7 @@ class BootSaskan(object):
         if not self.DB.execute_ddl(["DROP_METADATA", "CREATE_METADATA", "INSERT_METADATA"], False):
             raise BootError(f"{Colors.CL_RED}Error populating METADATA{Colors.CL_END}")
         else:
-            print(f"{Colors.CL_DARKCYAN}METADATA populated.{Colors.CL_END}")
+            print(f"{Colors.CL_DARKCYAN}METADATA populated{Colors.CL_END}")
         components = [
             ("TEXTS", SD.set_texts),
             ("FRAMES", SD.set_frames),
@@ -141,10 +143,10 @@ class BootSaskan(object):
         ]
         for component_name, set_function in components:
             if set_function():
-                print(f"{Colors.CL_DARKCYAN}{component_name} populated.{Colors.CL_END}")
+                print(f"{Colors.CL_DARKCYAN}{component_name} populated{Colors.CL_END}")
             else:
                 raise BootError(f"{Colors.CL_RED}Error populating {component_name}{Colors.CL_END}")
-        print(f"{Colors.CL_DARKCYAN}{Colors.CL_BOLD}App data populated.{Colors.CL_END}")
+        print(f"{Colors.CL_DARKCYAN}{Colors.CL_BOLD}App data populated\n{Colors.CL_END}")
 
     def boot_story_data(self):
         """
@@ -158,57 +160,76 @@ class BootSaskan(object):
         - Consider using a GUI for data entry.
         :write: /db/SASKAN.db
         """
-        self.populate_maps_and_grids()
-        # self.populate_grids()
-        # self.populate_cross_maps()
-        # self.populate_story_data()
-        print(f"{Colors.CL_DARKCYAN}{Colors.CL_BOLD}Story data populated{Colors.CL_END}")
+        self.populate_story_tables()
+        self.populate_cross_x()
+        self.populate_fonts_glossaries()
+        print(f"{Colors.CL_DARKCYAN}{Colors.CL_BOLD}Story data populated\n{Colors.CL_END}")
 
-    def populate_maps_and_grids(self):
-        """Populate maps, grids and _x_map associations.
-        """
+    def populate_story_tables(self):
+        """Populate various story tables. """
         components = [
             ("MAP_RECT", SD.set_rect_maps),
             ("MAP_BOX", SD.set_box_maps),
             ("MAP_SPHERE", SD.set_sphere_maps),
             ("GRID", SD.set_grids),
             ("GRID_CELL", SD.set_grid_cells),
+            ("GRID_INFO", SD.set_grid_infos),
         ]
         for component_name, set_function in components:
             if set_function():
-                print(f"{Colors.CL_DARKCYAN}{component_name} populated.{Colors.CL_END}")
+                print(f"{Colors.CL_DARKCYAN}{component_name} populated{Colors.CL_END}")
             else:
                 raise BootError(f"{Colors.CL_RED}Error populating {component_name}{Colors.CL_END}")
-        print(f"{Colors.CL_DARKCYAN}>> MAPS and GRIDS populated{Colors.CL_END}")
         return True
 
-    def populate_grids(self):
-        """Populate grid-related data."""
-        fail = f"{Colors.CL_RED}Error populating GRIDS{Colors.CL_END}"
-        if not SD.set_grids():
+    def populate_cross_x(self):
+        """Populate cross-x (association, n-t-n) data, that is association tables.
+
+        The set_cross_x method assumes that the caller knows the UID col names and
+        the UID values of the rows being associated. For example, retrieve recs by map_name
+        or grid_name (may rename that an ID, which would be more appropirate), that is, a
+        natural key which should be unique in combination with a blank delete_dt. Retrieve
+        the UIDs, then call the set_cross_x method with the UID col names, values and touch type.
+
+        param values in call are a dict of values:
+            {<uid_col_nm_1>: <uid_1_value>,
+             <uid_col_nm_2>: <uid_2_value>,
+             "touch_type": <touch_type_value> (optional)}
+        """
+        fail = f"{Colors.CL_RED}Error populating CROSS_X{Colors.CL_END}"
+        map_rect_data = GD.get_by_match("MAP_RECT", {"map_name": "Saskan Lands Political Regions"})
+        map_box_data = GD.get_by_match("MAP_BOX", {"map_name": "Saskan Lands Geography"})
+        map_sphere_data = GD.get_by_match(
+                          "MAP_SPHERE", {"map_name": "Gavor-Havorra Planetary Map"})
+        grid_data = GD.get_by_match("GRID", {"grid_name": "30x_40y_30zu_30zd"})
+        # This tests the default touch type of ""
+        if not SD.set_cross_x({"map_rect_uid_pk": map_rect_data['map_rect_uid_pk'],
+                               "map_box_uid_pk": map_box_data['map_box_uid_pk']}):
             raise BootError(fail)
-        if not SD.set_grid_cells():
+        # This tests the virtual delete logic
+        if not SD.set_cross_x({"map_rect_uid_pk": map_rect_data['map_rect_uid_pk'],
+                               "map_box_uid_pk": map_box_data['map_box_uid_pk'],
+                               "touch_type": "overlaps"}):
             raise BootError(fail)
-        if not SD.set_grid_infos():
+        if not SD.set_cross_x({"map_sphere_uid_pk": map_sphere_data['map_sphere_uid_pk'],
+                               "map_box_uid_pk": map_box_data['map_box_uid_pk'],
+                               "touch_type": "contains"}):
             raise BootError(fail)
-        print(f"{Colors.CL_DARKCYAN}GRIDS populated{Colors.CL_END}")
+        if not SD.set_cross_x({"map_rect_uid_pk": map_rect_data['map_rect_uid_pk'],
+                               "grid_uid_pk": grid_data['grid_uid_pk'],
+                               "touch_type": "overlaps"}):
+            raise BootError(fail)
+
+        print(f"{Colors.CL_DARKCYAN}CROSS_X populated{Colors.CL_END}")
         return True
 
-    def populate_cross_maps(self):
-        """Populate cross-map related data."""
-        fail = f"{Colors.CL_RED}Error populating _X_MAPS{Colors.CL_END}"
-        if not SD.set_map_x_maps():
+    def populate_fonts_glossaries(self):
+        """Populate character set and glossary tables."""
+        fail = f"{Colors.CL_RED}Error populating CHAR* or GLOSS* tables{Colors.CL_END}"
+        if not SD.set_char_sets():
             raise BootError(fail)
-        if not SD.set_grid_x_maps():
-            raise BootError(fail)
-        print(f"{Colors.CL_DARKCYAN}MAP_X_MAP and GRID_X_MAP populated{Colors.CL_END}")
-        return True
-
-    def populate_story_data(self):
-        """Populate character sets and other story data."""
-        fail = f"{Colors.CL_RED}Error populating CHAR_SET{Colors.CL_END}"
-        if not SD.set_story_data():
-            raise BootError(fail)
+        # print(f"{Colors.CL_DARKCYAN}CHAR_SET, CHAR_MEMBER, GLOSS_COMMMON " +
+        #      f"and glossary populated{Colors.CL_END}")
         print(f"{Colors.CL_DARKCYAN}CHAR_SET populated{Colors.CL_END}")
         return True
 

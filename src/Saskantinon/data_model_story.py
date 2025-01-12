@@ -25,6 +25,29 @@ like maps, languages, settings, characters and so on.
 - Do NOT use an __init__ method in data model classes. We never instantiate them.
   The data types and default values are extracted directly by the DataBase() class
   reading the "magic" __dict__ attribute of the classes.
+
+
+        @DEV:
+        - Review the data model regarding use of _id and _name fields.
+        Probably need to tweak some things to be consistent and follow this pattern:
+            - UID - system-generated unique identifier, the only type of value used for a PK or FK.
+                  - When a record is marked deleted, its replacement gets a new UID.
+                  - A UID PK is unique across the entire database.
+                  - A UID FK always points to a UID PK and is never null.
+            - ID - a string that, in combo with a blank delete_dt, uniquely identifies a record
+                 in a table. An ID + empty delete_dt is unique within a table. THe content of an
+                 ID is neutral w/ respect to languages. Can be used as a natural foreign key, often
+                 in combo with a delete_dt, or delete_dt + lang-code. Note that my matching
+                 method needs to be able to handle this. Does it always expect empty delete_dt,
+                 then allow one or two other columns to be used for matching. That's what I want.
+            - NAME - Similar to ID, but content is lang-specific. Used for display purposes,
+                    and _not_ necessarily unique in a table. For example, the closet in a room could
+                    be labeled "closet" in both English and Spanish, but "armoire" in French.
+                    Matching using a natural key, NAME could be used in combo with a lang code,
+                    but correct practice is using id and lang code, with expectation that the
+                    ID is non-volatile, while the NAME is volatile. The ID is _like_ it is
+                    indexed uniquely, even though it is not. Whereas NAME should be treated like any
+                    other non-indexed column.
 """
 
 from pprint import pformat as pf  # noqa: F401
@@ -42,7 +65,7 @@ SM = ShellMethods()
 # =============================================================
 # Abstract Maps and Grids
 # =============================================================
-class MapRect(object):
+class MapRect():
     """
     Map is a rectangle (2d). Typically used for geographic maps.
     Rectangle units are in degrees latitude and degrees longitude.
@@ -94,7 +117,7 @@ class MapRect(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "map_rect_uid_pk"
         CK: dict = {"map_shape": EntityType.MAP_SHAPE, "map_type": EntityType.MAP_TYPE}
         ORDER: list = ["map_name ASC"]
@@ -148,7 +171,7 @@ class MapBox(MapRect):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "map_box_uid_pk"
         CK: dict = {"map_shape": EntityType.MAP_SHAPE, "map_type": EntityType.MAP_TYPE}
         ORDER: list = ["map_name ASC"]
@@ -209,7 +232,7 @@ class MapSphere(MapRect):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "map_sphere_uid_pk"
         CK: dict = {
             "map_shape": EntityType.MAP_SHAPE,
@@ -219,7 +242,7 @@ class MapSphere(MapRect):
         ORDER: list = ["map_name ASC"]
 
 
-class Grid(object):
+class Grid():
     """
     The Grid structure defines dimensions of a Map for story-telling
     rendering, drawing and referencing purposes. It defines a matrix,
@@ -269,12 +292,12 @@ class Grid(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "grid_uid_pk"
         ORDER: list = ["grid_name ASC"]
 
 
-class GridCell(object):
+class GridCell():
     """
     The GridCell structure defines a given data cell within a Grid.
     The grid_cell_name is an optional descriptive name for a cell.
@@ -322,16 +345,22 @@ class GridCell(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "grid_cell_uid_pk"
         FK: dict = {"grid_uid_fk": ("GRID", "grid_uid_pk")}
         ORDER: list = ["grid_cell_name ASC"]
 
 
-class GridInfo(object):
+class GridInfo():
     """
     The GridInfo structure holds information that belongs
     to a given cell within a grid.
+
+        - info_data: list of dicts of grid info data:
+                    {grid_info_id: str, grid_info_name: str,
+                     grid_info_int: int, grid_info_float: float,
+                     grid_info_str: str, grid_info_json: str,
+                     grid_info_img_path: str, grid_info_img: bytes/blob})
 
     $$
     - grid_info_uid_pk: Primary key, unique ID for each grid info record
@@ -339,11 +368,14 @@ class GridInfo(object):
     - grid_cell_uid_fk: Foreign key linking to the GridCell table
     - grid_name: Name of the grid this information belongs to
     - grid_cell_name: Name of grid cell this info is associated with
-    - grid_info_id: Short descriptive tag for the cell value
-    - grid_info_data_type: Data type of the value (e.g., string, integer)
-    - grid_info_name: Label for value, providing context or description
-    - grid_info_value: Actual value, which might be binary data
-    - grid_info_path: Path for storing data outside the database
+    - grid_info_id: Short universal descriptive tag for the cell value
+    - grid_info_name: Label for value, providing context or description in lang of cell
+    - grid_info_int: (optional) Integer value for the cell
+    - grid_info_float: (optional) Float value for the cell
+    - grid_info_str: (optional) String value for the cell
+    - grid_info_json: (optional) JSON string value for the cell
+    - grid_info_img_path: (optional) Path to image object for the cell
+    - grid_info_img: (optional) Image object for the cell, stored as a BLOB
     - delete_dt: Deletion date, when the record was marked for deletion
     $$
 
@@ -356,10 +388,13 @@ class GridInfo(object):
     grid_name: str = ""
     grid_cell_name: str = ""
     grid_info_id: str = ""
-    grid_info_data_type: str = ""
     grid_info_name: str = ""
-    grid_info_value: bytes = b""
-    grid_info_path: str = ""
+    grid_info_int: int = 0
+    grid_info_float: float = 0.0
+    grid_info_str: str = ""
+    grid_info_json: str = ""
+    grid_info_img_path: str = ""
+    grid_info_img: bytes = b""
     delete_dt: str = ""
 
     def to_dict(self) -> dict:
@@ -370,43 +405,97 @@ class GridInfo(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "grid_info_uid_pk"
         FK: dict = {
             "grid_cell_uid_fk": ("GRID_CELL", "grid_cell_uid_pk"),
             "grid_uid_fk": ("GRID", "grid_uid_pk"),
         }
-        CK: dict = {"grid_info_data_type": EntityType.DATA_TYPE}
         ORDER: list = ["grid_info_name ASC"]
 
 
-class MapXMap(object):
+class CrossAssociation():
+    """
+    Generic model for associative keys.
+    - TBL_* (n) <--> TBL_* (n)
+    The "touch type" reads in direction 1-->2.
+        For example, 1-contains-2, 1-is_contained_by-2, etc.
+
+    Tables are linked by UIDs, not by ID or NAME. However, it uses
+      VFKs so we can use this structure for any two types of tables,
+      mixing different types. The designation `_vfk` indicates a virtual FK.
+    The links are verified in python code rather than by SQLite.
+    The linked table names are provided as columns. The names of
+    the linked UID columns are implied.
+
+    $$
+    - cross_x_uid_pk: Primary key, unique ID for each association
+    - uid_1_table: Table name of the first table in the association
+    - uid_1_vfk: VFK to first table UID in the association
+    - uid_2_table: Table name of the second table in the association
+    - uid_2_vfk: VFK to second table UID in the association
+    - touch_type: Describes the relationship type between the two records,
+        such as contains, is_contained_by
+    - delete_dt: Deletion date, indicating when the record was marked for deletion
+    $$
+
+    @DEV:
+    - This is an unusual approach. Typically there would be a separate
+      association table for every possible many-to-many relation between two specific
+      tables. Having a single association table that is generic for all type of
+      associations may provide better flexibility at the cost/risk of slightly more complexity.
+      If this creates a shit-show, then go back to using table-specific association tables.
+    """
+    _tablename: str = "CROSS_X"
+    cross_x_uid_pk: str = ""
+    uid_1_table: str = ""
+    uid_1_vfk: str = ""
+    uid_2_table: str = ""
+    uid_2_vfk: str = ""
+    touch_type: str = ""
+    delete_dt: str = ""
+
+    def to_dict(self) -> dict:
+        """Convert object to dict."""
+        return DM.cols_to_dict(CrossAssociation)
+
+    def from_dict(self, p_dict: dict, p_row: int) -> dict:
+        """Load DB SELECT results into memory."""
+        return DM.rec_to_dict(self, p_dict, p_row)
+
+    class Constraints():
+        PK: str = "cross_x_uid_pk"
+        CK: dict = {"touch_type": EntityType.TOUCH_TYPE}
+
+
+class MapXMap():
     """
     Associative keys --
     - MAP_* (n) <--> MAP_* (n)
     The "touch type" reads in direction 1-->2.
     For example, 1-contains-2, 1-is_contained_by-2, etc.
 
-    On this table, the FK rule is not enforced, only managed.
-    This is so we can use this structure for any type of map,
-    and even mix different types. This type of "FK" is not identified
-    in the Constraints class, as it is not a true FK.
-    We use the designation `_vfk` to indicate a virtual FK.
+    Use VFKs so we can use this structure for any type of map, mixing
+    different types. The designation `_vfk` indicates a virtual FK.
+    The link is verified in python code rather than by SQLite.
 
     $$
     - map_x_map_uid_pk: Primary key, unique ID for each map-to-map association
-    - map_uid_1_vfk: Virtual foreign key representing the first map in the association
-    - map_uid_2_vfk: Virtual foreign key representing the second map in the association
-    - touch_type: Describes the relationship type between the two maps (e.g.,
-      contains, is_contained_by)
+    - map_uid_1_table: Table name of the first map in the association
+    - map_uid_1_vfk: VFK to first map in the association
+    - map_uid_2_table: Table name of the second map in the association
+    - map_uid_2_vfk: VFK to second map in the association
+    - touch_type: Describes the relationship type between the two maps, such as
+        contains, is_contained_by
     - delete_dt: Deletion date, indicating when the record was marked for deletion
     $$
 
     """
-
     _tablename: str = "MAP_X_MAP"
     map_x_map_uid_pk: str = ""
+    map_uid_1_table: str = ""
     map_uid_1_vfk: str = ""
+    map_uid_2_table: str = ""
     map_uid_2_vfk: str = ""
     touch_type: str = ""
     delete_dt: str = ""
@@ -419,12 +508,12 @@ class MapXMap(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "map_x_map_uid_pk"
         CK: dict = {"touch_type": EntityType.TOUCH_TYPE}
 
 
-class GridXMap(object):
+class GridXMap():
     """
     Associative keys --
     - GRIDs (n) <--> MAPs (n)
@@ -457,7 +546,7 @@ class GridXMap(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "grid_x_map_uid_pk"
         FK: dict = {"grid_uid_fk": ("GRID", "grid_uid_pk")}
 
@@ -465,7 +554,7 @@ class GridXMap(object):
 # =============================================================
 # Semantics and Languages
 # =============================================================
-class CharSet(object):
+class CharSet():
     """
     Description of a set of characters used in a language.
     Provide the name of a font. We'll define where fonts
@@ -536,13 +625,13 @@ class CharSet(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "char_set_uid_pk"
         CK: dict = {"char_set_type": EntityType.CHAR_SET_TYPE}
         ORDER: list = ["font_name ASC"]
 
 
-class CharMember(object):
+class CharMember():
     """
     Describe individual characters in a character set.
     Where the character is not represented in Unicode, a reference
@@ -580,7 +669,7 @@ class CharMember(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "char_member_uid_pk"
         FK: dict = {"char_set_uid_fk": ("CHAR_SET", "char_set_uid_pk")}
         ORDER: list = ["char_member_name ASC"]
@@ -592,7 +681,7 @@ class CharMember(object):
 # modified to include a touch_type column.
 
 
-class LangFamily(object):
+class LangFamily():
     """
     Describe basic features of a language family, without getting too
     complicated.
@@ -629,13 +718,13 @@ class LangFamily(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "lang_family_uid_pk"
         FK: dict = {"char_set_uid_fk": ("CHAR_SET", "char_set_uid_pk")}
         ORDER: list = ["lang_family_name ASC"]
 
 
-class Language(object):
+class Language():
     """
         Describe basic features of a language, without getting too
         complicated.
@@ -720,13 +809,13 @@ class Language(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "lang_uid_pk"
         FK: dict = {"lang_family_uid_fk": ("LANG_FAMILY", "lang_family_uid_pk")}
         ORDER: list = ["lang_name ASC"]
 
 
-class LangDialect(object):
+class LangDialect():
     """
     Describe basic features of a dialect, without getting too
     complicated.
@@ -761,13 +850,13 @@ class LangDialect(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "dialect_uid_pk"
         FK: dict = {"lang_uid_fk": ("LANGUAGE", "lang_uid_pk")}
         ORDER: list = ["dialect_name ASC"]
 
 
-class GlossCommon(object):
+class GlossCommon():
     """
     The common glossary is in the "common" language, e.g. English.
     It serves as the 'Rosetta Stone' for all other languages, first
@@ -805,14 +894,14 @@ class GlossCommon(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "gloss_common_uid_pk"
         FK: dict = {"dialect_uid_fk": ("LANG_DIALECT", "dialect_uid_pk")}
         CK: dict = {"gloss_type": EntityType.GLOSS_TYPE}
         ORDER: list = ["gloss_name ASC"]
 
 
-class Glossary(object):
+class Glossary():
     """
     The glossary is a multi-lingual dictionary as well an extension
     for the GlossCommon items.
@@ -847,7 +936,7 @@ class Glossary(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "glossary_uid_pk"
         FK: dict = {
             "gloss_common_uid_fk": ("GLOSS_COMMON", "gloss_common_uid_pk"),
@@ -860,7 +949,7 @@ class Glossary(object):
 # =============================================================
 # Game Astronomy
 # =============================================================
-class Universe(object):
+class Universe():
     """Define qualities of a game Universe.
     This is the highest, broadest container in the game model.
     A Universe may contain multiple Galactic Clusters.
@@ -904,12 +993,12 @@ class Universe(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "univ_uid_pk"
         ORDER: list = ["univ_name ASC"]
 
 
-class ExternalUniv(object):
+class ExternalUniv():
     """The External Universe defines qualities of the Game Universe
     which lie outside of the "playable" Universe. An External
     Universe is always 1:1 to a Universe. It has no shape, only mass.
@@ -944,13 +1033,13 @@ class ExternalUniv(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "external_univ_uid_pk"
         FK: dict = {"univ_uid_fk": ("UNIVERSE", "univ_uid_pk")}
         ORDER: list = ["external_univ_name ASC"]
 
 
-class GalacticCluster(object):
+class GalacticCluster():
     """The Galactic Cluster defines a section of the Game Universe
     in which a particular game instance is played. A Galactic Cluster
     is contained by one Universe and it may contain multiple Galaxies.
@@ -1031,14 +1120,14 @@ class GalacticCluster(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "galactic_cluster_uid_pk"
         FK: dict = {"univ_uid_fk": ("UNIVERSE", "univ_uid_pk")}
         CK: dict = {"cluster_shape": EntityType.CLUSTER_SHAPE}
         ORDER: list = ["galactic_cluster_name ASC"]
 
 
-class Galaxy(object):
+class Galaxy():
     """The Galaxy defines a section of the Galactic Cluster in
     which a particular game instance is played. A Galaxy is contained
     by a Galactic Cluster and it may contain multiple Star-Systems.
@@ -1148,7 +1237,7 @@ class Galaxy(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "galaxy_uid_pk"
         FK: dict = {
             "galactic_cluster_uid_fk": ("GALACTIC_CLUSTER", "galactic_cluster_uid_pk")
@@ -1243,7 +1332,7 @@ and basic simulation, consider the following critical data elements:
 """
 
 
-class StarSystem(object):
+class StarSystem():
     """A Star System is a collection of planets, moons, and other objects.
     Usually it has one star, but it can have multiple stars.
     In most cases, we are only interested in star systems that include
@@ -1341,7 +1430,7 @@ class StarSystem(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "star_system_uid_pk"
         FK: dict = {"galaxy_uid_fk": ("GALAXY", "galaxy_uid_pk")}
         CK: dict = {
@@ -1377,7 +1466,7 @@ AI-assisted algorithm, then design the DB tables based on that.
 """
 
 
-class World(object):
+class World():
     """
     A World is a planet within a Star System. It may be habitable or not.
     A World is associated with one Star System, and multiple Worlds can be
@@ -1454,7 +1543,7 @@ class World(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "world_uid_pk"
         FK: dict = {"star_system_uid_fk": ("STAR_SYSTEM", "star_system_uid_pk")}
         CK: dict = {
@@ -1465,7 +1554,7 @@ class World(object):
         ORDER: list = ["world_name ASC"]
 
 
-class Moon(object):
+class Moon():
     """
     A Moon is any type of permanent satellite around a World that
     is large enough to be seen from the planet.
@@ -1520,7 +1609,7 @@ class Moon(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "moon_uid_pk"
         FK: dict = {"world_uid_fk": ("WORLD", "world_uid_pk")}
         CK: dict = {
@@ -1533,7 +1622,7 @@ class Moon(object):
 # =============================================================
 # Time
 # =============================================================
-class SolarYear(object):
+class SolarYear():
     """
     A Solar Year is always associated with a World, within a
     given Star System and that world's star is the reference.
@@ -1582,7 +1671,7 @@ class SolarYear(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "solar_year_uid_pk"
         FK: dict = {
             "world_uid_fk": ("WORLD", "world_uid_pk"),
@@ -1591,7 +1680,7 @@ class SolarYear(object):
         ORDER: list = ["solar_year_key ASC"]
 
 
-class Season(object):
+class Season():
     """
     A Season defines the length of a season as proportion of a Solar year.
     It is categoriezed as one or more of the four seasons in common
@@ -1634,7 +1723,7 @@ class Season(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "season_uid_pk"
         FK: dict = {"solar_year_uid_fk": ("SOLAR_YEAR", "solar_year_uid_pk")}
         CK: dict = {
@@ -1644,7 +1733,7 @@ class Season(object):
         ORDER: list = ["season_uid_pk ASC", "season_type ASC"]
 
 
-class LunarYear(object):
+class LunarYear():
     """
     A Lunar Year is always associated with a World, within a
     given Star System. And with one __or more__ Moon cycles.
@@ -1690,13 +1779,13 @@ class LunarYear(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "lunar_year_uid_pk"
         FK: dict = {"world_uid_fk": ("WORLD", "world_uid_pk")}
         ORDER: list = ["lunar_year_key ASC"]
 
 
-class LunarYearXMoon(object):
+class LunarYearXMoon():
     """
     Associative keys --
     - LUNAR_YEARs (n) <--> MOONs (n)
@@ -1726,7 +1815,7 @@ class LunarYearXMoon(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "lunar_year_x_moon_uid_pk"
         FK: dict = {
             "lunar_year_uid_fk": ("LUNAR_YEAR", "lunar_year_uid_pk"),
@@ -1735,7 +1824,7 @@ class LunarYearXMoon(object):
         CK: dict = {"touch_type": EntityType.TOUCH_TYPE}
 
 
-class SolarCalendar(object):
+class SolarCalendar():
     """
     A Solar Calendar is a cultural artifact. It is associated with
     a Solar Year. The name of the calendar is defined as a virtual
@@ -1795,7 +1884,7 @@ class SolarCalendar(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "solar_calendar_uid_pk"
         FK: dict = {
             "solar_year_uid_fk": ("SOLAR_YEAR", "solar_year_uid_pk"),
@@ -1805,7 +1894,7 @@ class SolarCalendar(object):
         ORDER: list = ["solar_calendar_id ASC"]
 
 
-class LunarCalendar(object):
+class LunarCalendar():
     """
     A Lunar Calendar is a cultural artifact associated with
     a Lunar Year. The name of the calendar is defined as an optional link to
@@ -1841,13 +1930,13 @@ class LunarCalendar(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "lunar_calendar_uid_pk"
         FK: dict = {"lunar_year_uid_fk": ("LUNAR_YEAR", "lunar_year_uid_pk")}
         ORDER: list = ["lunar_calendar_id ASC"]
 
 
-class Month(object):
+class Month():
     """
     A Month is associated with 1..n Calendars via an
     association table.
@@ -1884,12 +1973,12 @@ class Month(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "month_uid_pk"
         ORDER: list = ["month_id ASC"]
 
 
-class SolarCalendarXMonth(object):
+class SolarCalendarXMonth():
     """
     Associative keys --
     - SOLAR_CALENDARs (n) <--> MONTHs (n)
@@ -1919,7 +2008,7 @@ class SolarCalendarXMonth(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "solar_calendar_x_moon_uid_pk"
         FK: dict = {
             "solar_calendar_uid_fk": ("SOLAR_CALENDAR", "solar_calendar_uid_pk"),
@@ -1928,7 +2017,7 @@ class SolarCalendarXMonth(object):
         CK: dict = {"touch_type": EntityType.TOUCH_TYPE}
 
 
-class LunarCalendarXMonth(object):
+class LunarCalendarXMonth():
     """
     Associative keys --
     - LUNAR_CALENDARs (n) <--> MONTHs (n)
@@ -1959,7 +2048,7 @@ class LunarCalendarXMonth(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "lunar_calendar_x_moon_uid_pk"
         FK: dict = {
             "lunar_calendar_uid_fk": ("LUNAR_CALENDAR", "lunar_calendar_uid_pk"),
@@ -1968,7 +2057,7 @@ class LunarCalendarXMonth(object):
         CK: dict = {"touch_type": EntityType.TOUCH_TYPE}
 
 
-class WeekTime(object):
+class WeekTime():
     """
     WeekTime is associated with 1..n Calendars via an
     association table.
@@ -2010,12 +2099,12 @@ class WeekTime(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "week_time_uid_pk"
         ORDER: list = ["week_time_id ASC"]
 
 
-class SolarCalendarXWeekTime(object):
+class SolarCalendarXWeekTime():
     """
     Associative keys --
     - SOLAR_CALENDARs (n) <--> WEEK_TIMEs (n)
@@ -2045,7 +2134,7 @@ class SolarCalendarXWeekTime(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "solar_calendar_x_week_time_uid_pk"
         FK: dict = {
             "solar_calendar_uid_fk": ("SOLAR_CALENDAR", "solar_calendar_uid_pk"),
@@ -2054,7 +2143,7 @@ class SolarCalendarXWeekTime(object):
         CK: dict = {"touch_type": EntityType.TOUCH_TYPE}
 
 
-class LunarCalendarXWeekTime(object):
+class LunarCalendarXWeekTime():
     """
     Associative keys --
     - LUNAR_CALENDARs (n) <--> WEEK_TIMEs (n)
@@ -2084,7 +2173,7 @@ class LunarCalendarXWeekTime(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "lunar_calendar_x_week_time_uid_pk"
         FK: dict = {
             "lunar_calendar_uid_fk": ("LUNAR_CALENDAR", "lunar_calendar_uid_pk"),
@@ -2093,7 +2182,7 @@ class LunarCalendarXWeekTime(object):
         CK: dict = {"touch_type": EntityType.TOUCH_TYPE}
 
 
-class DayTime(object):
+class DayTime():
     """
     DayTime is associated with 1..n Weeks via an association table.
     It describes any reckoning of time construed in
@@ -2134,12 +2223,12 @@ class DayTime(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "day_time_uid_pk"
         ORDER: list = ["day_time_id ASC"]
 
 
-class WeekTimeXDayTime(object):
+class WeekTimeXDayTime():
     """
     Associative keys --
     - WEEK_TIMEs (n) <--> DAY_TIMEs (n)
@@ -2169,7 +2258,7 @@ class WeekTimeXDayTime(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "week_time_x_day_time_uid_pk"
         FK: dict = {
             "week_time_uid_fk": ("WEEK_TIME", "week_time_uid_pk"),
@@ -2188,7 +2277,7 @@ class WeekTimeXDayTime(object):
 # =============================================================
 # Game Geography
 # =============================================================
-class Lake(object):
+class Lake():
     """
     Geographic features, e.g. lakes, rivers, mountains, are
     named by reference to a gloss_common_uid_pk.
@@ -2286,7 +2375,7 @@ class Lake(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "lake_uid_pk"
         JSON: list = ["lake_shoreline_points_json"]
         CK: dict = {
@@ -2297,7 +2386,7 @@ class Lake(object):
         ORDER: list = ["lake_uid_pk ASC"]
 
 
-class LakeXMap(object):
+class LakeXMap():
     """
     Associative keys --
     - LAKEs (n) <--> MAPs (n)
@@ -2326,7 +2415,7 @@ class LakeXMap(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "lake_x_map_pk"
         FK: dict = {
             "lake_uid_fk": ("LAKE", "lake_uid_pk"),
@@ -2336,7 +2425,7 @@ class LakeXMap(object):
         ORDER: list = ["lake_uid_fk ASC", "map_uid_fk ASC"]
 
 
-class River(object):
+class River():
     """
     drainage_basin_m: Avg area of land where rainfall is
     collected and drained into river on each bank. For game
@@ -2420,7 +2509,7 @@ class River(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "river_uid_pk"
         CK: dict = {
             "river_type": EntityType.RIVER_TYPE,
@@ -2435,7 +2524,7 @@ class River(object):
         ORDER: list = ["river_uid_pk ASC"]
 
 
-class RiverXMap(object):
+class RiverXMap():
     """
     Associative keys --
     - RIVERs (n) <--> MAPs (n)
@@ -2464,7 +2553,7 @@ class RiverXMap(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "river_x_map_uid_pk"
         FK: dict = {
             "river_uid_fk": ("RIVER", "river_uid_pk"),
@@ -2474,7 +2563,7 @@ class RiverXMap(object):
         ORDER: list = ["river_x_map_uid_pk ASC"]
 
 
-class OceanBody(object):
+class OceanBody():
     """For bodies of water associated with oceans.
 
     $$
@@ -2533,7 +2622,7 @@ class OceanBody(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "ocean_body_uid_pk"
         CK: dict = {
             "ocean_body_type": EntityType.OCEAN_BODY_TYPE,
@@ -2549,7 +2638,7 @@ class OceanBody(object):
         ORDER: list = ["ocean_body_uid_pk ASC"]
 
 
-class OceanBodyXMap(object):
+class OceanBodyXMap():
     """
     Associative keys --
     - OCEAN_BODY (n) <--> MAP (n)
@@ -2578,7 +2667,7 @@ class OceanBodyXMap(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "ocean_body_x_map_uid_pk"
         FK: dict = {
             "ocean_body_uid_fk": ("OCEAN_BODY", "ocean_body_uid_pk"),
@@ -2588,7 +2677,7 @@ class OceanBodyXMap(object):
         ORDER: list = ["ocean_body_x_map_uid_pk ASC"]
 
 
-class OceanBodyXRiver(object):
+class OceanBodyXRiver():
     """
     Associative keys --
     - OCEAN_BODY (n) <--> RIVER (n)
@@ -2617,7 +2706,7 @@ class OceanBodyXRiver(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "ocean_body_x_river_uid_pk"
         FK: dict = {
             "ocean_body_uid_fk": ("OCEAN_BODY", "ocean_body_uid_pk"),
@@ -2627,7 +2716,7 @@ class OceanBodyXRiver(object):
         ORDER: list = ["ocean_body_x_river_uid_pk ASC"]
 
 
-class LandBody(object):
+class LandBody():
     """
     Use this for geographic features that are not water.
     Including: continents, islands, geographic regions.
@@ -2666,13 +2755,13 @@ class LandBody(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "land_body_uid_pk"
         CK: dict = {"land_body_type": EntityType.LAND_BODY_TYPE}
         ORDER: list = ["land_body_uid_pk ASC"]
 
 
-class LandBodyXMap(object):
+class LandBodyXMap():
     """
     Associative keys --
     - LAND_BODY (n) <--> MAP (n)
@@ -2701,7 +2790,7 @@ class LandBodyXMap(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "land_body_x_map_uid_pk"
         FK: dict = {
             "land_body_uid_fk": ("LAND_BODY", "land_body_uid_pk"),
@@ -2711,7 +2800,7 @@ class LandBodyXMap(object):
         ORDER: list = ["land_body_x_map_uid_pk ASC"]
 
 
-class LandBodyXLandBody(object):
+class LandBodyXLandBody():
     """
     Associative keys --
     - LAND_BODY (n) <--> LAND_BODY (n)
@@ -2744,7 +2833,7 @@ class LandBodyXLandBody(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "land_body_x_land_body_uid_pk"
         FK: dict = {
             "land_body_1_uid_fk": ("LAND_BODY", "land_body_uid_pk"),
@@ -2757,7 +2846,7 @@ class LandBodyXLandBody(object):
         ORDER: list = ["land_body_x_land_body_uid_pk ASC"]
 
 
-class LandBodyXOceanBody(object):
+class LandBodyXOceanBody():
     """
     Associative keys --
     - LAND_BODY (n) <--> OCEAN_BODY (n)
@@ -2788,7 +2877,7 @@ class LandBodyXOceanBody(object):
         """Load DB SELECT results into memory."""
         return DM.rec_to_dict(self, p_dict, p_row)
 
-    class Constraints(object):
+    class Constraints():
         PK: str = "land_body_x_ocean_body_uid_pk"
         FK: dict = {
             "land_body_uid_fk": ("LAND_BODY", "land_body_uid_pk"),

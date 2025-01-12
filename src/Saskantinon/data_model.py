@@ -168,8 +168,7 @@ def create_sql(DB: object) -> bool:
             DMS.Grid,
             DMS.GridCell,
             DMS.GridInfo,
-            DMS.MapXMap,
-            DMS.GridXMap,
+            DMS.CrossAssociation,
             DMS.CharSet,
             DMS.CharMember,
             DMS.LangFamily,
@@ -185,16 +184,9 @@ def create_sql(DB: object) -> bool:
             DMS.World,
             DMS.Moon,
             DMS.Lake,
-            DMS.LakeXMap,
             DMS.River,
-            DMS.RiverXMap,
             DMS.OceanBody,
-            DMS.OceanBodyXMap,
-            DMS.OceanBodyXRiver,
             DMS.LandBody,
-            DMS.LandBodyXMap,
-            DMS.LandBodyXLandBody,
-            DMS.LandBodyXOceanBody,
             DMS.SolarYear,
             DMS.Season,
             DMS.LunarYear,
@@ -202,13 +194,8 @@ def create_sql(DB: object) -> bool:
             DMS.SolarCalendar,
             DMS.LunarCalendar,
             DMS.Month,
-            DMS.LunarCalendarXMonth,
-            DMS.SolarCalendarXMonth,
             DMS.WeekTime,
-            DMS.LunarCalendarXWeekTime,
-            DMS.SolarCalendarXWeekTime,
             DMS.DayTime,
-            DMS.WeekTimeXDayTime,
         ],
     }
     # Generate SQL for each model category
@@ -221,7 +208,7 @@ def create_sql(DB: object) -> bool:
                 raise CreateSQLError(fail)
                 return False
 
-    print(f"{Colors.CL_DARKCYAN}{Colors.CL_BOLD}SQL files generated.{Colors.CL_END}")
+    print(f"{Colors.CL_DARKCYAN}{Colors.CL_BOLD}SQL files generated.\n{Colors.CL_END}")
     return True
 
 
@@ -253,9 +240,10 @@ def create_db(DB: object, p_backup: bool = True) -> bool:
     # Execute DROP statements without foreign key constraints
     ok = DB.execute_ddl(drop_sql_list, p_foreign_keys_on=False)
     if ok:
-        print(f"{Colors.CL_DARKCYAN}Database tables dropped.{Colors.CL_END}")
+        print(f"{Colors.CL_DARKCYAN}Database tables dropped{Colors.CL_END}")
         # Execute CREATE statements with foreign key constraints
         ok = DB.execute_ddl(create_sql_list, p_foreign_keys_on=True)
         if ok:
-            print(f"{Colors.CL_DARKCYAN}{Colors.CL_BOLD}Database tables created.{Colors.CL_END}")
+            print(f"{Colors.CL_DARKCYAN}{Colors.CL_BOLD}Database and " +
+                  f"Tables created\n{Colors.CL_END}")
     return ok
