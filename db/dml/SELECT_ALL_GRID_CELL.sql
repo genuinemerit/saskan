@@ -1,6 +1,7 @@
 SELECT `grid_cell_uid_pk`,
 `grid_uid_fk`,
-`grid_name`,
+`grid_id`,
+`lang_code`,
 `grid_cell_name`,
 `x_col_ix`,
 `y_row_ix`,

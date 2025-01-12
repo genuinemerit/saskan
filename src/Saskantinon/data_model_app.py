@@ -26,27 +26,19 @@ like frames, buttons, menus and links.
   The data types and default values are extracted directly by the DataBase() class
   reading the "magic" __dict__ attribute of the classes.
 
-        @DEV:
-        - Review the data model regarding use of _id and _name fields.
-        Probably need to tweak some things to be consistent and follow this pattern:
-            - UID - system-generated unique identifier, the only type of value used for a PK or FK.
-                  - When a record is marked deleted, its replacement gets a new UID.
-                  - A UID PK is unique across the entire database.
-                  - A UID FK always points to a UID PK and is never null.
-            - ID - a string that, in combo with a blank delete_dt, uniquely identifies a record
-                 in a table. An ID + empty delete_dt is unique within a table. THe content of an
-                 ID is neutral w/ respect to languages. Can be used as a natural foreign key, often
-                 in combo with a delete_dt, or delete_dt + lang-code. Note that my matching
-                 method needs to be able to handle this. Does it always expect empty delete_dt,
-                 then allow one or two other columns to be used for matching. That's what I want.
-            - NAME - Similar to ID, but content is lang-specific. Used for display purposes,
-                    and _not_ necessarily unique in a table. For example, the closet in a room could
-                    be labeled "closet" in both English and Spanish, but "armoire" in French.
-                    Matching using a natural key, NAME could be used in combo with a lang code,
-                    but correct practice is using id and lang code, with expectation that the
-                    ID is non-volatile, while the NAME is volatile. The ID is _like_ it is
-                    indexed uniquely, even though it is not. Whereas NAME should be treated like any
-                    other non-indexed column.
+- UID - system-generated unique identifier, the only type of value used for a PK or FK.
+        - When a record is marked deleted, its replacement gets a new UID.
+        - A UID PK is unique across the entire database.
+        - A UID FK always points to a UID PK and is never null.
+- ID - a string that, in combo with a blank delete_dt, or with blank delete_dt and lang_code,
+        uniquely identifies a record in a table. Note that ID is not necessarily unqiue
+        within a table, but is unique within a table for a given lang_code + blank delete_dt.
+- NAME - Similar to ID, but content is lang-specific and is for display purposes. The NAME
+        is _not_ necessarily unique in a table across lang codes. For example, the word
+        "closet" can be used for both English and Spanish. It is also possible that the
+        NAME value can be volatile, whereas the ID value should never change. Note that the
+        _name suffix may also be used in other situations where appropriate. It is not always
+        a lang-specific display/label value.
 # =============================================================
 """
 
@@ -71,7 +63,7 @@ class Metadata:
     $$
     - meta_uid_pk: Primary key
     - name_space: [app|story]
-    - model_name: name of the data model class
+    - model_name: class name of the data model
     - tbl_name: name of the SQL table
     - col_name: name of the SQL column
     - col_def: definition of the SQL column
@@ -98,7 +90,7 @@ class Backup():
     """Store metadata about DB backup, restore, archive, export.
     $$
     - bkup_uid_pk: Primary key
-    - bkup_name: Name of the backup
+    - bkup_id: ID (natural key) of the backup, typically type + timestamp
     - bkup_dttm: Date and time of the backup
     - bkup_type: Type of backup, e.g., 'full', 'incremental'
     - file_from: Source file or directory
@@ -109,7 +101,7 @@ class Backup():
 
     _tablename: str = "BACKUP"
     bkup_uid_pk: str = ""  # Primary key
-    bkup_name: str = ""
+    bkup_id: str = ""
     bkup_dttm: str = ""
     bkup_type: str = ""
     file_from: str = ""
@@ -126,7 +118,7 @@ class Backup():
 
     class Constraints():
         PK: str = "bkup_uid_pk"
-        ORDER: list = ["bkup_dttm DESC", "bkup_name ASC"]
+        ORDER: list = ["bkup_dttm DESC", "bkup_id ASC"]
         CK: dict = {"bkup_type": EntityType.BACKUP_TYPE}
 
 
@@ -139,7 +131,7 @@ class Texts():
     $$
     - text_uid_pk: Primary key, unique identifier for each text entry
     - lang_code: Language code of the text, e.g., en, de, fr
-    - text_name: Name/ID/label of a text string, not unique, shared across languages
+    - text_id: ID of a text string shared across languages
     - text_value: Text string value
     - delete_dt: Deletion date, indicating when the record was marked for deletion
     $$
@@ -148,7 +140,7 @@ class Texts():
     _tablename: str = "TEXTS"
     text_uid_pk: str = ""
     lang_code: str = ""
-    text_name: str = ""
+    text_id: str = ""
     text_value: str = ""
     delete_dt: str = ""
 
@@ -163,7 +155,7 @@ class Texts():
     class Constraints():
         PK: str = "text_uid_pk"
         CK: dict = {"lang_code": EntityType.LANG_CODE}
-        ORDER: list = ["text_name ASC", "lang_code ASC"]
+        ORDER: list = ["text_id ASC", "lang_code ASC"]
 
 
 # If it turns out the be useful, may want to add an "APP" structure
@@ -176,8 +168,8 @@ class Frames():
     $$
     - frame_uid_pk: Primary key, unique identifier for each frame entry
     - lang_code: Language code of the frame, e.g., en, de, fr
-    - frame_id: Not unique, can be shared by apps, e.g., 'admin' or 'game'
-    - frame_title: Title of the frame
+    - frame_id: Natural key, in combo with lang-code and blank delete_dt
+    - frame_name: Displayed title of the frame in a given language
     - frame_desc: Description of the frame
     - frame_w: Width of the frame
     - frame_h: Height of the frame
@@ -194,7 +186,7 @@ class Frames():
     frame_uid_pk: str = ""
     lang_code: str = ""
     frame_id: str = ""
-    frame_title: str = ""
+    frame_name: str = ""
     frame_desc: str = ""
     frame_w: float = 0.0
     frame_h: float = 0.0
@@ -225,8 +217,8 @@ class MenuBars():
 
     $$
     - menu_bar_uid_pk: Primary key, unique identifier for each menu bar entry
-    - frame_uid_fk: Foreign key referencing the frame's unique identifier
-    - frame_id: Identifier to match with corresponding frame records
+    - frame_uid_fk: Foreign key referencing a frame UID (PK)
+    - frame_id: Natural key to match with corresponding frame records
     - mbar_margin: Margin around the menu bar
     - mbar_h: Height of the menu bar
     - mbar_x: X-coordinate of the top-left corner relative to the frame
@@ -358,7 +350,7 @@ class Windows():
     - frame_id: Identifier to match with corresponding frame records
     - lang_code: Language code for the window text
     - win_id: Generic string label "ID" or key for the window
-    - win_title: Title of the window in designated language
+    - win_name: Displayed title (name) of window in designated language
     - win_margin: Margin size around the window
     - delete_dt: Deletion date, indicating when the record was marked for deletion
     $$
@@ -371,7 +363,7 @@ class Windows():
     frame_id: str = ""
     lang_code: str = ""
     win_id: str = ""
-    win_title: str = ""
+    win_name: str = ""
     win_margin: float = 0.0
     delete_dt: str = ""
 
@@ -445,13 +437,15 @@ class ButtonSingle():
 
     $$
     - button_single_uid_pk: Primary key, unique identifier for each button entry
+    - frame_uid_fk: Foreign key linking to the associated frame
+    - window_uid_fk: Foreign key linking to the associated window
     - button_type: Type of button (e.g., submit, reset)
+    - button_id: Identifier for the button
+    - lang_code: Language code associated with the button
     - button_name: Displayed name for the button
     - button_icon: Binary data representing the button's icon image
     - button_icon_path: Path to the icon file in the app images directory
     - button_key: Key to press to activate the button
-    - frame_uid_fk: Foreign key linking to the associated frame
-    - window_uid_fk: Foreign key linking to the associated window
     - left_x: X-coordinate position of top-left corner relative to the window
     - top_y: Y-coordinate position of top-left corner relative to the window
     - enabled_by_default: True to enable, False to disable the button
@@ -460,17 +454,21 @@ class ButtonSingle():
     - delete_dt: Deletion date, indicating when the record was marked for deletion
     $$
 
+    @DEV:
+    - Consider adding a "button_order" field to allow for ordering of buttons if needed.
+    - Use a config file to define the single-button widgets.
     """
-
     _tablename: str = "BUTTON_SINGLE"
     button_single_uid_pk: str = ""
+    frame_uid_fk: str = ""
+    window_uid_fk: str = ""
     button_type: str = ""
+    button_id: str = ""
+    lang_code: str = ""
     button_name: str = ""
     button_icon: bytes = b""
     button_icon_path: str = ""
     button_key: str = ""
-    frame_uid_fk: str = ""
-    window_uid_fk: str = ""
     left_x: float = 0.0
     top_y: float = 0.0
     enabled_by_default: bool = True
@@ -492,7 +490,8 @@ class ButtonSingle():
             "frame_uid_fk": ("FRAMES", "frame_uid_pk"),
             "window_uid_fk": ("WINDOWS", "window_uid_pk"),
         }
-        CK: dict = {"button_type": EntityType.BUTTON_TYPE}
+        CK: dict = {"button_type": EntityType.BUTTON_TYPE,
+                    "lang_code": EntityType.LANG_CODE}
         ORDER: list = ["button_name ASC"]
 
 
@@ -501,12 +500,14 @@ class ButtonMulti():
 
     $$
     - button_multi_uid_pk: Primary key, unique identifier for each button group entry
+    - frame_uid_fk: Foreign key linking to the associated frame
+    - window_uid_fk: Foreign key linking to the associated window
     - button_type: Type of button group (e.g., radio, checkbox)
+    - button_id: Identifier for the button
+    - lang_code: Language code associated with the button
     - button_name: Displayed name for the button group
     - button_icon: Binary data representing the button group's icon image
     - button_icon_path: Path to the icon file in the app images directory
-    - frame_uid_fk: Foreign key linking to the associated frame
-    - window_uid_fk: Foreign key linking to the associated window
     - x: X-coordinate position of top-left corner relative to the window
     - y: Y-coordinate position of top-left corner relative to the window
     - enabled_by_default: True to enable, False to disable the button group
@@ -518,12 +519,14 @@ class ButtonMulti():
 
     _tablename: str = "BUTTON_MULTI"
     button_multi_uid_pk: str = ""
+    frame_uid_fk: str = ""
+    window_uid_fk: str = ""
     button_type: str = ""
+    button_id: str = ""
+    lang_code: str = ""
     button_name: str = ""
     button_icon: bytes = b""
     button_icon_path: str = ""
-    frame_uid_fk: str = ""
-    window_uid_fk: str = ""
     left_x: float = 0.0
     top_y: float = 0.0
     enabled_by_default: bool = True
@@ -544,7 +547,8 @@ class ButtonMulti():
             "frame_uid_fk": ("FRAMES", "frame_uid_pk"),
             "window_uid_fk": ("WINDOWS", "window_uid_pk"),
         }
-        CK: dict = {"button_type": EntityType.BUTTON_TYPE}
+        CK: dict = {"button_type": EntityType.BUTTON_TYPE,
+                    "lang_code": EntityType.LANG_CODE}
         ORDER: list = ["button_name ASC"]
 
 
@@ -554,6 +558,8 @@ class ButtonItem():
     $$
     - button_item_uid_pk: Primary key, unique identifier for each button item
     - button_multi_uid_fk: Foreign key linking to the associated multi-choice button group
+    - button_id: Identifier for the button item
+    - lang_code: Language code associated with the button item
     - button_name: Displayed name for the button item
     - button_icon: Binary data representing the button item's icon image
     - button_icon_path: Path to the icon file in the app images directory
@@ -564,12 +570,12 @@ class ButtonItem():
     - help_text: Text to display when the mouse hovers over the button item
     - delete_dt: Deletion date, indicating when the record was marked for deletion
     $$
-
     """
-
     _tablename: str = "BUTTON_ITEM"
     button_item_uid_pk: str = ""
     button_multi_uid_fk: str = ""
+    button_id: str = ""
+    lang_code: str = ""
     button_name: str = ""
     button_icon: bytes = b""
     button_icon_path: str = ""
@@ -591,4 +597,5 @@ class ButtonItem():
     class Constraints():
         PK: str = "button_item_uid_pk"
         FK: dict = {"button_multi_uid_fk": ("BUTTON_MULTI", "button_multi_uid_pk")}
+        CK: dict = {"lang_code": EntityType.LANG_CODE}
         ORDER: list = ["button_name ASC"]

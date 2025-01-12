@@ -52,14 +52,22 @@ class GetData:
 
     def get_by_match(self, p_table_nm: str, p_match: dict, p_first_only: bool = True):
         """
-        Get data from a DB table by selecting on one or two columns.
+        Get data from a DB table by selecting on one, two or three columns.
+        The most common scenarios are:
+        - Match on one column: p_match = {"col_name": value}, returning n rows.
+        - Match on two columns: p_match = {"col1": val1, "col2": val2}, usually a natural
+           key like an ID field, plus a blank value for delete_dt, returning one row.
+        - Match on three columns: p_match = {"col1": val1, "col2": val2, "col3": val3},
+            returning one row. Typically used for a natural key plus a lang-code and a
+            blank value for delete_dt.
         :param p_table_nm: Name of the table to query
-        :param p_match: Dict of col-name:value pairs to match on. Max of 2.
+        :param p_match: Dict of col-name:value pairs to match on. Max of 3.
         :param p_first_only: Return only the first row that matches
         :return: List of non-ordered dicts of data from the table, or [], if no match
                  found or p_first_only is False; or one non-ordered dict if p_first_only is True
         @DEV:
-        - This logic would probably work with any number of columns to match. Test that out.
+        - This logic will probably work for any number of matching columns, but let's keep
+          it contained to 3 for now.
         """
 
         def _match_values(data_rows, match_cols, match_vals):
@@ -76,23 +84,23 @@ class GetData:
         data_rows = self.DB.execute_select_all_clean(p_table_nm)
         match_cols, match_vals = list(p_match.keys()), list(p_match.values())
 
-        if len(match_cols) not in [1, 2]:
-            print(f"{DSC.CL_RED}WARN{DSC.CL_END}: Can only match on 1 or 2 values.")
+        if len(match_cols) not in [1, 2, 3]:
+            print(f"{DSC.CL_YELLOW}WARN{DSC.CL_END}: Can only match on 1, 2 or 3 values.")
             return []
 
         data = _match_values(data_rows, match_cols, match_vals)
         return data[0] if p_first_only and data else data
 
-    def get_text(self, p_lang_code: str, p_text_name: str, DB_CFG: dict) -> str:
+    def get_text(self, p_lang_code: str, p_text_id: str, DB_CFG: dict) -> str:
         """
         Specialized method to get text data from the TEXT_DATA table.
         :param p_lang_code: Language code
-        :param p_text_name: Text name
+        :param p_text_id: Text name
         :param DB_CFG: Dict of DB config data
         :return: value of the 'text_value' column
         """
         row = self.get_by_match(
-            "TEXT_DATA", {"lang_code": p_lang_code, "text_name": p_text_name}
+            "TEXT_DATA", {"lang_code": p_lang_code, "text_id": p_text_id}
         )
         return str(row["text_value"]) if row else ""
 

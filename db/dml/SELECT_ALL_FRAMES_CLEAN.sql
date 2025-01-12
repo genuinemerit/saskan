@@ -1,7 +1,7 @@
 SELECT `frame_uid_pk`,
 `lang_code`,
 `frame_id`,
-`frame_title`,
+`frame_name`,
 `frame_desc`,
 `frame_w`,
 `frame_h`,

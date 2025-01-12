@@ -1,5 +1,7 @@
 SELECT `button_item_uid_pk`,
 `button_multi_uid_fk`,
+`button_id`,
+`lang_code`,
 `button_name`,
 `button_icon`,
 `button_icon_path`,

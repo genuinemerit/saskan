@@ -6,6 +6,7 @@
 Saskanantinize App GUI.  pygame/sqlite version.
 Saskantinize is the admin controller and manager app
 for Saskantinon.
+It will be less confusing to just call this app_admin.py, no?
 
 @DEV:
 - All config data should be in the DB.
@@ -75,7 +76,7 @@ pg.init()
 class PG:
 
     FRM = GD.get_by_id("FRAMES", "frame_id", "admin", DB_CFG)
-    pg.display.set_caption(FRM["frame_title"])
+    pg.display.set_caption(FRM["frame_name"])
     APD.WIN_W = float(FRM["frame_w"])
     APD.WIN_H = float(FRM["frame_h"])
     APD.WIN_MID = (APD.WIN_W / 2, APD.WIN_H / 2)

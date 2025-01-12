@@ -1,6 +1,8 @@
 UPDATE `MAP_SPHERE` SET
 `map_shape`=?,
 `map_type`=?,
+`map_id`=?,
+`lang_code`=?,
 `map_name`=?,
 `map_desc`=?,
 `origin_lat`=?,

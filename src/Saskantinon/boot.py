@@ -66,7 +66,7 @@ class BootSaskan():
         self.CONTEXT = self._boot_context()
         self.DB = DataBase(self.CONTEXT)
 
-    # Init methods, called from init
+    # Init methods, called from __init__()
 
     def _get_userdata_path(self):
         """Get the user data path from arguments or use default."""
@@ -108,7 +108,7 @@ class BootSaskan():
         FM.write_file(self.CONTEXT_FILE_PATH, json.dumps(context))
         return context
 
-    # Boot methods, called from main
+    # Boot methods, called from __main__
 
     def boot_saskan(self):
         """Run all boot steps:
@@ -121,7 +121,7 @@ class BootSaskan():
                 self.boot_app_data()
                 self.boot_story_data()
             else:
-                print(f"{Colors.RED}Database creation failed{Colors.CL_END}")
+                print(f"{Colors.CL_RED}Database creation failed{Colors.CL_END}")
 
     def boot_app_data(self):
         """
@@ -187,7 +187,7 @@ class BootSaskan():
 
         The set_cross_x method assumes that the caller knows the UID col names and
         the UID values of the rows being associated. For example, retrieve recs by map_name
-        or grid_name (may rename that an ID, which would be more appropirate), that is, a
+        or grid_id (may rename that an ID, which would be more appropirate), that is, a
         natural key which should be unique in combination with a blank delete_dt. Retrieve
         the UIDs, then call the set_cross_x method with the UID col names, values and touch type.
 
@@ -201,7 +201,7 @@ class BootSaskan():
         map_box_data = GD.get_by_match("MAP_BOX", {"map_name": "Saskan Lands Geography"})
         map_sphere_data = GD.get_by_match(
                           "MAP_SPHERE", {"map_name": "Gavor-Havorra Planetary Map"})
-        grid_data = GD.get_by_match("GRID", {"grid_name": "30x_40y_30zu_30zd"})
+        grid_data = GD.get_by_match("GRID", {"grid_id": "30x_40y_30zu_30zd"})
         # This tests the default touch type of ""
         if not SD.set_cross_x({"map_rect_uid_pk": map_rect_data['map_rect_uid_pk'],
                                "map_box_uid_pk": map_box_data['map_box_uid_pk']}):

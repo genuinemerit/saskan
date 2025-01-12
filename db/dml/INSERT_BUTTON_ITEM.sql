@@ -1,6 +1,8 @@
 INSERT INTO `BUTTON_ITEM` (
 `button_item_uid_pk`,
 `button_multi_uid_fk`,
+`button_id`,
+`lang_code`,
 `button_name`,
 `button_icon`,
 `button_icon_path`,
@@ -9,4 +11,4 @@ INSERT INTO `BUTTON_ITEM` (
 `enabled_by_default`,
 `is_enabled`,
 `help_text`,
-`delete_dt`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+`delete_dt`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);

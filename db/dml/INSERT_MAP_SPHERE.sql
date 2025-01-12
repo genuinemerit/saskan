@@ -2,6 +2,8 @@ INSERT INTO `MAP_SPHERE` (
 `map_sphere_uid_pk`,
 `map_shape`,
 `map_type`,
+`map_id`,
+`lang_code`,
 `map_name`,
 `map_desc`,
 `origin_lat`,
@@ -9,4 +11,4 @@ INSERT INTO `MAP_SPHERE` (
 `z_value`,
 `unit_of_measure`,
 `sphere_radius`,
-`delete_dt`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+`delete_dt`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);

@@ -268,7 +268,7 @@ class DataBase(object):
             sql = f"SELECT {columns}\nFROM `{p_table_name}`"
 
             # Add ORDER BY clause if it's present in constraints
-            # Example of order constraint is...  ORDER: list = ["text_name ASC", "lang_code ASC"]
+            # Example of order constraint is...  ORDER: list = ["text_id ASC", "lang_code ASC"]
             # When generating the SQL, only the column name should be enclosed in backticks,
             # not the ASC or DESC keywords.
             if "ORDER" in p_constraints:
@@ -314,7 +314,7 @@ class DataBase(object):
             )
 
             # Add ORDER BY clause if it's present in constraints.
-            # Example of order constraint is...  ORDER: list = ["text_name ASC", "lang_code ASC"]
+            # Example of order constraint is...  ORDER: list = ["text_id ASC", "lang_code ASC"]
             # When generating the SQL, only the column name should be enclosed in backticks,
             # not the ASC or DESC keywords.
             if "ORDER" in p_constraints:

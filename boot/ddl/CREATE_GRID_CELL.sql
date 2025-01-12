@@ -1,7 +1,8 @@
 CREATE TABLE IF NOT EXISTS GRID_CELL (
 grid_cell_uid_pk TEXT DEFAULT '',
 grid_uid_fk TEXT DEFAULT '',
-grid_name TEXT DEFAULT '',
+grid_id TEXT DEFAULT '',
+lang_code TEXT DEFAULT '',
 grid_cell_name TEXT DEFAULT '',
 x_col_ix INTEGER DEFAULT 0,
 y_row_ix INTEGER DEFAULT 0,

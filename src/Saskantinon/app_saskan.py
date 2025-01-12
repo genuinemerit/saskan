@@ -51,7 +51,7 @@ pg.init()
 class PG:
 
     FRM = GD.get_by_id("FRAMES", "frame_id", "saskan", DB_CFG)
-    pg.display.set_caption(FRM["frame_title"])
+    pg.display.set_caption(FRM["frame_name"])
     APD.WIN_W = float(FRM["frame_w"])
     APD.WIN_H = float(FRM["frame_h"])
     APD.WIN_MID = (APD.WIN_W / 2, APD.WIN_H / 2)
@@ -504,8 +504,8 @@ class Windows(object):
             win_id = w_v["win_id"]
             PG.WINDOWS[win_id] = {
                 "uid": w_v["win_uid_pk"],
-                "title": w_v["win_title"],
-                "title_txt": w_v["win_title"],
+                "title": w_v["win_name"],
+                "title_txt": w_v["win_name"],
                 "margin": w_v["win_margin"],
                 "w_box": None,
                 "t_box": None,
@@ -631,7 +631,7 @@ class Stage(object):
             )
             [grid_recs.append(rec) for rec in g_recs]
         PG.GRIDS = {
-            g["grid_name"]: {
+            g["grid_id"]: {
                 "grid_uid": g["grid_uid_pk"],
                 "map_NAME": p_map_name,
                 "row_cnt": g["row_cnt"],
@@ -640,22 +640,22 @@ class Stage(object):
             for g in grid_recs
         }
 
-    def draw_gamemap(self, p_grid_name: str = None):
+    def draw_gamemap(self, p_grid_id: str = None):
         """Use modified PG.GRIDS data to draw the gamemap grid.
         Use PG.MAPS to layer information over the grid.
         Use whatever "story" related data to populate widgets and
          overlay to the map.
-        If p_grid_name is None, default to first grid in PG.GRIDS.
+        If p_grid_id is None, default to first grid in PG.GRIDS.
         """
-        p_grid_name = p_grid_name or list(PG.GRIDS.keys())[0]
+        p_grid_id = p_grid_id or list(PG.GRIDS.keys())[0]
         # Draw the grid.
-        for p1, p2 in PG.GRIDS[p_grid_name]["h_lines"]:
+        for p1, p2 in PG.GRIDS[p_grid_id]["h_lines"]:
             pg.draw.aaline(APD.WIN, CLR.CP_WHITE, p1, p2)
-        for p1, p2 in PG.GRIDS[p_grid_name]["v_lines"]:
+        for p1, p2 in PG.GRIDS[p_grid_id]["v_lines"]:
             pg.draw.aaline(APD.WIN, CLR.CP_WHITE, p1, p2)
         # Draw the reference numbers
         for ck, cv in {
-            c: v for c, v in PG.GRIDS[p_grid_name]["cells"].items() if v["is_ref"]
+            c: v for c, v in PG.GRIDS[p_grid_id]["cells"].items() if v["is_ref"]
         }.items():
             txt = APD.F_SANS_SM.render(cv["txt"], True, CLR.CP_BLACK, CLR.CP_WHITE)
             txt_box = txt.get_rect()

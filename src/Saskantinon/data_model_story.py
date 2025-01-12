@@ -26,28 +26,19 @@ like maps, languages, settings, characters and so on.
   The data types and default values are extracted directly by the DataBase() class
   reading the "magic" __dict__ attribute of the classes.
 
-
-        @DEV:
-        - Review the data model regarding use of _id and _name fields.
-        Probably need to tweak some things to be consistent and follow this pattern:
-            - UID - system-generated unique identifier, the only type of value used for a PK or FK.
-                  - When a record is marked deleted, its replacement gets a new UID.
-                  - A UID PK is unique across the entire database.
-                  - A UID FK always points to a UID PK and is never null.
-            - ID - a string that, in combo with a blank delete_dt, uniquely identifies a record
-                 in a table. An ID + empty delete_dt is unique within a table. THe content of an
-                 ID is neutral w/ respect to languages. Can be used as a natural foreign key, often
-                 in combo with a delete_dt, or delete_dt + lang-code. Note that my matching
-                 method needs to be able to handle this. Does it always expect empty delete_dt,
-                 then allow one or two other columns to be used for matching. That's what I want.
-            - NAME - Similar to ID, but content is lang-specific. Used for display purposes,
-                    and _not_ necessarily unique in a table. For example, the closet in a room could
-                    be labeled "closet" in both English and Spanish, but "armoire" in French.
-                    Matching using a natural key, NAME could be used in combo with a lang code,
-                    but correct practice is using id and lang code, with expectation that the
-                    ID is non-volatile, while the NAME is volatile. The ID is _like_ it is
-                    indexed uniquely, even though it is not. Whereas NAME should be treated like any
-                    other non-indexed column.
+- UID - system-generated unique identifier, the only type of value used for a PK or FK.
+        - When a record is marked deleted, its replacement gets a new UID.
+        - A UID PK is unique across the entire database.
+        - A UID FK always points to a UID PK and is never null.
+- ID - a string that, in combo with a blank delete_dt, or with blank delete_dt and lang_code,
+        uniquely identifies a record in a table. Note that ID is not necessarily unqiue
+        within a table, but is unique within a table for a given lang_code + blank delete_dt.
+- NAME - Similar to ID, but content is lang-specific and is for display purposes. The NAME
+        is _not_ necessarily unique in a table across lang codes. For example, the word
+        "closet" can be used for both English and Spanish. It is also possible that the
+        NAME value can be volatile, whereas the ID value should never change. Note that the
+        _name suffix may also be used in other situations where appropriate. It is not always
+        a lang-specific display/label value.
 """
 
 from pprint import pformat as pf  # noqa: F401
@@ -87,7 +78,9 @@ class MapRect():
     - map_rect_uid_pk: Primary key, unique identifier for each map rectangle
     - map_shape: Shape of the map area (e.g., rectangle, box, sphere)
     - map_type: Type of map area (e.g., geo, astro, underwater)
-    - map_name: Name of the map rectangle
+    - map_id: ID of the map rectangle
+    - lang_code: Language code for the map rectangle
+    - map_name: Displayable name of the map rectangle
     - map_desc: Description of the map rectangle
     - north_lat: Northern latitude boundary of the map rectangle
     - south_lat: Southern latitude boundary of the map rectangle
@@ -101,6 +94,8 @@ class MapRect():
     map_rect_uid_pk: str = ""
     map_shape: str = ""
     map_type: str = ""
+    map_id: str = ""
+    lang_code: str = ""
     map_name: str = ""
     map_desc: str = ""
     north_lat: float = 0.0
@@ -136,6 +131,8 @@ class MapBox(MapRect):
     - map_box_uid_pk: Primary key, unique identifier for each map box
     - map_shape: Shape of the map area (e.g., box)
     - map_type: Type of map area (e.g., geo, astro, underwater)
+    - map_id: ID of the map box
+    - lang_code: Language code for the map box
     - map_name: Name of the map box
     - map_desc: Description of the map box
     - north_lat: Northern latitude boundary of the map box
@@ -153,6 +150,8 @@ class MapBox(MapRect):
     map_box_uid_pk: str = ""
     map_shape: str = ""
     map_type: str = ""
+    map_id: str = ""
+    lang_code: str = ""
     map_name: str = ""
     map_desc: str = ""
     north_lat: float = 0.0
@@ -199,6 +198,8 @@ class MapSphere(MapRect):
     - map_sphere_uid_pk: Primary key, unique identifier for each map sphere
     - map_shape: Shape of the map area (e.g., sphere)
     - map_type: Type of map area (e.g., geo, astro, underwater)
+    - map_id: ID of the map box
+    - lang_code: Language code for the map box
     - map_name: Name of the map sphere
     - map_desc: Description of the map sphere
     - origin_lat: Latitudinal coordinate of the sphere's origin
@@ -215,6 +216,8 @@ class MapSphere(MapRect):
     map_sphere_uid_pk: str = ""
     map_shape: str = ""
     map_type: str = ""
+    map_id: str = ""
+    lang_code: str = ""
     map_name: str = ""
     map_desc: str = ""
     origin_lat: float = 0.0
@@ -263,9 +266,12 @@ class Grid():
 
     Grids are always associated with one or more MAP_* tables.
 
+    There is nothing displayable about the grid that is language-specific,
+    so it has an ID, but not a NAME or a LANG_CODE.
+
     $$
     - grid_uid_pk: Primary key, unique identifier for each grid
-    - grid_name: Name of the grid
+    - grid_id: ID of the grid
     - x_col_cnt: Number of columns (east-west direction)
     - y_row_cnt: Number of rows (north-south direction)
     - z_up_cnt: Number of layers above the zeroth row
@@ -277,7 +283,7 @@ class Grid():
 
     _tablename: str = "GRID"
     grid_uid_pk: str = ""
-    grid_name: str = ""
+    grid_id: str = ""
     x_col_cnt: int = 0
     y_row_cnt: int = 0
     z_up_cnt: int = 0
@@ -294,7 +300,7 @@ class Grid():
 
     class Constraints():
         PK: str = "grid_uid_pk"
-        ORDER: list = ["grid_name ASC"]
+        ORDER: list = ["grid_id ASC"]
 
 
 class GridCell():
@@ -315,7 +321,8 @@ class GridCell():
     $$
     - grid_cell_uid_pk: Primary key, unique identifier for each grid cell
     - grid_uid_fk: Foreign key linking to the Grid table
-    - grid_name: Name of the grid this cell belongs to
+    - grid_id: Name of the grid this cell belongs to
+    - lang_code: Language code for the grid cell
     - grid_cell_name: Optional descriptive name for the grid cell
     - x_col_ix: Zero-based column index (east-west direction)
     - y_row_ix: Zero-based row index (north-south direction)
@@ -329,7 +336,8 @@ class GridCell():
     _tablename: str = "GRID_CELL"
     grid_cell_uid_pk: str = ""
     grid_uid_fk: str = ""
-    grid_name: str = ""
+    grid_id: str = ""
+    lang_code: str = ""
     grid_cell_name: str = ""
     x_col_ix: int = 0
     y_row_ix: int = 0
@@ -366,10 +374,11 @@ class GridInfo():
     - grid_info_uid_pk: Primary key, unique ID for each grid info record
     - grid_uid_fk: Foreign key linking to the Grid table
     - grid_cell_uid_fk: Foreign key linking to the GridCell table
-    - grid_name: Name of the grid this information belongs to
+    - grid_id: Name of the grid this information belongs to
     - grid_cell_name: Name of grid cell this info is associated with
     - grid_info_id: Short universal descriptive tag for the cell value
-    - grid_info_name: Label for value, providing context or description in lang of cell
+    - lang_code: Language code for the grid info
+    - grid_info_name: Label for value, providing context or description
     - grid_info_int: (optional) Integer value for the cell
     - grid_info_float: (optional) Float value for the cell
     - grid_info_str: (optional) String value for the cell
@@ -385,9 +394,10 @@ class GridInfo():
     grid_info_uid_pk: str = ""
     grid_uid_fk: str = ""
     grid_cell_uid_fk: str = ""
-    grid_name: str = ""
+    grid_id: str = ""
     grid_cell_name: str = ""
     grid_info_id: str = ""
+    lang_code: str = ""
     grid_info_name: str = ""
     grid_info_int: int = 0
     grid_info_float: float = 0.0
@@ -595,6 +605,10 @@ class CharSet():
     a word or concept. In some languages, the ideogram may
     actually be compound, with one portion signalling the
     pronunciation, and another portion signalling the meaning.
+
+    Since char sets are not displayed, per se, in the game, they
+    don't have a lang_code or a name. THe font_name acts like an ID.
+    For now, providing description of the font only in English.
 
     $$
     - char_set_uid_pk: Primary key, unique ID for each character set

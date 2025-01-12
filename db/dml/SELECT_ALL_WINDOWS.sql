@@ -3,7 +3,7 @@ SELECT `win_uid_pk`,
 `frame_id`,
 `lang_code`,
 `win_id`,
-`win_title`,
+`win_name`,
 `win_margin`,
 `delete_dt`
 FROM `WINDOWS`

@@ -1,9 +1,10 @@
 UPDATE `GRID_INFO` SET
 `grid_uid_fk`=?,
 `grid_cell_uid_fk`=?,
-`grid_name`=?,
+`grid_id`=?,
 `grid_cell_name`=?,
 `grid_info_id`=?,
+`lang_code`=?,
 `grid_info_name`=?,
 `grid_info_int`=?,
 `grid_info_float`=?,

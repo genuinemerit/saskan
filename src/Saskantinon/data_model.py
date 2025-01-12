@@ -142,6 +142,7 @@ def create_sql(DB: object) -> bool:
     # Delete all *.sql files in specified directories
     for directory in directories:
         for sql_file in FM.scan_dir(directory, "*.sql"):
+            print(f"{Colors.CL_YELLOW}Deleting {sql_file}{Colors.CL_END}")
             FM.delete_file(sql_file)
 
     # Define data models for processing with their respective categories
@@ -190,7 +191,6 @@ def create_sql(DB: object) -> bool:
             DMS.SolarYear,
             DMS.Season,
             DMS.LunarYear,
-            DMS.LunarYearXMoon,
             DMS.SolarCalendar,
             DMS.LunarCalendar,
             DMS.Month,
@@ -206,7 +206,8 @@ def create_sql(DB: object) -> bool:
                 fail = (f"{Colors.CL_RED}Error generating SQL for model {model}" +
                         f" in category {category}{Colors.CL_END}")
                 raise CreateSQLError(fail)
-                return False
+            else:
+                print(f"{Colors.CL_DARKCYAN}{model._tablename} SQL generated ")
 
     print(f"{Colors.CL_DARKCYAN}{Colors.CL_BOLD}SQL files generated.\n{Colors.CL_END}")
     return True
@@ -220,6 +221,7 @@ def create_db(DB: object, p_backup: bool = True) -> bool:
     - Always make a new .ARCV file.
     - Overlay existing .BAK if it exists.
     - Do not wipe out existing archived DB's.
+    - Delete .DB file if it exists.
     - Logged records appear in .BAK, not in refreshed .DB
     :param DB: Instantied DataBase() Class.
     :param p_backup: Booean flag. If True, backup and archive the .DB
@@ -234,16 +236,14 @@ def create_db(DB: object, p_backup: bool = True) -> bool:
         if db_path.exists():
             DB.backup_db(db_path, DB.SASKAN_BAK)
             print(f"{Colors.CL_DARKCYAN}Main DB was backed up{Colors.CL_END}")
-    # Use a single call to execute_ddl with concatenated SQL lists
-    drop_sql_list = [str(sql.name) for sql in FM.scan_dir(DB.DDL, "DROP*")]
+
+    FM.delete_file(DB.SASKAN_DB)
+    print(f"{Colors.CL_DARKCYAN}Database deleted{Colors.CL_END}")
+
+    # Execute CREATE statements with foreign key constraints
     create_sql_list = [str(sql.name) for sql in FM.scan_dir(DB.DDL, "CREATE*")]
-    # Execute DROP statements without foreign key constraints
-    ok = DB.execute_ddl(drop_sql_list, p_foreign_keys_on=False)
+    ok = DB.execute_ddl(create_sql_list, p_foreign_keys_on=True)
     if ok:
-        print(f"{Colors.CL_DARKCYAN}Database tables dropped{Colors.CL_END}")
-        # Execute CREATE statements with foreign key constraints
-        ok = DB.execute_ddl(create_sql_list, p_foreign_keys_on=True)
-        if ok:
-            print(f"{Colors.CL_DARKCYAN}{Colors.CL_BOLD}Database and " +
-                  f"Tables created\n{Colors.CL_END}")
+        print(f"{Colors.CL_DARKCYAN}{Colors.CL_BOLD}Database and " +
+              f"Tables created\n{Colors.CL_END}")
     return ok

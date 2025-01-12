@@ -42,7 +42,7 @@ class Widgets(object):
         MAPS: object,
         GRIDS: object,
         p_map_name: str = None,
-        p_grid_name: str = None,
+        p_grid_id: str = None,
     ):
         """ """
         pass

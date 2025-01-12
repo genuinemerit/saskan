@@ -1,6 +1,12 @@
 #! python
 """
 AI-generated. Time management for a science fiction setting.
+Enhance this with info from background regarding names, appearance, legend
+regarding moons and so on.
+Expand to include solar and other celestial events.
+Exapnd to include calendars, including leap periods.
+Include a callable function to return the current date and time.
+(see previous version in the lab).
 """
 
 import datetime

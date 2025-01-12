@@ -61,7 +61,7 @@ class GameMap(object):
         MAPS: object,
         GRIDS: object,
         p_map_name: str = None,
-        p_grid_name: str = None,
+        p_grid_id: str = None,
     ):
         """
         :args:
@@ -69,7 +69,7 @@ class GameMap(object):
         - MAPS (dict) -- PG.MAPS
         - GRIDS (dict) -- PG.GRIDS
         - p_map_name (str) -- name of map to load
-        - p_grid_name (str) -- name of grid to load
+        - p_grid_id (str) -- name of grid to load
 
         Default to first MAP and GRID if no name provided.
         Add an extra row and column at the top, bottom, left and right
@@ -80,11 +80,11 @@ class GameMap(object):
         -  GRIDS (dict) -- updated GRIDS dict
         """
         p_map_name = p_map_name or list(MAPS.keys())[0]
-        p_grid_name = p_grid_name or list(GRIDS.keys())[0]
+        p_grid_id = p_grid_id or list(GRIDS.keys())[0]
         W = WINDOWS["gamemap"]
-        G = GRIDS[p_grid_name]
-        GRIDS[p_grid_name] = self.set_grid_lines(W, G)
-        GRIDS[p_grid_name]["cells"] = self.set_grid_matrix(W, G)
+        G = GRIDS[p_grid_id]
+        GRIDS[p_grid_id] = self.set_grid_lines(W, G)
+        GRIDS[p_grid_id]["cells"] = self.set_grid_matrix(W, G)
         return GRIDS
 
     def set_grid_lines(self, W: dict, G: dict) -> dict:

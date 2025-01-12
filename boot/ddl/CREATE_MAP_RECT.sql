@@ -2,6 +2,8 @@ CREATE TABLE IF NOT EXISTS MAP_RECT (
 map_rect_uid_pk TEXT DEFAULT '',
 map_shape TEXT DEFAULT '',
 map_type TEXT DEFAULT '',
+map_id TEXT DEFAULT '',
+lang_code TEXT DEFAULT '',
 map_name TEXT DEFAULT '',
 map_desc TEXT DEFAULT '',
 north_lat NUMERIC DEFAULT 0.0,

@@ -1,5 +1,5 @@
 UPDATE `GRID` SET
-`grid_name`=?,
+`grid_id`=?,
 `x_col_cnt`=?,
 `y_row_cnt`=?,
 `z_up_cnt`=?,

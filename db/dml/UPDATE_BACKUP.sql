@@ -1,5 +1,5 @@
 UPDATE `BACKUP` SET
-`bkup_name`=?,
+`bkup_id`=?,
 `bkup_dttm`=?,
 `bkup_type`=?,
 `file_from`=?,

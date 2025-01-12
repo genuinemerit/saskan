@@ -37,9 +37,8 @@ class SetData():
     This module is for more complex/bespoke use cases.
 
     @TODO:
-    - Add method for loading WIDGETS table from config data,
-      after defining the WIDGETS data model.
-    - Once the Admin front-end is more defined, many of the methods
+    - Add method for loading BUTTONS and other widgets from config data
+    - Once the Admin front-end is more defined, more methods
       for setting data on the Story models can likely be added here.
     """
 
@@ -95,10 +94,13 @@ class SetData():
         return self.DB.execute_update(p_table_nm, uid, tuple(rec.values()))
 
     def _set_insert(self, p_table_name: str, p_del_match: dict, t_cols) -> bool:
-        """Code shared by the set_rect_maps, set_box_maps, and set_sphere_maps methods.
+        """Code shared by the various set_* data methods.
         :param p_table_name: str - Name of the table to update.
         :param p_del_match: dict - Dictionary of values to match on for virtual delete/update.
         :param t_cols: dict - Dictionary of column values for the map.
+
+        Note that get_by_match() accepts up to a max of 3 matching column values.
+        If matching only on UID, then use a DB query using a SELECT_BY_PK_ sql file.
         """
         existing_data = GD.get_by_match(p_table_name, p_del_match)
         if existing_data and not self._virtual_delete(p_table_name, existing_data):
@@ -117,18 +119,18 @@ class SetData():
         """
         table_name, table_data, table_cols = self._prep_data_set(DMA.Texts())
         language_code = self.CONTEXT["lang"]
-        for text_name, text_value in table_data.items():
+        for text_id, text_value in table_data.items():
             t_cols = table_cols.copy()
             t_cols.pop("text_uid_pk")
             t_cols.update(
                 {
                     "lang_code": language_code,
-                    "text_name": text_name,
+                    "text_id": text_id,
                     "text_value": text_value,
                     "delete_dt": "",
                 }
             )
-            del_match = {"lang_code": language_code, "text_name": text_name}
+            del_match = {"lang_code": language_code, "text_id": text_id}
             self._set_insert(table_name, del_match, t_cols)
         return True
 
@@ -147,7 +149,7 @@ class SetData():
                 {
                     "frame_id": frame_id,
                     "lang_code": self.CONTEXT["lang"],
-                    "frame_title": frame_config["title"],
+                    "frame_name": frame_config["title"],
                     "frame_desc": frame_config["desc"],
                     "frame_w": frame_config["frame_w"],
                     "frame_h": frame_config["frame_h"],
@@ -279,7 +281,7 @@ class SetData():
                         "frame_id": frame_id,
                         "lang_code": win_vals["lang_code"],
                         "win_id": win_id,
-                        "win_title": win_vals["title"],
+                        "win_name": win_vals["title"],
                         "win_margin": win_vals["margin"],
                         "delete_dt": "",
                     }
@@ -331,12 +333,14 @@ class SetData():
 
     def set_rect_maps(self) -> bool:
         """Define rectangular maps for game use.
-        Using hard-coded values for now. Eventually, these will be defined in a config file,
+        Using hard-coded values for now.
+        Eventually, these will be defined in a config file,
         maybe also via a GUI or CLI.
         :return: True if all operations succeed; Raises error otherwise.
         """
         table_name, _, table_cols = self._prep_data_set(DMS.MapRect(), False)
         map_name = "Saskan Lands Political Regions"
+        map_id = "saskan_lands_political"
         t_cols = table_cols.copy()
         t_cols.pop("map_rect_uid_pk")
         t_cols.update(
@@ -344,6 +348,8 @@ class SetData():
                 "map_shape": "rectangle",
                 "map_type": "political",
                 "map_name": map_name,
+                "map_id": map_id,
+                "lang_code": "en",
                 "map_desc": "Borders and names of the regions and provinces of Saskantinon.",
                 "north_lat": 39.7392,
                 "west_lon": -104.9902,
@@ -352,7 +358,7 @@ class SetData():
                 "delete_dt": "",
             }
         )
-        del_match = {"map_name": map_name}
+        del_match = {"map_id": map_id, "lang_code": "en"}
         return self._set_insert(table_name, del_match, t_cols)
 
     def set_box_maps(self) -> bool:
@@ -363,12 +369,15 @@ class SetData():
         """
         table_name, _, table_cols = self._prep_data_set(DMS.MapBox(), False)
         map_name = "Saskan Lands Geography"
+        map_id = "saskan_lands_geography"
         t_cols = table_cols.copy()
         t_cols.pop("map_box_uid_pk")
         t_cols.update(
             {
                 "map_shape": "box",
                 "map_type": "geo",
+                "map_id": map_id,
+                "lang_code": "en",
                 "map_name": map_name,
                 "map_desc": "Elevation, mountains, hills, lakes, rivers, and streams.",
                 "north_lat": 39.7392,
@@ -380,7 +389,7 @@ class SetData():
                 "delete_dt": "",
             }
         )
-        del_match = {"map_name": map_name}
+        del_match = {"map_id": map_id, "lang_code": "en"}
         return self._set_insert(table_name, del_match, t_cols)
 
     def set_sphere_maps(self) -> bool:
@@ -391,12 +400,15 @@ class SetData():
         """
         table_name, _, table_cols = self._prep_data_set(DMS.MapSphere(), False)
         map_name = "Gavor-Havorra Planetary Map"
+        map_id = "gavor_havorra_planet"
         t_cols = table_cols.copy()
         t_cols.pop("map_sphere_uid_pk")
         t_cols.update(
             {
                 "map_shape": "sphere",
                 "map_type": "geo",
+                "map_id": map_id,
+                "lang_code": "en",
                 "map_name": map_name,
                 "map_desc": "Continents, oceans, and land masses of Gavor-Havorra.",
                 "origin_lat": 0.0,
@@ -407,7 +419,7 @@ class SetData():
                 "delete_dt": "",
             }
         )
-        del_match = {"map_name": map_name}
+        del_match = {"map_id": map_id, "lang_code": "en"}
         return self._set_insert(table_name, del_match, t_cols)
 
     def set_grids(self) -> bool:
@@ -417,11 +429,11 @@ class SetData():
         :return: True if all operations succeed; Raises error otherwise.
         """
         table_name, _, table_cols = self._prep_data_set(DMS.Grid(), False)
-        grid_name = "30x_40y_30zu_30zd"
+        grid_id = "30x_40y_30zu_30zd"
         table_cols.pop("grid_uid_pk")
         table_cols.update(
             {
-                "grid_name": grid_name,
+                "grid_id": grid_id,
                 "x_col_cnt": 30,
                 "y_row_cnt": 40,
                 "z_up_cnt": 30,
@@ -429,7 +441,7 @@ class SetData():
                 "delete_dt": "",
             }
         )
-        del_match = {"grid_name": grid_name}
+        del_match = {"grid_id": grid_id}
         return self._set_insert(table_name, del_match, table_cols)
         return True
 
@@ -442,13 +454,13 @@ class SetData():
         :return: True if all operations succeed; Raises error otherwise.
         """
         table_name, _, table_cols = self._prep_data_set(DMS.GridCell(), False)
-        grid_name = "30x_40y_30zu_30zd"
+        grid_id = "30x_40y_30zu_30zd"
         grid_data = [
             {"grid_cell_name": "Selaron Town", "x_col_ix": 25, "y_row_ix": 12, "z_up_down_ix": 0},
             {"grid_cell_name": "Morilly Town", "x_col_ix": 15, "y_row_ix": 23, "z_up_down_ix": 0},
             {"grid_cell_name": "Wildwind Town", "x_col_ix": 12, "y_row_ix": 27, "z_up_down_ix": 0},
         ]
-        linked_data = GD.get_by_match("GRID", {"grid_name": grid_name})
+        linked_data = GD.get_by_match("GRID", {"grid_id": grid_id})
         if not linked_data:
             raise SetDataError(f"{Colors.CL_RED}Link to GRID not found.{Colors.CL_END}")
         for cells in grid_data:
@@ -462,7 +474,8 @@ class SetData():
             cell_cols.update(
                 {
                     "grid_uid_fk": linked_data["grid_uid_pk"],
-                    "grid_name": grid_name,
+                    "grid_id": grid_id,
+                    "lang_code": "en",
                     "grid_cell_name": cells["grid_cell_name"],
                     "x_col_ix": cells["x_col_ix"],
                     "y_row_ix": cells["y_row_ix"],
@@ -471,7 +484,7 @@ class SetData():
                     "delete_dt": "",
                 }
             )
-            del_match = {"grid_name": grid_name, "grid_cell_id": grid_cell_id}
+            del_match = {"grid_id": grid_id, "grid_cell_id": grid_cell_id}
             self._set_insert(table_name, del_match, cell_cols)
         return True
 
@@ -483,8 +496,8 @@ class SetData():
         - If an image path is provided, then load the image into the DB as a BLOB.
         """
         table_name, _, table_cols = self._prep_data_set(DMS.GridInfo(), False)
-        grid_name = "30x_40y_30zu_30zd"
-        linked_grid_data = GD.get_by_match("GRID", {"grid_name": grid_name})
+        grid_id = "30x_40y_30zu_30zd"
+        linked_grid_data = GD.get_by_match("GRID", {"grid_id": grid_id})
         if not linked_grid_data:
             raise SetDataError(f"{Colors.CL_RED}Link to GRID not found.{Colors.CL_END}")
 
@@ -514,9 +527,10 @@ class SetData():
                 {
                     "grid_uid_fk": linked_grid_data["grid_uid_pk"],
                     "grid_cell_uid_fk": linked_cell_data["grid_cell_uid_pk"],
-                    "grid_name": grid_name,
+                    "grid_id": grid_id,
                     "grid_cell_name": grid_cell_name,
                     "grid_info_id": info["grid_info_id"],
+                    "lang_code": "en",
                     "grid_info_name": info["grid_info_name"],
                     "grid_info_int": int_val,
                     "grid_info_float": float_val,
@@ -527,7 +541,7 @@ class SetData():
                     "delete_dt": "",
                 }
             )
-            del_match = {"grid_name": grid_name, "grid_cell_name": grid_cell_name}
+            del_match = {"grid_id": grid_id, "grid_cell_name": grid_cell_name}
             self._set_insert(table_name, del_match, info_cols)
         return True
 
